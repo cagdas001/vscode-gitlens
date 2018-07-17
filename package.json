@@ -1493,8 +1493,13 @@
                 "category": "GitLens"
             },
             {
-                "command": "gitlens.showHistoryExplorer",
+                "command": "gitlens.showFileHistoryExplorer",
                 "title": "Show File History Explorer",
+                "category": "GitLens"
+            },
+            {
+                "command": "gitlens.showLineHistoryExplorer",
+                "title": "Show Line History Explorer",
                 "category": "GitLens"
             },
             {
@@ -2114,12 +2119,13 @@
                     "when": "gitlens:enabled && gitlens:gitExplorer"
                 },
                 {
-                    "command": "gitlens.showHistoryExplorer",
-                    "when": "gitlens:enabled && gitlens:historyExplorer"
+                    "command": "gitlens.showFileHistoryExplorer",
+                    "when": "gitlens:enabled && gitlens:fileHistoryExplorer"
                 },
                 {
-                    "command": "gitlens.showHistoryExplorer",
-                    "when": "gitlens:enabled && !gitlens:historyExplorer && gitlens:gitExplorer"
+                    "command": "gitlens.showLineHistoryExplorer",
+                    "title": "Show Line History Explorer",
+                    "when": "gitlens:enabled && gitlens:lineHistoryExplorer"
                 },
                 {
                     "command": "gitlens.showResultsExplorer",
@@ -2805,17 +2811,17 @@
                 },
                 {
                     "command": "gitlens.historyExplorer.refresh",
-                    "when": "view =~ /^gitlens.historyExplorer:/",
+                    "when": "view =~ /^gitlens.fileHistoryExplorer:/",
                     "group": "navigation@1"
                 },
                 {
                     "command": "gitlens.historyExplorer.setRenameFollowingOn",
-                    "when": "view =~ /^gitlens.historyExplorer:/ && !config.gitlens.advanced.fileHistoryFollowsRenames",
+                    "when": "view =~ /^gitlens.fileHistoryExplorer:/ && !config.gitlens.advanced.fileHistoryFollowsRenames",
                     "group": "1_gitlens"
                 },
                 {
                     "command": "gitlens.historyExplorer.setRenameFollowingOff",
-                    "when": "view =~ /^gitlens.historyExplorer:/ && config.gitlens.advanced.fileHistoryFollowsRenames",
+                    "when": "view =~ /^gitlens.fileHistoryExplorer:/ && config.gitlens.advanced.fileHistoryFollowsRenames",
                     "group": "1_gitlens"
                 },
                 {
@@ -3167,7 +3173,7 @@
                 },
                 {
                     "command": "gitlens.historyExplorer.refreshNode",
-                    "when": "view =~ /^gitlens.historyExplorer:/ && viewItem =~ /gitlens:(?!file\\b)/",
+                    "when": "view =~ /^gitlens.fileHistoryExplorer:/ && viewItem =~ /gitlens:(?!file\\b)/",
                     "group": "9_gitlens@1"
                 }
             ]
@@ -3376,9 +3382,14 @@
                     "when": "gitlens:enabled && gitlens:gitExplorer == gitlens"
                 },
                 {
-                    "id": "gitlens.historyExplorer:gitlens",
+                    "id": "gitlens.fileHistoryExplorer:gitlens",
                     "name": "File History",
-                    "when": "gitlens:enabled && gitlens:historyExplorer == gitlens"
+                    "when": "gitlens:enabled && gitlens:fileHistoryExplorer == gitlens"
+                },
+                {
+                    "id": "gitlens.lineHistoryExplorer:gitlens",
+                    "name": "Line History",
+                    "when": "gitlens:enabled && gitlens:lineHistoryExplorer == gitlens"
                 },
                 {
                     "id": "gitlens.resultsExplorer:gitlens",
@@ -3393,9 +3404,14 @@
                     "when": "gitlens:enabled && gitlens:gitExplorer == explorer"
                 },
                 {
-                    "id": "gitlens.historyExplorer:explorer",
+                    "id": "gitlens.fileHistoryExplorer:explorer",
                     "name": "GitLens File History",
-                    "when": "gitlens:enabled && gitlens:historyExplorer == explorer"
+                    "when": "gitlens:enabled && gitlens:fileHistoryExplorer == explorer"
+                },
+                {
+                    "id": "gitlens.lineHistoryExplorer:explorer",
+                    "name": "Line History",
+                    "when": "gitlens:enabled && gitlens:lineHistoryExplorer == explorer"
                 },
                 {
                     "id": "gitlens.resultsExplorer:explorer",
@@ -3410,9 +3426,14 @@
                     "when": "gitlens:enabled && gitlens:gitExplorer == scm"
                 },
                 {
-                    "id": "gitlens.historyExplorer:scm",
+                    "id": "gitlens.fileHistoryExplorer:scm",
                     "name": "GitLens File History",
-                    "when": "gitlens:enabled && gitlens:historyExplorer == scm"
+                    "when": "gitlens:enabled && gitlens:fileHistoryExplorer == scm"
+                },
+                {
+                    "id": "gitlens.lineHistoryExplorer:scm",
+                    "name": "Line History",
+                    "when": "gitlens:enabled && gitlens:lineHistoryExplorer == scm"
                 },
                 {
                     "id": "gitlens.resultsExplorer:scm",

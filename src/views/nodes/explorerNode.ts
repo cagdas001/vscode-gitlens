@@ -1,6 +1,7 @@
 'use strict';
-import { Command, TreeItem } from 'vscode';
+import { Command, Disposable, Event, TreeItem, TreeViewVisibilityChangeEvent } from 'vscode';
 import { GitUri } from '../../gitService';
+import { ExplorerBase } from '../explorer';
 
 export enum ResourceType {
     Branch = 'gitlens:branch',
@@ -47,9 +48,14 @@ export interface NamedRef {
 export const unknownGitUri = new GitUri();
 
 export abstract class ExplorerNode {
-    constructor(
-        public readonly uri: GitUri
-    ) {}
+    constructor(uri: GitUri) {
+        this._uri = uri;
+    }
+
+    protected _uri: GitUri;
+    get uri() {
+        return this._uri;
+    }
 
     abstract getChildren(): ExplorerNode[] | Promise<ExplorerNode[]>;
     abstract getTreeItem(): TreeItem | Promise<TreeItem>;
@@ -78,4 +84,72 @@ export function isPageable(
     node: ExplorerNode
 ): node is ExplorerNode & { supportsPaging: boolean; maxCount: number | undefined } {
     return !!(node as any).supportsPaging;
+}
+
+export function supportsAutoRefresh(
+    explorer: ExplorerBase
+): explorer is ExplorerBase & { autoRefresh: boolean; onDidChangeAutoRefresh: Event<void> } {
+    return (explorer as any).onDidChangeAutoRefresh !== undefined;
+}
+
+export abstract class SubscribeableExplorerNode<TExplorer extends ExplorerBase> extends ExplorerNode {
+    protected _disposable: Disposable;
+    protected _subscription: Disposable | undefined;
+
+    constructor(
+        uri: GitUri,
+        protected readonly explorer: TExplorer
+    ) {
+        super(uri);
+
+        const disposables = [this.explorer.onDidChangeVisibility(this.onVisibilityChanged, this)];
+
+        if (supportsAutoRefresh(this.explorer)) {
+            disposables.push(this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this));
+        }
+
+        this._disposable = Disposable.from(...disposables);
+    }
+
+    dispose() {
+        this.unsubscribe();
+
+        if (this._disposable !== undefined) {
+            this._disposable.dispose();
+        }
+    }
+
+    protected abstract async subscribe(): Promise<Disposable | undefined>;
+    protected unsubscribe(): void {
+        if (this._subscription !== undefined) {
+            this._subscription.dispose();
+            this._subscription = undefined;
+        }
+    }
+
+    protected onAutoRefreshChanged() {
+        this.onVisibilityChanged({ visible: this.explorer.visible });
+    }
+
+    protected onVisibilityChanged(e: TreeViewVisibilityChangeEvent) {
+        this.ensureSubscription();
+
+        if (e.visible) {
+            void this.explorer.refreshNode(this);
+        }
+    }
+
+    async ensureSubscription() {
+        // We only need to subscribe if we are visible and if auto-refresh enabled (when supported)
+        if (!this.explorer.visible || (supportsAutoRefresh(this.explorer) && !this.explorer.autoRefresh)) {
+            this.unsubscribe();
+
+            return;
+        }
+
+        // If we already have a subscription, just kick out
+        if (this._subscription !== undefined) return;
+
+        this._subscription = await this.subscribe();
+    }
 }

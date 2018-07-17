@@ -10,35 +10,27 @@ import { GitExplorer } from '../gitExplorer';
 import { BranchesNode } from './branchesNode';
 import { BranchNode } from './branchNode';
 import { MessageNode } from './common';
-import { ExplorerNode, ResourceType } from './explorerNode';
+import { ExplorerNode, ResourceType, SubscribeableExplorerNode } from './explorerNode';
 import { RemotesNode } from './remotesNode';
 import { StashesNode } from './stashesNode';
 import { StatusFilesNode } from './statusFilesNode';
 import { StatusUpstreamNode } from './statusUpstreamNode';
 import { TagsNode } from './tagsNode';
 
-export class RepositoryNode extends ExplorerNode implements Disposable {
+export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
     private _children: ExplorerNode[] | undefined;
-    private _disposable: Disposable | undefined;
     private _status: Promise<GitStatus | undefined>;
 
     constructor(
         uri: GitUri,
         public readonly repo: Repository,
-        private readonly explorer: GitExplorer,
+        explorer: GitExplorer,
         private readonly active: boolean = false,
         private readonly activeParent?: ExplorerNode
     ) {
-        super(uri);
+        super(uri, explorer);
 
         this._status = this.repo.getStatus();
-    }
-
-    dispose() {
-        if (this._disposable !== undefined) {
-            this._disposable.dispose();
-            this._disposable = undefined;
-        }
     }
 
     get id(): string {
@@ -162,24 +154,7 @@ export class RepositoryNode extends ExplorerNode implements Disposable {
         this.ensureSubscription();
     }
 
-    private get includeWorkingTree(): boolean {
-        return this.explorer.config.includeWorkingTree;
-    }
-
-    ensureSubscription() {
-        // We only need to subscribe if auto-refresh is enabled and we are visible
-        if (!this.explorer.autoRefresh || !this.explorer.visible) {
-            if (this._disposable !== undefined) {
-                this._disposable.dispose();
-                this._disposable = undefined;
-            }
-
-            return;
-        }
-
-        // If we already have a subscription, just kick out
-        if (this._disposable !== undefined) return;
-
+    protected async subscribe() {
         const disposables = [this.repo.onDidChange(this.onRepoChanged, this)];
 
         if (this.includeWorkingTree) {
@@ -190,7 +165,11 @@ export class RepositoryNode extends ExplorerNode implements Disposable {
             this.repo.startWatchingFileSystem();
         }
 
-        this._disposable = Disposable.from(...disposables);
+        return Disposable.from(...disposables);
+    }
+
+    private get includeWorkingTree(): boolean {
+        return this.explorer.config.includeWorkingTree;
     }
 
     private async onFileSystemChanged(e: RepositoryFileSystemChangeEvent) {

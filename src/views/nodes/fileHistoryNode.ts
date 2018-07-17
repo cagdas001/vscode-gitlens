@@ -6,39 +6,20 @@ import {
     GitLogCommit,
     GitService,
     GitUri,
-    Repository,
     RepositoryChange,
     RepositoryChangeEvent,
     RepositoryFileSystemChangeEvent
 } from '../../gitService';
 import { Logger } from '../../logger';
 import { Iterables } from '../../system';
-import { Explorer } from '../explorer';
+import { FileHistoryExplorer } from '../fileHistoryExplorer';
 import { CommitFileNode, CommitFileNodeDisplayAs } from './commitFileNode';
 import { MessageNode } from './common';
-import { ExplorerNode, ResourceType } from './explorerNode';
+import { ExplorerNode, ResourceType, SubscribeableExplorerNode } from './explorerNode';
 
-export class FileHistoryNode extends ExplorerNode {
-    private _disposable: Disposable | undefined;
-
-    constructor(
-        uri: GitUri,
-        private readonly repo: Repository,
-        private readonly explorer: Explorer
-    ) {
-        super(uri);
-
-        // this._disposable = Disposable.from(
-        //     this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this),
-        //     this.explorer.onDidChangeVisibility(this.onVisibilityChanged, this)
-        // );
-    }
-
-    dispose() {
-        if (this._disposable !== undefined) {
-            this._disposable.dispose();
-            this._disposable = undefined;
-        }
+export class FileHistoryNode extends SubscribeableExplorerNode<FileHistoryExplorer> {
+    constructor(uri: GitUri, explorer: FileHistoryExplorer) {
+        super(uri, explorer);
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
@@ -113,6 +94,21 @@ export class FileHistoryNode extends ExplorerNode {
         return item;
     }
 
+    protected async subscribe() {
+        const repo = await Container.git.getRepository(this.uri);
+        if (repo === undefined) return undefined;
+
+        const subscription = Disposable.from(
+            repo.onDidChange(this.onRepoChanged, this),
+            repo.onDidChangeFileSystem(this.onRepoFileSystemChanged, this),
+            { dispose: () => repo.stopWatchingFileSystem() }
+        );
+
+        repo.startWatchingFileSystem();
+
+        return subscription;
+    }
+
     private onRepoChanged(e: RepositoryChangeEvent) {
         if (!e.changed(RepositoryChange.Repository)) return;
 
@@ -127,22 +123,5 @@ export class FileHistoryNode extends ExplorerNode {
         Logger.log(`FileHistoryNode.onRepoFileSystemChanged; triggering node refresh`);
 
         this.explorer.refreshNode(this);
-    }
-
-    private ensureSubscription() {
-        // if (!this.explorer.visible) {
-        //     return;
-        // }
-
-        // If we already have a subscription, just kick out
-        if (this._disposable !== undefined) return;
-
-        this._disposable = Disposable.from(
-            this.repo.onDidChange(this.onRepoChanged, this),
-            this.repo.onDidChangeFileSystem(this.onRepoFileSystemChanged, this),
-            { dispose: () => this.repo.stopWatchingFileSystem() }
-        );
-
-        this.repo.startWatchingFileSystem();
     }
 }

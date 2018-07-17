@@ -14,8 +14,9 @@ import { configuration } from '../configuration';
 import { Container } from '../container';
 import { Logger } from '../logger';
 import { RefreshNodeCommandArgs } from './explorerCommands';
+import { FileHistoryExplorer } from './fileHistoryExplorer';
 import { GitExplorer } from './gitExplorer';
-import { HistoryExplorer } from './historyExplorer';
+import { LineHistoryExplorer } from './lineHistoryExplorer';
 import { ExplorerNode } from './nodes';
 import { isPageable } from './nodes/explorerNode';
 import { ResultsExplorer } from './resultsExplorer';
@@ -31,7 +32,7 @@ export enum RefreshReason {
     VisibleEditorsChanged = 'visible-editors-changed'
 }
 
-export type Explorer = GitExplorer | HistoryExplorer | ResultsExplorer;
+export type Explorer = GitExplorer | FileHistoryExplorer | LineHistoryExplorer | ResultsExplorer;
 
 export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Disposable {
     protected _onDidChangeTreeData = new EventEmitter<ExplorerNode>();
@@ -48,7 +49,9 @@ export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Di
     protected _root: ExplorerNode | undefined;
     protected _tree: TreeView<ExplorerNode> | undefined;
 
-    constructor() {
+    constructor(
+        public readonly id: string
+    ) {
         this.registerCommands();
 
         Container.context.subscriptions.push(configuration.onDidChange(this.onConfigurationChanged, this));
@@ -58,8 +61,6 @@ export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Di
     dispose() {
         this._disposable && this._disposable.dispose();
     }
-
-    abstract readonly id: string;
 
     getQualifiedCommand(command: string) {
         return `${this.id}.${command}`;
@@ -91,7 +92,7 @@ export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Di
             this._root = this.getRoot();
         }
 
-        return this._root!.getChildren();
+        return this._root.getChildren();
     }
 
     getParent(): ExplorerNode | undefined {

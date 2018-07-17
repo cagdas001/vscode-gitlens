@@ -6,10 +6,10 @@ import { Container } from '../container';
 import { ExplorerBase, RefreshReason } from './explorer';
 import { RepositoriesNode } from './nodes';
 
-// export * from './nodes';
-
 export class GitExplorer extends ExplorerBase {
-    readonly id = 'gitlens.gitExplorer';
+    constructor() {
+        super('gitlens.gitExplorer');
+    }
 
     private _onDidChangeAutoRefresh = new EventEmitter<void>();
     public get onDidChangeAutoRefresh(): Event<void> {
@@ -96,7 +96,7 @@ export class GitExplorer extends ExplorerBase {
         return { ...Container.config.explorers, ...Container.config.gitExplorer };
     }
 
-    async setAutoRefresh(enabled: boolean, workspaceEnabled?: boolean) {
+    private async setAutoRefresh(enabled: boolean, workspaceEnabled?: boolean) {
         if (enabled) {
             if (workspaceEnabled === undefined) {
                 workspaceEnabled = Container.context.workspaceState.get<boolean>(

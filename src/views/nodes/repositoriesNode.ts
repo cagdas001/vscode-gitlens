@@ -1,38 +1,21 @@
 'use strict';
-import { Disposable, TreeItem, TreeItemCollapsibleState, TreeViewVisibilityChangeEvent } from 'vscode';
+import { Disposable, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Container } from '../../container';
 import { GitUri } from '../../gitService';
 import { GitExplorer } from '../gitExplorer';
 import { MessageNode } from './common';
-import { ExplorerNode, ResourceType, unknownGitUri } from './explorerNode';
+import { ExplorerNode, ResourceType, SubscribeableExplorerNode, unknownGitUri } from './explorerNode';
 import { RepositoryNode } from './repositoryNode';
 
-export class RepositoriesNode extends ExplorerNode implements Disposable {
+export class RepositoriesNode extends SubscribeableExplorerNode<GitExplorer> {
     private _children: (RepositoryNode | MessageNode)[] | undefined;
-    private _disposable: Disposable | undefined;
-    private _repositoriesChangedDisposable: Disposable | undefined;
 
-    constructor(
-        private readonly explorer: GitExplorer
-    ) {
-        super(unknownGitUri);
-
-        this._disposable = Disposable.from(
-            this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this),
-            this.explorer.onDidChangeVisibility(this.onVisibilityChanged, this)
-        );
+    constructor(explorer: GitExplorer) {
+        super(unknownGitUri, explorer);
     }
 
     dispose() {
-        if (this._repositoriesChangedDisposable !== undefined) {
-            this._repositoriesChangedDisposable.dispose();
-            this._repositoriesChangedDisposable = undefined;
-        }
-
-        if (this._disposable !== undefined) {
-            this._disposable.dispose();
-            this._disposable = undefined;
-        }
+        super.dispose();
 
         if (this._children !== undefined) {
             for (const child of this._children) {
@@ -60,6 +43,15 @@ export class RepositoriesNode extends ExplorerNode implements Disposable {
         }
 
         return this._children;
+    }
+
+    getTreeItem(): TreeItem {
+        const item = new TreeItem(`Repositories`, TreeItemCollapsibleState.Expanded);
+        item.contextValue = ResourceType.Repositories;
+
+        this.ensureSubscription();
+
+        return item;
     }
 
     async refresh() {
@@ -96,64 +88,11 @@ export class RepositoriesNode extends ExplorerNode implements Disposable {
         this.ensureSubscription();
     }
 
-    getTreeItem(): TreeItem {
-        const item = new TreeItem(`Repositories`, TreeItemCollapsibleState.Expanded);
-        item.contextValue = ResourceType.Repositories;
-
-        this.ensureSubscription();
-
-        return item;
-    }
-
-    private onAutoRefreshChanged() {
-        this.ensureSubscription();
-
-        if (this._children === undefined) return;
-
-        for (const child of this._children) {
-            if (child instanceof RepositoryNode) {
-                child.ensureSubscription();
-            }
-        }
+    protected async subscribe() {
+        return Disposable.from(Container.git.onDidChangeRepositories(this.onRepositoriesChanged, this));
     }
 
     private onRepositoriesChanged() {
         this.explorer.refreshNode(this);
-    }
-
-    onVisibilityChanged(e: TreeViewVisibilityChangeEvent) {
-        if (this._children === undefined) return;
-        if (!this.explorer.autoRefresh) return;
-
-        this.ensureSubscription();
-        for (const child of this._children) {
-            if (child instanceof RepositoryNode) {
-                if (e.visible) {
-                    this.explorer.refreshNode(child);
-                }
-                else {
-                    child.ensureSubscription();
-                }
-            }
-        }
-    }
-
-    private ensureSubscription() {
-        // We only need to subscribe if auto-refresh is enabled and we are visible
-        if (!this.explorer.autoRefresh || !this.explorer.visible) {
-            if (this._repositoriesChangedDisposable !== undefined) {
-                this._repositoriesChangedDisposable.dispose();
-                this._repositoriesChangedDisposable = undefined;
-            }
-
-            return;
-        }
-
-        // If we already have a subscription, just kick out
-        if (this._repositoriesChangedDisposable !== undefined) return;
-
-        this._repositoriesChangedDisposable = Disposable.from(
-            Container.git.onDidChangeRepositories(this.onRepositoriesChanged, this)
-        );
     }
 }

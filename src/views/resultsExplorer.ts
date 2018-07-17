@@ -23,15 +23,17 @@ import {
     CommitsResultsNode,
     ComparisonResultsNode,
     ExplorerNode,
-    MessageNode,
+    isPageable,
     NamedRef,
     ResourceType
 } from './nodes';
+import { MessageNode } from './nodes/common';
 // import { Messages } from './messages';
 
 export * from './nodes';
 
 export class ResultsExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
+    readonly id = 'ResultsExplorer';
     private _disposable: Disposable | undefined;
     private _roots: ExplorerNode[] = [];
     private _tree: TreeView<ExplorerNode> | undefined;
@@ -162,7 +164,7 @@ export class ResultsExplorer implements TreeDataProvider<ExplorerNode>, Disposab
     refreshNode(node: ExplorerNode, args?: RefreshNodeCommandArgs) {
         Logger.log(`ResultsExplorer.refreshNode(${(node as { id?: string }).id || ''})`);
 
-        if (args !== undefined && node.supportsPaging) {
+        if (args !== undefined && isPageable(node)) {
             node.maxCount = args.maxCount;
         }
         node.refresh();
