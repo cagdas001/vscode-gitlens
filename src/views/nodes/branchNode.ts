@@ -7,7 +7,7 @@ import { GitBranch, GitUri } from '../../gitService';
 import { Arrays, Iterables } from '../../system';
 import { GitExplorer } from '../gitExplorer';
 import { CommitNode } from './commitNode';
-import { ExplorerNode, ExplorerRefNode, MessageNode, ResourceType, ShowAllNode } from './explorerNode';
+import { ExplorerNode, ExplorerRefNode, MessageNode, ResourceType, ShowMoreNode } from './explorerNode';
 
 export class BranchNode extends ExplorerRefNode {
     readonly supportsPaging: boolean = true;
@@ -15,7 +15,8 @@ export class BranchNode extends ExplorerRefNode {
     constructor(
         public readonly branch: GitBranch,
         uri: GitUri,
-        protected readonly explorer: GitExplorer
+        protected readonly explorer: GitExplorer,
+        private readonly markCurrent: boolean = true
     ) {
         super(uri);
     }
@@ -31,16 +32,15 @@ export class BranchNode extends ExplorerRefNode {
         return this.current || GitBranch.isDetached(branchName) ? branchName : this.branch.getBasename();
     }
 
-    get markCurrent(): boolean {
-        return true;
-    }
-
     get ref(): string {
         return this.branch.ref;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
-        const log = await Container.git.getLog(this.uri.repoPath!, { maxCount: this.maxCount, ref: this.ref });
+        const log = await Container.git.getLog(this.uri.repoPath!, {
+            maxCount: this.maxCount || this.explorer.config.defaultItemLimit,
+            ref: this.ref
+        });
         if (log === undefined) return [new MessageNode('No commits yet')];
 
         const branches = await Container.git.getBranches(this.uri.repoPath);
@@ -58,12 +58,12 @@ export class BranchNode extends ExplorerRefNode {
             return branches.join(', ');
         };
 
-        const children: (CommitNode | ShowAllNode)[] = [
+        const children: (CommitNode | ShowMoreNode)[] = [
             ...Iterables.map(log.commits.values(), c => new CommitNode(c, this.explorer, this.branch, getBranchTips))
         ];
 
         if (log.truncated) {
-            children.push(new ShowAllNode('Show All Commits', this, this.explorer));
+            children.push(new ShowMoreNode('Commits', this, this.explorer));
         }
         return children;
     }
@@ -79,8 +79,11 @@ export class BranchNode extends ExplorerRefNode {
                     GlyphChars.ArrowLeftRightLong
                 }${GlyphChars.Space} ${this.branch.tracking}`;
             }
-            tooltip += `\n\nTracking ${GlyphChars.Dash} ${this.branch.tracking}
-${this.branch.getTrackingStatus({ empty: 'up-to-date', expand: true, separator: '\n' })}`;
+            tooltip += `\n\nis tracking ${this.branch.tracking}${this.branch.getTrackingStatus({
+                empty: 'up-to-date',
+                expand: true,
+                separator: '\n'
+            })}`;
 
             if (this.branch.state.ahead || this.branch.state.behind) {
                 if (this.branch.state.behind) {

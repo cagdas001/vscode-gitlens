@@ -279,7 +279,7 @@ export class ResultsExplorer implements TreeDataProvider<ExplorerNode>, Disposab
     private clearResults() {
         if (this._roots.length === 0) return;
 
-        this._roots.forEach(r => r.dispose());
+        // this._roots.forEach(r => r.dispose());
         this._roots = [];
 
         void this.refresh();
@@ -291,7 +291,7 @@ export class ResultsExplorer implements TreeDataProvider<ExplorerNode>, Disposab
 
         this._roots.splice(index, 1);
 
-        node.dispose();
+        // node.dispose();
 
         void this.refresh();
     }

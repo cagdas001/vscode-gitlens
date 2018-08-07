@@ -161,6 +161,7 @@ export interface IExplorersConfig {
     commitFileFormat: string;
     commitFormat: string;
     // dateFormat: string | null;
+    defaultItemLimit: number;
 
     stashFileFormat: string;
     stashFormat: string;
