@@ -6,7 +6,8 @@ import { GitUri, Repository } from '../../gitService';
 import { Arrays } from '../../system';
 import { GitExplorer } from '../gitExplorer';
 import { BranchOrTagFolderNode } from './branchOrTagFolderNode';
-import { ExplorerNode, MessageNode, ResourceType } from './explorerNode';
+import { MessageNode } from './common';
+import { ExplorerNode, ResourceType } from './explorerNode';
 import { TagNode } from './tagNode';
 
 export class TagsNode extends ExplorerNode {

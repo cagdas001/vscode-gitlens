@@ -4,8 +4,9 @@ import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
 import { GitLog, GitService, GitUri } from '../../gitService';
 import { Strings } from '../../system';
+import { Explorer } from '../explorer';
 import { CommitsResultsNode } from './commitsResultsNode';
-import { Explorer, ExplorerNode, NamedRef, ResourceType } from './explorerNode';
+import { ExplorerNode, NamedRef, ResourceType } from './explorerNode';
 import { StatusFilesResultsNode } from './statusFilesResultsNode';
 
 export class ComparisonResultsNode extends ExplorerNode {

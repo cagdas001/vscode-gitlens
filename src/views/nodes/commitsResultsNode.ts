@@ -2,11 +2,14 @@
 import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { GitLog, GitUri } from '../../gitService';
 import { Iterables } from '../../system';
+import { Explorer } from '../explorer';
 import { CommitNode } from './commitNode';
-import { Explorer, ExplorerNode, ResourceType, ShowAllNode } from './explorerNode';
+import { ShowAllNode } from './common';
+import { ExplorerNode, PageableExplorerNode, ResourceType } from './explorerNode';
 
-export class CommitsResultsNode extends ExplorerNode {
+export class CommitsResultsNode extends ExplorerNode implements PageableExplorerNode {
     readonly supportsPaging: boolean = true;
+    maxCount: number | undefined;
 
     private _cache: { label: string; log: GitLog | undefined } | undefined;
 

@@ -13,8 +13,10 @@ import {
 } from '../../gitService';
 import { Logger } from '../../logger';
 import { Iterables } from '../../system';
+import { Explorer } from '../explorer';
 import { CommitFileNode, CommitFileNodeDisplayAs } from './commitFileNode';
-import { Explorer, ExplorerNode, MessageNode, ResourceType } from './explorerNode';
+import { MessageNode } from './common';
+import { ExplorerNode, ResourceType } from './explorerNode';
 
 export class FileHistoryNode extends ExplorerNode {
     private _disposable: Disposable | undefined;

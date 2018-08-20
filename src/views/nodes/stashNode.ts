@@ -3,7 +3,8 @@ import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Container } from '../../container';
 import { CommitFormatter, GitStashCommit, ICommitFormatOptions } from '../../gitService';
 import { Iterables } from '../../system';
-import { Explorer, ExplorerNode, ExplorerRefNode, ResourceType } from './explorerNode';
+import { Explorer } from '../explorer';
+import { ExplorerNode, ExplorerRefNode, ResourceType } from './explorerNode';
 import { StashFileNode } from './stashFileNode';
 
 export class StashNode extends ExplorerRefNode {

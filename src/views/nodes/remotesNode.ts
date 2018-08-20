@@ -4,7 +4,8 @@ import { Container } from '../../container';
 import { GitUri, Repository } from '../../gitService';
 import { Iterables } from '../../system';
 import { GitExplorer } from '../gitExplorer';
-import { ExplorerNode, MessageNode, ResourceType } from './explorerNode';
+import { MessageNode } from './common';
+import { ExplorerNode, ResourceType } from './explorerNode';
 import { RemoteNode } from './remoteNode';
 
 export class RemotesNode extends ExplorerNode {

@@ -5,7 +5,7 @@ import { Container } from '../../container';
 import { GitUri } from '../../gitService';
 import { Functions } from '../../system';
 import { GitExplorer } from '../gitExplorer';
-import { ExplorerNode } from './explorerNode';
+import { ExplorerNode, unknownGitUri } from './explorerNode';
 import { RepositoryNode } from './repositoryNode';
 
 export class ActiveRepositoryNode extends ExplorerNode {
@@ -14,7 +14,7 @@ export class ActiveRepositoryNode extends ExplorerNode {
     constructor(
         private readonly explorer: GitExplorer
     ) {
-        super(undefined!);
+        super(unknownGitUri);
 
         Container.context.subscriptions.push(
             window.onDidChangeActiveTextEditor(Functions.debounce(this.onActiveEditorChanged, 500), this)

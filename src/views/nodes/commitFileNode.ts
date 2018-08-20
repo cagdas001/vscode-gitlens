@@ -14,7 +14,8 @@ import {
     IStatusFormatOptions,
     StatusFileFormatter
 } from '../../gitService';
-import { Explorer, ExplorerNode, ExplorerRefNode, ResourceType } from './explorerNode';
+import { Explorer } from '../explorer';
+import { ExplorerNode, ExplorerRefNode, ResourceType } from './explorerNode';
 
 export enum CommitFileNodeDisplayAs {
     CommitLabel = 1 << 0,

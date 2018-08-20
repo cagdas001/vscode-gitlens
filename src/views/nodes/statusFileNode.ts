@@ -4,7 +4,8 @@ import { Command, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Commands, DiffWithCommandArgs } from '../../commands';
 import { Container } from '../../container';
 import { getGitStatusIcon, GitStatusFile, GitUri, IStatusFormatOptions, StatusFileFormatter } from '../../gitService';
-import { Explorer, ExplorerNode, ResourceType } from './explorerNode';
+import { Explorer } from '../explorer';
+import { ExplorerNode, ResourceType } from './explorerNode';
 
 export class StatusFileNode extends ExplorerNode {
     constructor(

@@ -3,10 +3,10 @@ import { commands, ConfigurationChangeEvent, Event, EventEmitter } from 'vscode'
 import { configuration, ExplorerFilesLayout, IExplorersConfig, IGitExplorerConfig } from '../configuration';
 import { CommandContext, setCommandContext, WorkspaceState } from '../constants';
 import { Container } from '../container';
-import { ExplorerBase } from './explorer';
-import { RefreshReason, RepositoriesNode } from './nodes';
+import { ExplorerBase, RefreshReason } from './explorer';
+import { RepositoriesNode } from './nodes';
 
-export * from './nodes';
+// export * from './nodes';
 
 export class GitExplorer extends ExplorerBase {
     readonly id = 'gitlens.gitExplorer';

@@ -6,10 +6,12 @@ import { GitTag, GitUri } from '../../gitService';
 import { Iterables } from '../../system';
 import { GitExplorer } from '../gitExplorer';
 import { CommitNode } from './commitNode';
-import { ExplorerNode, ExplorerRefNode, MessageNode, ResourceType, ShowMoreNode } from './explorerNode';
+import { MessageNode, ShowMoreNode } from './common';
+import { ExplorerNode, ExplorerRefNode, PageableExplorerNode, ResourceType } from './explorerNode';
 
-export class TagNode extends ExplorerRefNode {
+export class TagNode extends ExplorerRefNode implements PageableExplorerNode {
     readonly supportsPaging: boolean = true;
+    maxCount: number | undefined;
 
     constructor(
         public readonly tag: GitTag,

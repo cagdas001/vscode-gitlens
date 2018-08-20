@@ -14,7 +14,24 @@ import { configuration } from '../configuration';
 import { Container } from '../container';
 import { Logger } from '../logger';
 import { RefreshNodeCommandArgs } from './explorerCommands';
-import { ExplorerNode, RefreshReason } from './nodes';
+import { GitExplorer } from './gitExplorer';
+import { HistoryExplorer } from './historyExplorer';
+import { ExplorerNode } from './nodes';
+import { isPageable } from './nodes/explorerNode';
+import { ResultsExplorer } from './resultsExplorer';
+
+export enum RefreshReason {
+    ActiveEditorChanged = 'active-editor-changed',
+    AutoRefreshChanged = 'auto-refresh-changed',
+    Command = 'command',
+    ConfigurationChanged = 'configuration',
+    NodeCommand = 'node-command',
+    RepoChanged = 'repo-changed',
+    ViewChanged = 'view-changed',
+    VisibleEditorsChanged = 'visible-editors-changed'
+}
+
+export type Explorer = GitExplorer | HistoryExplorer | ResultsExplorer;
 
 export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Disposable {
     protected _onDidChangeTreeData = new EventEmitter<ExplorerNode>();
@@ -110,7 +127,7 @@ export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Di
     async refreshNode(node: ExplorerNode, args?: RefreshNodeCommandArgs) {
         Logger.log(`Explorer(${this.id}).refreshNode(${(node as { id?: string }).id || ''})`);
 
-        if (args !== undefined && node.supportsPaging) {
+        if (args !== undefined && isPageable(node)) {
             if (args.maxCount === undefined || args.maxCount === 0) {
                 node.maxCount = args.maxCount;
             }

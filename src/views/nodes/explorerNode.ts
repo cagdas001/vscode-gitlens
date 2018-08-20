@@ -1,28 +1,6 @@
 'use strict';
-import { Command, Disposable, ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from 'vscode';
-import { GlyphChars } from '../../constants';
-import { Container } from '../../container';
+import { Command, TreeItem } from 'vscode';
 import { GitUri } from '../../gitService';
-import { RefreshNodeCommandArgs } from '../explorerCommands';
-import { GitExplorer } from '../gitExplorer';
-import { HistoryExplorer } from '../historyExplorer';
-import { ResultsExplorer } from '../resultsExplorer';
-
-export interface NamedRef {
-    label?: string;
-    ref: string;
-}
-
-export enum RefreshReason {
-    ActiveEditorChanged = 'active-editor-changed',
-    AutoRefreshChanged = 'auto-refresh-changed',
-    Command = 'command',
-    ConfigurationChanged = 'configuration',
-    NodeCommand = 'node-command',
-    RepoChanged = 'repo-changed',
-    ViewChanged = 'view-changed',
-    VisibleEditorsChanged = 'visible-editors-changed'
-}
 
 export enum ResourceType {
     Branch = 'gitlens:branch',
@@ -61,27 +39,17 @@ export enum ResourceType {
     Tags = 'gitlens:tags'
 }
 
-export type Explorer = GitExplorer | HistoryExplorer | ResultsExplorer;
+export interface NamedRef {
+    label?: string;
+    ref: string;
+}
+
+export const unknownGitUri = new GitUri();
 
 export abstract class ExplorerNode {
-    readonly supportsPaging: boolean = false;
-    maxCount: number | undefined;
-
-    // protected children: ExplorerNode[] | undefined;
-    // protected disposable: Disposable | undefined;
-
     constructor(
         public readonly uri: GitUri
     ) {}
-
-    // dispose() {
-    //     if (this.disposable !== undefined) {
-    //         this.disposable.dispose();
-    //         this.disposable = undefined;
-    //     }
-
-    //     this.resetChildren();
-    // }
 
     abstract getChildren(): ExplorerNode[] | Promise<ExplorerNode[]>;
     abstract getTreeItem(): TreeItem | Promise<TreeItem>;
@@ -91,106 +59,23 @@ export abstract class ExplorerNode {
     }
 
     refresh(): void | Promise<void> {}
-
-    // resetChildren(): void {
-    //     if (this.children !== undefined) {
-    //         this.children.forEach(c => c.dispose());
-    //         this.children = undefined;
-    //     }
-    // }
 }
 
 export abstract class ExplorerRefNode extends ExplorerNode {
     abstract get ref(): string;
+
     get repoPath(): string {
         return this.uri.repoPath!;
     }
 }
 
-export class MessageNode extends ExplorerNode {
-    constructor(
-        private readonly message: string,
-        private readonly tooltip?: string,
-        private readonly iconPath?:
-            | string
-            | Uri
-            | {
-                  light: string | Uri;
-                  dark: string | Uri;
-              }
-            | ThemeIcon
-    ) {
-        super(new GitUri());
-    }
-
-    getChildren(): ExplorerNode[] | Promise<ExplorerNode[]> {
-        return [];
-    }
-
-    getTreeItem(): TreeItem | Promise<TreeItem> {
-        const item = new TreeItem(this.message, TreeItemCollapsibleState.None);
-        item.contextValue = ResourceType.Message;
-        item.tooltip = this.tooltip;
-        item.iconPath = this.iconPath;
-        return item;
-    }
+export interface PageableExplorerNode {
+    readonly supportsPaging: boolean;
+    maxCount: number | undefined;
 }
 
-export abstract class PagerNode extends ExplorerNode {
-    protected _args: RefreshNodeCommandArgs = {};
-
-    constructor(
-        protected readonly message: string,
-        protected readonly node: ExplorerNode,
-        protected readonly explorer: Explorer
-    ) {
-        super(new GitUri());
-    }
-
-    getChildren(): ExplorerNode[] | Promise<ExplorerNode[]> {
-        return [];
-    }
-
-    getTreeItem(): TreeItem | Promise<TreeItem> {
-        const item = new TreeItem(this.message, TreeItemCollapsibleState.None);
-        item.contextValue = ResourceType.Pager;
-        item.command = this.getCommand();
-        item.iconPath = {
-            dark: Container.context.asAbsolutePath('images/dark/icon-unfold.svg'),
-            light: Container.context.asAbsolutePath('images/light/icon-unfold.svg')
-        };
-        return item;
-    }
-
-    getCommand(): Command | undefined {
-        return {
-            title: 'Refresh',
-            command: this.explorer.getQualifiedCommand('refreshNode'),
-            arguments: [this.node, this._args]
-        } as Command;
-    }
-}
-
-export class ShowMoreNode extends PagerNode {
-    constructor(
-        type: string,
-        node: ExplorerNode,
-        explorer: Explorer,
-        maxCount: number = Container.config.advanced.maxListItems
-    ) {
-        super(
-            maxCount === 0
-                ? `Show All ${type} ${GlyphChars.Space}${GlyphChars.Dash}${GlyphChars.Space} this may take a while`
-                : `Show More ${type}`,
-            node,
-            explorer
-        );
-        this._args.maxCount = maxCount;
-    }
-}
-
-export class ShowAllNode extends ShowMoreNode {
-    constructor(type: string, node: ExplorerNode, explorer: Explorer) {
-        super(type, node, explorer, 0);
-    }
+export function isPageable(
+    node: ExplorerNode
+): node is ExplorerNode & { supportsPaging: boolean; maxCount: number | undefined } {
+    return !!(node as any).supportsPaging;
 }

@@ -2,8 +2,9 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { GitUri } from '../../gitService';
 import { Arrays, Objects } from '../../system';
+import { Explorer } from '../explorer';
 import { BranchNode } from './branchNode';
-import { Explorer, ExplorerNode, ResourceType } from './explorerNode';
+import { ExplorerNode, ResourceType } from './explorerNode';
 import { TagNode } from './tagNode';
 
 export class BranchOrTagFolderNode extends ExplorerNode {

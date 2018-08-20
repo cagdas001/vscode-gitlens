@@ -21,9 +21,10 @@ import { GitUri } from '../git/gitUri';
 import { Logger } from '../logger';
 import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
-import { ExplorerNode, HistoryNode, MessageNode, RefreshReason } from './nodes';
+import { RefreshReason } from './explorer';
+import { ExplorerNode, HistoryNode } from './nodes';
 
-export * from './nodes';
+// export * from './nodes';
 
 export class HistoryExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
     private _disposable: Disposable | undefined;

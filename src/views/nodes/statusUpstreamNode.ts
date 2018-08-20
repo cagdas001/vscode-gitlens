@@ -3,12 +3,14 @@ import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Container } from '../../container';
 import { GitStatus, GitUri } from '../../gitService';
 import { Iterables, Strings } from '../../system';
-import { GitExplorer, ShowMoreNode } from '../gitExplorer';
+import { GitExplorer } from '../gitExplorer';
 import { CommitNode } from './commitNode';
-import { ExplorerNode, ResourceType } from './explorerNode';
+import { ShowMoreNode } from './common';
+import { ExplorerNode, PageableExplorerNode, ResourceType } from './explorerNode';
 
-export class StatusUpstreamNode extends ExplorerNode {
+export class StatusUpstreamNode extends ExplorerNode implements PageableExplorerNode {
     readonly supportsPaging: boolean = true;
+    maxCount: number | undefined;
 
     constructor(
         public readonly status: GitStatus,

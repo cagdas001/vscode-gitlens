@@ -3,7 +3,9 @@ import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Container } from '../../container';
 import { GitUri, Repository } from '../../gitService';
 import { Iterables } from '../../system';
-import { Explorer, ExplorerNode, MessageNode, ResourceType } from './explorerNode';
+import { Explorer } from '../explorer';
+import { MessageNode } from './common';
+import { ExplorerNode, ResourceType } from './explorerNode';
 import { StashNode } from './stashNode';
 
 export class StashesNode extends ExplorerNode {

@@ -3,7 +3,8 @@ import { Disposable, TreeItem, TreeItemCollapsibleState, TreeViewVisibilityChang
 import { Container } from '../../container';
 import { GitUri } from '../../gitService';
 import { GitExplorer } from '../gitExplorer';
-import { ExplorerNode, MessageNode, ResourceType } from './explorerNode';
+import { MessageNode } from './common';
+import { ExplorerNode, ResourceType, unknownGitUri } from './explorerNode';
 import { RepositoryNode } from './repositoryNode';
 
 export class RepositoriesNode extends ExplorerNode implements Disposable {
@@ -14,7 +15,7 @@ export class RepositoriesNode extends ExplorerNode implements Disposable {
     constructor(
         private readonly explorer: GitExplorer
     ) {
-        super(undefined!);
+        super(unknownGitUri);
 
         this._disposable = Disposable.from(
             this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this),

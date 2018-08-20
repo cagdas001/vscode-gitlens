@@ -16,6 +16,7 @@ import { Container } from '../container';
 import { GitLog, GitLogCommit } from '../gitService';
 import { Logger } from '../logger';
 import { Functions, Strings } from '../system';
+import { RefreshReason } from './explorer';
 import { RefreshNodeCommandArgs } from './explorerCommands';
 import {
     CommitResultsNode,
@@ -24,7 +25,6 @@ import {
     ExplorerNode,
     MessageNode,
     NamedRef,
-    RefreshReason,
     ResourceType
 } from './nodes';
 // import { Messages } from './messages';
