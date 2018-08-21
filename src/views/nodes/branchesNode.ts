@@ -13,14 +13,13 @@ export class BranchesNode extends ExplorerNode {
     constructor(
         uri: GitUri,
         private readonly repo: Repository,
-        private readonly explorer: GitExplorer,
-        private readonly active: boolean = false
+        private readonly explorer: GitExplorer
     ) {
         super(uri);
     }
 
     get id(): string {
-        return `gitlens:repository(${this.repo.path})${this.active ? ':active' : ''}:branches`;
+        return `gitlens:repository(${this.repo.path}):branches`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
@@ -42,14 +41,15 @@ export class BranchesNode extends ExplorerNode {
             this.explorer.config.files.compact
         );
 
-        const root = new BranchOrTagFolderNode(this.repo.path, '', undefined, hierarchy, this.explorer);
+        const root = new BranchOrTagFolderNode('branch', this.repo.path, '', undefined, hierarchy, this.explorer);
         return root.getChildren();
     }
 
     async getTreeItem(): Promise<TreeItem> {
-        const item = new TreeItem(`Branches`, TreeItemCollapsibleState.Collapsed);
-
         const remotes = await this.repo.getRemotes();
+
+        const item = new TreeItem(`Branches`, TreeItemCollapsibleState.Collapsed);
+        item.id = this.id;
         item.contextValue =
             remotes !== undefined && remotes.length > 0 ? ResourceType.BranchesWithRemotes : ResourceType.Branches;
 

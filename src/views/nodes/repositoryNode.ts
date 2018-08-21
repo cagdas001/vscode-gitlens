@@ -24,9 +24,7 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
     constructor(
         uri: GitUri,
         public readonly repo: Repository,
-        explorer: GitExplorer,
-        private readonly active: boolean = false,
-        private readonly activeParent?: ExplorerNode
+        explorer: GitExplorer
     ) {
         super(uri, explorer);
 
@@ -34,7 +32,7 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
     }
 
     get id(): string {
-        return `gitlens:repository(${this.repo.path})${this.active ? ':active' : ''}`;
+        return `gitlens:repository(${this.repo.path})`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
@@ -56,26 +54,26 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
                 children.push(new BranchNode(branch, this.uri, this.explorer, false));
 
                 if (status.state.behind) {
-                    children.push(new StatusUpstreamNode(status, 'behind', this.explorer, this.active));
+                    children.push(new StatusUpstreamNode(status, 'behind', this.explorer));
                 }
 
                 if (status.state.ahead) {
-                    children.push(new StatusUpstreamNode(status, 'ahead', this.explorer, this.active));
+                    children.push(new StatusUpstreamNode(status, 'ahead', this.explorer));
                 }
 
                 if (status.state.ahead || (status.files.length !== 0 && this.includeWorkingTree)) {
                     const range = status.upstream ? `${status.upstream}..${branch.ref}` : undefined;
-                    children.push(new StatusFilesNode(status, range, this.explorer, this.active));
+                    children.push(new StatusFilesNode(status, range, this.explorer));
                 }
 
                 children.push(new MessageNode(GlyphChars.Dash.repeat(2), ''));
             }
 
             children.push(
-                new BranchesNode(this.uri, this.repo, this.explorer, this.active),
-                new RemotesNode(this.uri, this.repo, this.explorer, this.active),
-                new StashesNode(this.uri, this.repo, this.explorer, this.active),
-                new TagsNode(this.uri, this.repo, this.explorer, this.active)
+                new BranchesNode(this.uri, this.repo, this.explorer),
+                new RemotesNode(this.uri, this.repo, this.explorer),
+                new StashesNode(this.uri, this.repo, this.explorer),
+                new TagsNode(this.uri, this.repo, this.explorer)
             );
             this._children = children;
         }
@@ -83,8 +81,7 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
     }
 
     async getTreeItem(): Promise<TreeItem> {
-        let label = `${this.active ? `Active Repository ${Strings.pad(GlyphChars.Dash, 1, 1)} ` : ''}${this.repo
-            .formattedName || this.uri.repoPath}`;
+        let label = this.repo.formattedName || this.uri.repoPath || '';
 
         let tooltip = this.repo.formattedName ? `${this.repo.formattedName}\n${this.uri.repoPath}` : this.uri.repoPath;
         let iconSuffix = '';
@@ -190,7 +187,7 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
             e.changed(RepositoryChange.Repository) ||
             e.changed(RepositoryChange.Config)
         ) {
-            this.explorer.refreshNode(this.active && this.activeParent !== undefined ? this.activeParent : this);
+            void this.explorer.refreshNode(this);
 
             return;
         }
@@ -198,21 +195,21 @@ export class RepositoryNode extends SubscribeableExplorerNode<GitExplorer> {
         if (e.changed(RepositoryChange.Stashes)) {
             const node = this._children.find(c => c instanceof StashesNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.explorer.refreshNode(node);
             }
         }
 
         if (e.changed(RepositoryChange.Remotes)) {
             const node = this._children.find(c => c instanceof RemotesNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.explorer.refreshNode(node);
             }
         }
 
         if (e.changed(RepositoryChange.Tags)) {
             const node = this._children.find(c => c instanceof TagsNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.explorer.refreshNode(node);
             }
         }
     }

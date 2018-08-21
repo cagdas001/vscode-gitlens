@@ -3378,7 +3378,7 @@
             "gitlens": [
                 {
                     "id": "gitlens.gitExplorer:gitlens",
-                    "name": "Explorer",
+                    "name": "Repositories",
                     "when": "gitlens:enabled && gitlens:gitExplorer == gitlens"
                 },
                 {

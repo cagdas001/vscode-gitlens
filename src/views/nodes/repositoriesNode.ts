@@ -1,7 +1,9 @@
 'use strict';
-import { Disposable, TreeItem, TreeItemCollapsibleState } from 'vscode';
+import { Disposable, TextEditor, TreeItem, TreeItemCollapsibleState, window } from 'vscode';
 import { Container } from '../../container';
 import { GitUri } from '../../gitService';
+import { Logger } from '../../logger';
+import { Functions } from '../../system';
 import { GitExplorer } from '../gitExplorer';
 import { MessageNode } from './common';
 import { ExplorerNode, ResourceType, SubscribeableExplorerNode, unknownGitUri } from './explorerNode';
@@ -89,7 +91,34 @@ export class RepositoriesNode extends SubscribeableExplorerNode<GitExplorer> {
     }
 
     protected async subscribe() {
-        return Disposable.from(Container.git.onDidChangeRepositories(this.onRepositoriesChanged, this));
+        return Disposable.from(
+            window.onDidChangeActiveTextEditor(Functions.debounce(this.onActiveEditorChanged, 500), this),
+            Container.git.onDidChangeRepositories(this.onRepositoriesChanged, this)
+        );
+    }
+
+    private async onActiveEditorChanged(editor: TextEditor | undefined) {
+        if (editor == null || this._children === undefined || this._children.length === 1) {
+            return;
+        }
+
+        try {
+            const uri = editor.document.uri;
+            const gitUri = await Container.git.getVersionedUri(uri);
+
+            const node = this._children.find(n => n instanceof RepositoryNode && n.repo.containsUri(gitUri || uri)) as
+                | RepositoryNode
+                | undefined;
+            if (node === undefined) return;
+
+            // HACK: Since we have no expand/collapse api, reveal the first child to force an expand
+            // See https://github.com/Microsoft/vscode/issues/55879
+            const children = await node.getChildren();
+            await this.explorer.reveal(children !== undefined && children.length !== 0 ? children[0] : node);
+        }
+        catch (ex) {
+            Logger.error(ex);
+        }
     }
 
     private onRepositoriesChanged() {

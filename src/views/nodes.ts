@@ -3,7 +3,6 @@
 export * from './nodes/explorerNode';
 export * from './nodes/activeFileHistoryNode';
 export * from './nodes/activeLineHistoryNode';
-export * from './nodes/activeRepositoryNode';
 export * from './nodes/branchesNode';
 export * from './nodes/branchNode';
 export * from './nodes/commitFileNode';

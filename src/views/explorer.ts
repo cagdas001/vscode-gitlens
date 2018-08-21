@@ -128,12 +128,14 @@ export abstract class ExplorerBase implements TreeDataProvider<ExplorerNode>, Di
     async refreshNode(node: ExplorerNode, args?: RefreshNodeCommandArgs) {
         Logger.log(`Explorer(${this.id}).refreshNode(${(node as { id?: string }).id || ''})`);
 
-        if (args !== undefined && isPageable(node)) {
-            if (args.maxCount === undefined || args.maxCount === 0) {
-                node.maxCount = args.maxCount;
-            }
-            else {
-                node.maxCount = (node.maxCount || args.maxCount) + args.maxCount;
+        if (args !== undefined) {
+            if (isPageable(node)) {
+                if (args.maxCount === undefined || args.maxCount === 0) {
+                    node.maxCount = args.maxCount;
+                }
+                else {
+                    node.maxCount = (node.maxCount || args.maxCount) + args.maxCount;
+                }
             }
         }
 

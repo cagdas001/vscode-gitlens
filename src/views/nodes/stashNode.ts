@@ -15,6 +15,10 @@ export class StashNode extends ExplorerRefNode {
         super(commit.toGitUri());
     }
 
+    get id(): string {
+        return `gitlens:repository(${this.commit.repoPath}):stash(${this.commit.sha})`;
+    }
+
     get ref(): string {
         return this.commit.sha;
     }
@@ -49,6 +53,7 @@ export class StashNode extends ExplorerRefNode {
             } as ICommitFormatOptions),
             TreeItemCollapsibleState.Collapsed
         );
+        item.id = this.id;
         item.contextValue = ResourceType.Stash;
         item.tooltip = CommitFormatter.fromTemplate('${ago} (${date})\n\n${message}', this.commit, {
             dateFormat: Container.config.defaultDateFormat

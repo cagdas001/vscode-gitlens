@@ -25,15 +25,14 @@ export class StatusFilesNode extends ExplorerNode {
     constructor(
         public readonly status: GitStatus,
         public readonly range: string | undefined,
-        private readonly explorer: GitExplorer,
-        private readonly active: boolean = false
+        private readonly explorer: GitExplorer
     ) {
         super(GitUri.fromRepoPath(status.repoPath));
         this.repoPath = status.repoPath;
     }
 
     get id(): string {
-        return `gitlens:repository(${this.status.repoPath})${this.active ? ':active' : ''}:status:files`;
+        return `gitlens:repository(${this.status.repoPath}):status:files`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {

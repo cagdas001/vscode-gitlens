@@ -44,7 +44,7 @@ export class ActiveFileHistoryNode extends SubscribeableExplorerNode<FileHistory
 
     getTreeItem(): TreeItem {
         const item = new TreeItem('File History', TreeItemCollapsibleState.Expanded);
-        item.contextValue = ResourceType.History;
+        item.contextValue = ResourceType.ActiveFileHistory;
 
         this.ensureSubscription();
 

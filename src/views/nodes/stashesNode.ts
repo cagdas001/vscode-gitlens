@@ -12,14 +12,13 @@ export class StashesNode extends ExplorerNode {
     constructor(
         uri: GitUri,
         private readonly repo: Repository,
-        private readonly explorer: Explorer,
-        private readonly active: boolean = false
+        private readonly explorer: Explorer
     ) {
         super(uri);
     }
 
     get id(): string {
-        return `gitlens:repository(${this.repo.path})${this.active ? ':active' : ''}:stashes`;
+        return `gitlens:repository(${this.repo.path}):stashes`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
@@ -31,6 +30,7 @@ export class StashesNode extends ExplorerNode {
 
     getTreeItem(): TreeItem {
         const item = new TreeItem(`Stashes`, TreeItemCollapsibleState.Collapsed);
+        item.id = this.id;
         item.contextValue = ResourceType.Stashes;
 
         item.iconPath = {

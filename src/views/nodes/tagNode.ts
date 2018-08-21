@@ -21,6 +21,10 @@ export class TagNode extends ExplorerRefNode implements PageableExplorerNode {
         super(uri);
     }
 
+    get id(): string {
+        return `gitlens:repository(${this.tag.repoPath}):tag(${this.tag.name})`;
+    }
+
     get label(): string {
         return this.explorer.config.branches.layout === ExplorerBranchesLayout.Tree
             ? this.tag.getBasename()
@@ -50,8 +54,10 @@ export class TagNode extends ExplorerRefNode implements PageableExplorerNode {
 
     async getTreeItem(): Promise<TreeItem> {
         const item = new TreeItem(this.label, TreeItemCollapsibleState.Collapsed);
-        item.tooltip = `${this.tag.name}${this.tag.annotation === undefined ? '' : `\n${this.tag.annotation}`}`;
+        item.id = this.id;
         item.contextValue = ResourceType.Tag;
+        item.tooltip = `${this.tag.name}${this.tag.annotation === undefined ? '' : `\n${this.tag.annotation}`}`;
+
         return item;
     }
 }

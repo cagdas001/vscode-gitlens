@@ -53,8 +53,8 @@ export class ActiveLineHistoryNode extends SubscribeableExplorerNode<LineHistory
     }
 
     getTreeItem(): TreeItem {
-        const item = new TreeItem('File History', TreeItemCollapsibleState.Expanded);
-        item.contextValue = ResourceType.History;
+        const item = new TreeItem('Line History', TreeItemCollapsibleState.Expanded);
+        item.contextValue = ResourceType.ActiveLineHistory;
 
         this.ensureSubscription();
 

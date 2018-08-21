@@ -4,6 +4,8 @@ import { GitUri } from '../../gitService';
 import { ExplorerBase } from '../explorer';
 
 export enum ResourceType {
+    ActiveFileHistory = 'gitlens:active:history-file',
+    ActiveLineHistory = 'gitlens:active:history-line',
     Branch = 'gitlens:branch',
     BranchWithTracking = 'gitlens:branch:tracking',
     Branches = 'gitlens:branches',
@@ -18,7 +20,6 @@ export enum ResourceType {
     ComparisonResults = 'gitlens:results:comparison',
     FileHistory = 'gitlens:history-file',
     Folder = 'gitlens:folder',
-    History = 'gitlens:history',
     Message = 'gitlens:message',
     Pager = 'gitlens:pager',
     Remote = 'gitlens:remote',

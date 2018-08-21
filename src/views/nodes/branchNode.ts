@@ -23,6 +23,12 @@ export class BranchNode extends ExplorerRefNode implements PageableExplorerNode 
         super(uri);
     }
 
+    get id(): string {
+        return `gitlens:repository(${this.branch.repoPath}):branch(${this.branch.name})${
+            this.branch.remote ? ':remote' : ''
+        }${this.markCurrent ? ':current' : ''}`;
+    }
+
     get current(): boolean {
         return this.branch.current;
     }
@@ -101,6 +107,7 @@ export class BranchNode extends ExplorerRefNode implements PageableExplorerNode 
             `${this.markCurrent && this.current ? `${GlyphChars.Check} ${GlyphChars.Space}` : ''}${name}`,
             TreeItemCollapsibleState.Collapsed
         );
+        item.id = this.id;
         item.tooltip = tooltip;
 
         if (this.branch.remote) {

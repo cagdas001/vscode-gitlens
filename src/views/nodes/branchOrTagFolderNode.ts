@@ -9,6 +9,7 @@ import { TagNode } from './tagNode';
 
 export class BranchOrTagFolderNode extends ExplorerNode {
     constructor(
+        public readonly type: 'branch' | 'remote-branch' | 'tag',
         public readonly repoPath: string,
         public readonly folderName: string,
         public readonly relativePath: string | undefined,
@@ -17,6 +18,10 @@ export class BranchOrTagFolderNode extends ExplorerNode {
         private readonly expanded: boolean = false
     ) {
         super(GitUri.fromRepoPath(repoPath));
+    }
+
+    get id(): string {
+        return `gitlens:repository(${this.repoPath}):${this.type}-folder(${this.folderName})`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
@@ -32,6 +37,7 @@ export class BranchOrTagFolderNode extends ExplorerNode {
                     folder.descendants.some(n => n instanceof BranchNode && n.current);
                 children.push(
                     new BranchOrTagFolderNode(
+                        this.type,
                         this.repoPath,
                         folder.name,
                         folder.relativePath,
@@ -54,6 +60,7 @@ export class BranchOrTagFolderNode extends ExplorerNode {
             this.label,
             this.expanded ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
         );
+        item.id = this.id;
         item.contextValue = ResourceType.Folder;
         item.iconPath = ThemeIcon.Folder;
         item.tooltip = this.label;

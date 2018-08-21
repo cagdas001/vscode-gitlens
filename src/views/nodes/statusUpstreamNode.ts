@@ -15,16 +15,13 @@ export class StatusUpstreamNode extends ExplorerNode implements PageableExplorer
     constructor(
         public readonly status: GitStatus,
         public readonly direction: 'ahead' | 'behind',
-        private readonly explorer: GitExplorer,
-        private readonly active: boolean = false
+        private readonly explorer: GitExplorer
     ) {
         super(GitUri.fromRepoPath(status.repoPath));
     }
 
     get id(): string {
-        return `gitlens:repository(${this.status.repoPath})${this.active ? ':active' : ''}:status:upstream:${
-            this.direction
-        }`;
+        return `gitlens:repository(${this.status.repoPath}):status:upstream:${this.direction}`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
