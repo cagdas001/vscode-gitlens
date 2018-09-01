@@ -3470,7 +3470,7 @@
     },
     "devDependencies": {
         "@types/clipboardy": "1.1.0",
-        "@types/node": "8.10.28",
+        "@types/node": "8.10.29",
         "@types/tmp": "0.0.33",
         "clean-webpack-plugin": "0.1.19",
         "css-loader": "1.0.0",
@@ -3489,11 +3489,11 @@
         "tslint-loader": "3.6.0",
         "tslint-prettiest": "0.0.1",
         "ts-loader": "4.5.0",
-        "typescript": "3.0.1",
+        "typescript": "3.0.3",
         "vscode": "1.1.21",
         "webpack": "4.17.1",
         "webpack-cli": "3.1.0",
-        "webpack-deep-scope-plugin": "1.5.1",
+        "webpack-deep-scope-plugin": "1.5.3",
         "webpack-node-externals": "1.7.2"
     }
 }
