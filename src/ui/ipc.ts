@@ -12,6 +12,11 @@ export interface SettingsBootstrap extends Bootstrap {
 
 export interface WelcomeBootstrap extends Bootstrap {}
 
+export interface CommitSearchBootstrap extends Bootstrap {
+    branches: string[];
+    branch: string;
+}
+
 export interface SaveSettingsMessage {
     type: 'saveSettings';
     changes: {
@@ -22,9 +27,19 @@ export interface SaveSettingsMessage {
     uri: string;
 }
 
+export interface SearchRepoMessage {
+    type: 'search';
+    searchText: string;
+    branch: string;
+    author: string;
+    since: string;
+    before: Date | undefined;
+    after: Date | undefined;
+}
+
 export interface SettingsChangedMessage {
     type: 'settingsChanged';
     config: IConfig;
 }
 
-export type Message = SaveSettingsMessage | SettingsChangedMessage;
+export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage;

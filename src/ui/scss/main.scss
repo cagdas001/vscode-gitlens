@@ -1022,4 +1022,50 @@ ul {
     flex-wrap: nowrap !important;
 }
 
+.search_container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    justify-content: stretch;
+    padding-bottom: 5px;
+
+    input {
+        -webkit-appearance: none;
+        width: 100px;
+    }
+    #searchText {
+        width: 200px;
+    }
+}
+#logs-container {
+    width: 100%;
+    tr {
+        width: 100%;
+        :hover {
+            cursor: pointer;
+        }
+    }
+    td{
+        width: 100%;
+    }
+    div.seperator {
+        border: 1px whitesmoke solid;
+        &{
+            width: 100%;
+        }
+        :hover{
+            cursor: none;
+        }
+    }
+    .commit-label{
+        font-weight: bold;
+    }
+    .details-row{
+        padding: 100px;
+        background-color: turquoise;
+        width: 100%;
+        color: dimgray;
+    }
+}
+
 @import 'popup';

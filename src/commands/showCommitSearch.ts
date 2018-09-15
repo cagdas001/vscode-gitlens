@@ -1,4 +1,5 @@
 'use strict';
+import { areRangesOverlapping } from 'date-fns';
 import { commands, InputBoxOptions, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
@@ -7,6 +8,7 @@ import { Logger } from '../logger';
 import { CommandQuickPickItem, CommitsQuickPick, ShowCommitsSearchInResultsQuickPickItem } from '../quickpicks';
 import { Strings } from '../system';
 import { Iterables } from '../system/iterable';
+import { ShowAllNode } from '../views/nodes';
 import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
 import { ShowQuickCommitDetailsCommandArgs } from './showQuickCommitDetails';
 
@@ -21,8 +23,13 @@ const searchByMap = new Map<string, GitRepoSearchBy>([
 
 export interface ShowCommitSearchCommandArgs {
     search?: string;
-    searchBy?: GitRepoSearchBy;
+    searchBy?: GitRepoSearchBy[];
     maxCount?: number;
+    branch?: string;
+    author?: string;
+    since?: string;
+    before?: Date;
+    after?: Date;
 
     goBackCommand?: CommandQuickPickItem;
 }
@@ -48,7 +55,9 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
         args = { ...args };
         const originalArgs = { ...args };
 
-        if (!args.search || args.searchBy == null) {
+        const searchByValuesMap = new Map<GitRepoSearchBy, string>();
+
+        if (!args.search || args.searchBy == null || args.searchBy.length === 0) {
             try {
                 if (!args.search) {
                     if (editor != null && gitUri != null) {
@@ -62,65 +71,51 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
             catch (ex) {
                 Logger.error(ex, 'ShowCommitSearchCommand', 'search prefetch failed');
             }
-
-            args.search = await window.showInputBox({
-                value: args.search,
-                prompt: `Please enter a search string`,
-                placeHolder: `search by message, author (@<pattern>), files (:<pattern>), commit id (#<sha>), changes (=<pattern>), changed lines (~<pattern>)`
-            } as InputBoxOptions);
-            if (args.search === undefined) {
-                return args.goBackCommand === undefined ? undefined : args.goBackCommand.execute();
-            }
+            args.search = args.search || '';
 
             originalArgs.search = args.search;
 
             const match = searchByRegex.exec(args.search);
             if (match && match[1]) {
-                args.searchBy = searchByMap.get(match[1]);
-                args.search = args.search.substring(args.search[1] === ' ' ? 2 : 1);
+                const searchByValue = args.search.substring(args.search[1] === ' ' ? 2 : 1);
+                const searchBy = searchByMap.get(match[1]);
+                if (searchBy) {
+                    searchByValuesMap.set(searchBy, searchByValue);
+                }
             }
             else if (GitService.isSha(args.search)) {
-                args.searchBy = GitRepoSearchBy.Sha;
+                searchByValuesMap.set(GitRepoSearchBy.Sha, args.search);
             }
             else {
-                args.searchBy = GitRepoSearchBy.Message;
+                searchByValuesMap.set(GitRepoSearchBy.Message, args.search);
             }
         }
-
-        if (args.searchBy === undefined) {
-            args.searchBy = GitRepoSearchBy.Message;
+        if (args.author && !searchByValuesMap.get(GitRepoSearchBy.Author)) {
+            searchByValuesMap.set(GitRepoSearchBy.Author, args.author);
+        }
+        if (args.branch) {
+            searchByValuesMap.set(GitRepoSearchBy.Branch, args.branch);
+        }
+        if (args.since && args.since !== '-1') {
+            searchByValuesMap.set(GitRepoSearchBy.Since, args.since);
+        }
+        else {
+            if (args.before) {
+                searchByValuesMap.set(GitRepoSearchBy.Before, args.before.toString());
+            }
+            if (args.after) {
+                searchByValuesMap.set(GitRepoSearchBy.After, args.after.toString());
+            }
+        }
+        if (searchByValuesMap.size === 0) {
+            searchByValuesMap.set(GitRepoSearchBy.Message, args.search);
         }
 
-        let searchLabel: string | undefined = undefined;
-        switch (args.searchBy) {
-            case GitRepoSearchBy.Author:
-                searchLabel = `commits with an author matching '${args.search}'`;
-                break;
-
-            case GitRepoSearchBy.ChangedLines:
-                searchLabel = `commits with changed lines matching '${args.search}'`;
-                break;
-
-            case GitRepoSearchBy.Changes:
-                searchLabel = `commits with changes matching '${args.search}'`;
-                break;
-
-            case GitRepoSearchBy.Files:
-                searchLabel = `commits with files matching '${args.search}'`;
-                break;
-
-            case GitRepoSearchBy.Message:
-                searchLabel = args.search ? `commits with a message matching '${args.search}'` : 'all commits';
-                break;
-
-            case GitRepoSearchBy.Sha:
-                searchLabel = `commits with an id matching '${args.search}'`;
-                break;
-        }
-
+        const searchLabel: string | undefined = undefined;
         const progressCancellation = CommitsQuickPick.showProgress(searchLabel!);
+
         try {
-            const log = await Container.git.getLogForSearch(repoPath, args.search, args.searchBy, {
+            const log = await Container.git.getLogForSearch(repoPath, searchByValuesMap, {
                 maxCount: args.maxCount
             });
 
@@ -138,7 +133,7 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
                 );
 
             let commit;
-            if (args.searchBy !== GitRepoSearchBy.Sha || log === undefined || log.count !== 1) {
+            if (!searchByValuesMap.has(GitRepoSearchBy.Sha) || log === undefined || log.count !== 1) {
                 const pick = await CommitsQuickPick.show(log, searchLabel!, progressCancellation, {
                     goBackCommand: goBackCommand,
                     showAllCommand:
@@ -166,20 +161,7 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
                 commit = Iterables.first(log.commits.values());
             }
 
-            return commands.executeCommand(Commands.ShowQuickCommitDetails, commit.toGitUri(), {
-                sha: commit.sha,
-                commit: commit,
-                goBackCommand:
-                    goBackCommand ||
-                    new CommandQuickPickItem(
-                        {
-                            label: `go back ${GlyphChars.ArrowBack}`,
-                            description: `${Strings.pad(GlyphChars.Dash, 2, 2)} to search for ${searchLabel}`
-                        },
-                        Commands.ShowCommitSearch,
-                        [uri, args]
-                    )
-            } as ShowQuickCommitDetailsCommandArgs);
+            return;
         }
         catch (ex) {
             Logger.error(ex, 'ShowCommitSearchCommand');

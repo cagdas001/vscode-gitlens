@@ -47,23 +47,25 @@ export class CommitsQuickPick {
             items.splice(0, 0, options.goBackCommand);
         }
 
+        const toView = [
+            ...Iterables.map(items, itm => {
+                let commitFormattedDate: any;
+                if (itm instanceof CommitQuickPickItem) {
+                    const commitItm = itm as CommitQuickPickItem;
+                    commitFormattedDate = commitItm.commit!.formattedDate;
+                }
+                return { ...itm, commitFormattedDate: commitFormattedDate };
+            })
+        ];
+        await Container.searchEditor.updateGitLogs({ type: 'logsUpdate', msg: toView });
+
         if (progressCancellation.token.isCancellationRequested) return undefined;
 
         const scope = await Container.keyboard.beginScope({ left: options.goBackCommand });
 
         progressCancellation.cancel();
 
-        const pick = await window.showQuickPick(items, {
-            matchOnDescription: true,
-            placeHolder: placeHolder,
-            ignoreFocusOut: getQuickPickIgnoreFocusOut()
-            // onDidSelectItem: (item: QuickPickItem) => {
-            //     scope.setKeyCommand('right', item);
-            // }
-        } as QuickPickOptions);
-
         await scope.dispose();
-
-        return pick;
+        return;
     }
 }

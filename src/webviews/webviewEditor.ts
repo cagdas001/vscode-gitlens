@@ -1,6 +1,7 @@
 'use strict';
 import * as fs from 'fs';
 import {
+    commands,
     ConfigurationChangeEvent,
     ConfigurationTarget,
     Disposable,
@@ -19,7 +20,7 @@ import { Message, SettingsChangedMessage } from '../ui/ipc';
 export abstract class WebviewEditor<TBootstrap> implements Disposable {
     private _disposable: Disposable | undefined;
     private _disposablePanel: Disposable | undefined;
-    private _panel: WebviewPanel | undefined;
+    protected _panel: WebviewPanel | undefined;
 
     constructor() {
         this._disposable = Disposable.from(
@@ -32,7 +33,7 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
     abstract get id(): string;
     abstract get title(): string;
 
-    abstract getBootstrap(): TBootstrap;
+    abstract async getBootstrap(): Promise<TBootstrap>;
     abstract registerCommands(): Disposable[];
 
     dispose() {
@@ -90,6 +91,11 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                     await configuration.update(key, undefined, target);
                 }
                 break;
+            case 'search' :
+                const uri = Uri.file(Container.context.asAbsolutePath('.'))
+                .with({ scheme: 'vscode-resource' })
+                .toString();
+                commands.executeCommand('gitlens.showCommitSearch', { ...e });
         }
     }
 
@@ -111,7 +117,8 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 .toString()
         );
         if (html.includes("'{{bootstrap}}'")) {
-            html = html.replace("'{{bootstrap}}'", JSON.stringify(this.getBootstrap()));
+            const bootstrap = await this.getBootstrap();
+            html = html.replace("'{{bootstrap}}'", JSON.stringify(bootstrap));
         }
 
         if (this._panel === undefined) {
@@ -160,7 +167,7 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
         return doc.getText();
     }
 
-    private postMessage(message: Message, invalidates: 'all' | 'config' = 'all') {
+    public postMessage(message: Message, invalidates: 'all' | 'config' = 'all') {
         if (this._panel === undefined) return false;
 
         const result = this._panel!.webview.postMessage(message);

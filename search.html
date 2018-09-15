@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src *; style-src 'self'; script-src 'nonce-gitlens'"/> -->
+<link href="{{root}}/out/ui/search.css" rel="stylesheet"></head>
+
+<body class="preload">
+    <div class="container">
+        <div class="content">
+            <header>
+                <a class="header__link" title="Learn more about GitLens" href="http://gitlens.amod.io">
+                    <div class="header__logo">
+                        <img class="image__logo" src="{{root}}/images/gitlens-icon.png" />
+                        <div>
+                            <h1>GitLens</h1>
+                            <p class="header__subtitle">Git supercharged </p>
+                        </div>
+                    </div>
+                </a>
+            </header>
+
+            <div class="page-header page-header--sticky">
+                <div class="search_container">
+                    <input type="text" id="searchText" placeholder="enter search text" />
+                    <button id="postme" class="postme" name='postme' title="Post"> Search</button>
+
+                    <select class="branches" id="branches" name="branches">
+                        <option value="all">All Branches</option>
+                    </select>
+                    <input type="text" id="author" width="10" placeholder="enter author here" />
+                    <!-- </div> -->
+                    <div class="sub-container">
+                        <select class="since" id="since" name="since" aria-placeholder="since">
+                            <option value="-1">All</option>
+                            <option value="-1">-- Select --</option>
+                            <option value="1 days ago">Last 24 hours</option>
+                            <option value="7 days ago">Last 7 days</option>
+                        </select>
+                    </div>
+                    <input type="text" id="after" placeholder="after" title="after" onfocus="(this.type='date')" onblur="(this.type='text')" />
+                    <input type="text" id="before" placeholder="before" title="before" onfocus="(this.type='date')"
+                        onblur="(this.type='text')" />
+                    <div>
+                        <span id='searchMessage'></span>
+                    </div>
+                </div>
+                <div id="logs-container">
+                    <table id='logs' class="logs" style="width:100%">
+                        <tbody>
+                            <tr>
+                                <td>Hey Hey</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <script type="text/javascript">
+        window.bootstrap = '{{bootstrap}}';
+    </script>
+<script type="text/javascript" src="{{root}}/out/ui/search.js"></script></body>
+
+</html>

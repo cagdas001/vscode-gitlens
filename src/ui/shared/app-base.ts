@@ -3,7 +3,7 @@ import { darken, lighten, opacity } from '../shared/colors';
 import { Bootstrap, Message, SaveSettingsMessage } from './../ipc';
 import { DOM } from './../shared/dom';
 
-interface VsCodeApi {
+export interface VsCodeApi {
     postMessage(msg: {}): void;
     setState(state: {}): void;
     getState(): {};
@@ -12,7 +12,7 @@ interface VsCodeApi {
 declare function acquireVsCodeApi(): VsCodeApi;
 
 export abstract class App<TBootstrap extends Bootstrap> {
-    private readonly _api: VsCodeApi;
+    protected readonly _api: VsCodeApi;
     private _changes: { [key: string]: any } = Object.create(null);
     private _updating: boolean = false;
 

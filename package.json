@@ -1661,7 +1661,7 @@
                 "category": "GitLens"
             },
             {
-                "command": "gitlens.showCommitSearch",
+                "command": "gitlens.showSearchPage",
                 "title": "Search Commits",
                 "category": "GitLens",
                 "icon": {
@@ -2294,7 +2294,7 @@
                     "when": "gitlens:enabled"
                 },
                 {
-                    "command": "gitlens.showCommitSearch",
+                    "command": "gitlens.showSearchPage",
                     "when": "gitlens:enabled"
                 },
                 {
@@ -2868,7 +2868,7 @@
             ],
             "view/title": [
                 {
-                    "command": "gitlens.showCommitSearch",
+                    "command": "gitlens.showSearchPage",
                     "when": "view =~ /^gitlens.gitExplorer:/",
                     "group": "navigation@1"
                 },
@@ -2953,7 +2953,7 @@
                     "group": "1_gitlens"
                 },
                 {
-                    "command": "gitlens.showCommitSearch",
+                    "command": "gitlens.showSearchPage",
                     "when": "view =~ /^gitlens.resultsExplorer:/",
                     "group": "navigation@1"
                 },
@@ -3358,7 +3358,7 @@
                 "when": "gitlens:keymap == alternate && gitlens:enabled"
             },
             {
-                "command": "gitlens.showCommitSearch",
+                "command": "gitlens.showSearchPage",
                 "key": "alt+/",
                 "when": "gitlens:keymap == alternate && gitlens:enabled"
             },
@@ -3431,7 +3431,7 @@
                 "when": "gitlens:keymap == chorded && gitlens:enabled"
             },
             {
-                "command": "gitlens.showCommitSearch",
+                "command": "gitlens.showSearchPage",
                 "key": "ctrl+shift+g /",
                 "mac": "cmd+alt+g /",
                 "when": "gitlens:keymap == chorded && gitlens:enabled"

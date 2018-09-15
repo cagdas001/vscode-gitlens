@@ -16,6 +16,7 @@ import { ExplorerCommands } from './views/explorerCommands';
 import { GitExplorer } from './views/gitExplorer';
 import { HistoryExplorer } from './views/historyExplorer';
 import { ResultsExplorer } from './views/resultsExplorer';
+import { SearchEditor } from './webviews/searchEditor';
 import { SettingsEditor } from './webviews/settingsEditor';
 import { WelcomeEditor } from './webviews/welcomeEditor';
 
@@ -38,6 +39,7 @@ export class Container {
         context.subscriptions.push((this._codeLensController = new CodeLensController()));
         context.subscriptions.push((this._keyboard = new Keyboard()));
         context.subscriptions.push((this._settingsEditor = new SettingsEditor()));
+        context.subscriptions.push((this._searchEditor = new SearchEditor()));
         context.subscriptions.push((this._welcomeEditor = new WelcomeEditor()));
 
         if (config.gitExplorer.enabled) {
@@ -156,6 +158,11 @@ export class Container {
     private static _settingsEditor: SettingsEditor;
     static get settingsEditor() {
         return this._settingsEditor;
+    }
+
+    private static _searchEditor: SearchEditor;
+    static get searchEditor() {
+        return this._searchEditor;
     }
 
     private static _statusBarController: StatusBarController;

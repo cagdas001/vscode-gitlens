@@ -67,6 +67,7 @@ export enum Commands {
     ShowQuickStashList = 'gitlens.showQuickStashList',
     ShowResultsExplorer = 'gitlens.showResultsExplorer',
     ShowSettingsPage = 'gitlens.showSettingsPage',
+    ShowSearchPage = 'gitlens.showSearchPage',
     ShowWelcomePage = 'gitlens.showWelcomePage',
     StashApply = 'gitlens.stashApply',
     StashDelete = 'gitlens.stashDelete',

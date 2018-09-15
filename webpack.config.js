@@ -68,7 +68,7 @@ function getExtensionConfig(env) {
 }
 
 function getUIConfig(env) {
-    const clean = ['settings.html', 'welcome.html'];
+    const clean = ['settings.html', 'welcome.html','search.html'];
     if (env.optimizeImages) {
         console.log('Optimizing images (src/ui/images/settings/*.png)...');
         clean.push('images/settings');
@@ -78,6 +78,26 @@ function getUIConfig(env) {
         new CleanPlugin(clean, { verbose: false }),
         new MiniCssExtractPlugin({
             filename: '[name].css'
+        }),
+        new HtmlPlugin({
+            excludeAssets: [/.*\.main\.js/],
+            excludeChunks: ['welcome','settings'],
+            template: 'settings/index.html',
+            filename: path.resolve(__dirname, 'settings.html'),
+            inject: true,
+            inlineSource: env.production ? '.(js|css)$' : undefined,
+            // inlineSource: '.(js|css)$',
+            minify: env.production
+                ? {
+                      removeComments: true,
+                      collapseWhitespace: true,
+                      removeRedundantAttributes: true,
+                      useShortDoctype: true,
+                      removeEmptyAttributes: true,
+                      removeStyleLinkTypeAttributes: true,
+                      keepClosingSlash: true
+                  }
+                : false
         }),
         new HtmlPlugin({
             excludeAssets: [/.*\.main\.js/],
@@ -101,9 +121,9 @@ function getUIConfig(env) {
         }),
         new HtmlPlugin({
             excludeAssets: [/.*\.main\.js/],
-            excludeChunks: ['settings'],
-            template: 'welcome/index.html',
-            filename: path.resolve(__dirname, 'welcome.html'),
+            excludeChunks: ['welcome','settings'],
+            template: 'search/index.html',
+            filename: path.resolve(__dirname, 'search.html'),
             inject: true,
             inlineSource: env.production ? '.(js|css)$' : undefined,
             // inlineSource: '.(js|css)$',
@@ -148,7 +168,8 @@ function getUIConfig(env) {
         // This is ugly having main.scss on both bundles, but if it is added separately it will generate a js bundle :(
         entry: {
             settings: ['./settings/index.ts', './scss/main.scss'],
-            welcome: ['./welcome/index.ts', './scss/main.scss']
+            welcome: ['./welcome/index.ts', './scss/main.scss'],
+            search: ['./search/index.ts', './scss/main.scss']
             // main: ['./scss/main.scss']
         },
         mode: env.production ? 'production' : 'development',

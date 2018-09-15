@@ -21,7 +21,7 @@ export class WelcomeEditor extends WebviewEditor<WelcomeBootstrap> {
         return 'Welcome to GitLens';
     }
 
-    getBootstrap(): WelcomeBootstrap {
+    async getBootstrap(): Promise<WelcomeBootstrap> {
         return {
             config: Container.config
         };

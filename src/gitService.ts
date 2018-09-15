@@ -75,7 +75,11 @@ export enum GitRepoSearchBy {
     Changes = 'changes',
     Files = 'files',
     Message = 'message',
-    Sha = 'sha'
+    Sha = 'sha',
+    Since = 'since',
+    Before = 'before',
+    After = 'after',
+    Branch = 'branch'
 }
 
 export class GitService implements Disposable {
@@ -1157,39 +1161,61 @@ export class GitService implements Disposable {
 
     async getLogForSearch(
         repoPath: string,
-        search: string,
-        searchBy: GitRepoSearchBy,
+        searchByMap: Map<GitRepoSearchBy, string>,
         options: { maxCount?: number } = {}
     ): Promise<GitLog | undefined> {
-        Logger.log(`getLogForSearch('${repoPath}', '${search}', '${searchBy}', ${options.maxCount})`);
+        Logger.log(`getLogForSearch('${repoPath}', '${searchByMap}', ${options.maxCount})`);
 
         let maxCount = options.maxCount == null ? Container.config.advanced.maxListItems || 0 : options.maxCount;
 
-        let searchArgs: string[] | undefined = undefined;
-        switch (searchBy) {
-            case GitRepoSearchBy.Author:
-                searchArgs = ['-m', '-M', '--all', '--full-history', '-i', `--author=${search}`];
+        let searchArgs: string[] = [];
+        searchByMap.forEach((search, searchBy) => {
+            let args: string[] = [];
+            switch (searchBy) {
+                case GitRepoSearchBy.Author:
+                    args = ['-m', '-M', '--full-history', '-i', `--author=${search}`];
+                    break;
+                case GitRepoSearchBy.ChangedLines:
+                    args = ['-M', '--full-history', '-i', `-G${search}`];
+                    break;
+                case GitRepoSearchBy.Changes:
+                    args = ['-M', '--full-history', '-i', '--pickaxe-regex', `-S${search}`];
+                    break;
+                case GitRepoSearchBy.Files:
+                    args = ['-M', '--full-history', '-i', `--`, `${search}`];
+                    break;
+                case GitRepoSearchBy.Message:
+                    args = ['-m', '-M', '--full-history'];
+                    if (search) {
+                        args.push(`--grep=${search}`);
+                    }
+                    break;
+                case GitRepoSearchBy.Sha:
+                    args = [`-m`, '-M', search];
+                    maxCount = 1;
+                    break;
+                case GitRepoSearchBy.Branch:
+                    if (search === 'all') {
+                        args = [`-m`, '-M', '--all', '--branches'];
+                    }
+                    else {
+                        args = ['-m', '-M', `${search}`];
+                    }
+                    break;
+                case GitRepoSearchBy.Since:
+                    args = [`-m`, '-M', `--since`, `${search}`];
+                    break;
+
+                case GitRepoSearchBy.Before:
+                args = [`-m`, '-M', `--before`, `${search}`];
                 break;
-            case GitRepoSearchBy.ChangedLines:
-                searchArgs = ['-M', '--all', '--full-history', '-i', `-G${search}`];
-                break;
-            case GitRepoSearchBy.Changes:
-                searchArgs = ['-M', '--all', '--full-history', '-i', '--pickaxe-regex', `-S${search}`];
-                break;
-            case GitRepoSearchBy.Files:
-                searchArgs = ['-M', '--all', '--full-history', '-i', `--`, `${search}`];
-                break;
-            case GitRepoSearchBy.Message:
-                searchArgs = ['-m', '-M', '--all', '--full-history'];
-                if (search) {
-                    searchArgs.push(`--grep=${search}`);
-                }
-                break;
-            case GitRepoSearchBy.Sha:
-                searchArgs = [`-m`, '-M', search];
-                maxCount = 1;
-                break;
-        }
+
+                case GitRepoSearchBy.After:
+                    args = [`-m`, '-M', `--after`, `${search}`];
+                    break;
+            }
+            searchArgs = [...searchArgs, ...args];
+        });
 
         try {
             const data = await Git.log_search(repoPath, searchArgs, { maxCount: maxCount });
@@ -1208,7 +1234,7 @@ export class GitService implements Disposable {
             if (log !== undefined) {
                 const opts = { ...options };
                 log.query = (maxCount: number | undefined) =>
-                    this.getLogForSearch(repoPath, search, searchBy, { ...opts, maxCount: maxCount });
+                    this.getLogForSearch(repoPath, searchByMap, { ...opts, maxCount: maxCount });
             }
 
             return log;

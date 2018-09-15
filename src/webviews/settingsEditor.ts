@@ -21,7 +21,7 @@ export class SettingsEditor extends WebviewEditor<SettingsBootstrap> {
         return 'GitLens Settings';
     }
 
-    getBootstrap() {
+    async getBootstrap() {
         return {
             // Make sure to get the raw config, not from the container which has the modes mixed in
             config: configuration.get<IConfig>(),
