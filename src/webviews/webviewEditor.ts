@@ -1,5 +1,6 @@
 'use strict';
 import * as fs from 'fs';
+import * as path from 'path';
 import {
     commands,
     ConfigurationChangeEvent,
@@ -90,6 +91,10 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 for (const key of e.removes) {
                     await configuration.update(key, undefined, target);
                 }
+                break;
+            case 'showDiff' :
+                const fileUri =  Uri.file(path.resolve(e.repoPath, e.file)) ;
+                commands.executeCommand('gitlens.diffWith', { repoPath: e.repoPath, lhs: {sha: e.lsha, uri: fileUri}, rhs: {sha: e.rsha, uri: fileUri} });
                 break;
             case 'search' :
                 const uri = Uri.file(Container.context.asAbsolutePath('.'))

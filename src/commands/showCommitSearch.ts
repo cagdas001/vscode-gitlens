@@ -121,7 +121,7 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
 
             if (progressCancellation.token.isCancellationRequested) return undefined;
 
-            let goBackCommand: CommandQuickPickItem | undefined =
+            const goBackCommand: CommandQuickPickItem | undefined =
                 args.goBackCommand ||
                 new CommandQuickPickItem(
                     {
@@ -132,8 +132,6 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
                     [uri, originalArgs]
                 );
 
-            let commit;
-            if (!searchByValuesMap.has(GitRepoSearchBy.Sha) || log === undefined || log.count !== 1) {
                 const pick = await CommitsQuickPick.show(log, searchLabel!, progressCancellation, {
                     goBackCommand: goBackCommand,
                     showAllCommand:
@@ -154,14 +152,7 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
 
                 if (pick instanceof CommandQuickPickItem) return pick.execute();
 
-                commit = pick.commit;
-                goBackCommand = undefined;
-            }
-            else {
-                commit = Iterables.first(log.commits.values());
-            }
-
-            return;
+            return undefined;
         }
         catch (ex) {
             Logger.error(ex, 'ShowCommitSearchCommand');

@@ -1,6 +1,7 @@
 out
 node_modules
 settings.html
+search.html
 welcome.html
 images/settings
 gitlens-*.vsix

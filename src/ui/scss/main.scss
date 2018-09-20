@@ -1068,4 +1068,48 @@ ul {
     }
 }
 
+ul.tree {
+	padding: 5px;
+	margin: 5px;
+	li {
+		list-style-type: none;
+		position: relative;
+		padding-left: 1em;
+		ul {
+			display: none;
+		}
+		a {
+			text-decoration: none;
+			&:before {
+				height: 1em;
+				padding: 0 .1em;
+				font-size: .8em;
+				display: block;
+				position: absolute;
+				left: -1.3em;
+				top: .2em;
+			}
+		}
+		>a {
+			&:not(:last-child) {
+				&:before {
+					content: '+';
+				}
+			}
+		}
+	}
+	li.open {
+		>ul {
+			display: block;
+		}
+		>a {
+			&:not(:last-child) {
+				&:before {
+					content: '-';
+				}
+			}
+		}
+	}
+}
+
 @import 'popup';

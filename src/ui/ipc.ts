@@ -42,4 +42,12 @@ export interface SettingsChangedMessage {
     config: IConfig;
 }
 
-export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage;
+export interface ShowDiffMessage {
+    type: 'showDiff';
+    repoPath: string;
+    lsha: string;
+    rsha: string;
+    file: string;
+}
+
+export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage| ShowDiffMessage;
