@@ -191,7 +191,7 @@ export class Annotations {
         try {
             message += this.commentStartRender(level);
 
-            message += `[\`${ele.Message}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+            message += `[${ele.Message}](${AddLineCommentCommand.getMarkdownCommandArgs({
                 line: ele.Line,
                 fileName: ele.Path,
                 id: ele.Id,
@@ -221,7 +221,7 @@ export class Annotations {
     ): MarkdownString | undefined {
         let message = '';
 
-        message += `[\`# Show File Comments\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+        message += `[**Show File Comments**](${AddLineCommentCommand.getMarkdownCommandArgs({
             fileName: commit.fileName,
             commit: commit,
             isFileComment: true
