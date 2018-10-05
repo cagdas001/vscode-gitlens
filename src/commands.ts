@@ -48,6 +48,9 @@ import { ToggleFileRecentChangesCommand } from './commands/toggleFileRecentChang
 import { ToggleLineBlameCommand } from './commands/toggleLineBlame';
 import { CommandContext, setCommandContext } from './constants';
 import { Container } from './container';
+import { AddLineCommentCommand } from './commands/addLineComments';
+import { BitbucketServerService } from './git/remotes/bitbucket-server';
+import { BitBucketServiceAuthCommand } from './commands/bitBucketServiceAuth';
 
 export * from './commands/common';
 export * from './commands/clearFileAnnotations';
@@ -101,6 +104,8 @@ export * from './commands/toggleLineBlame';
 export function configureCommands(): void {
     setCommandContext(CommandContext.KeyMap, Container.config.keymap);
 
+    Container.context.subscriptions.push(new AddLineCommentCommand());
+    Container.context.subscriptions.push(new BitBucketServiceAuthCommand());
     Container.context.subscriptions.push(new ClearFileAnnotationsCommand());
     Container.context.subscriptions.push(new CloseUnchangedFilesCommand());
     Container.context.subscriptions.push(new CopyMessageToClipboardCommand());

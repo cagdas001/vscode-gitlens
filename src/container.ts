@@ -2,6 +2,7 @@
 import { Disposable, ExtensionContext, languages, workspace } from 'vscode';
 import { FileAnnotationController } from './annotations/fileAnnotationController';
 import { LineAnnotationController } from './annotations/lineAnnotationController';
+import { GitCommentService } from './gitCommentService';
 import { CodeLensController } from './codelens/codeLensController';
 import { GitRevisionCodeLensProvider } from './codelens/gitRevisionCodeLensProvider';
 import { configuration, IConfig } from './configuration';
@@ -28,6 +29,7 @@ export class Container {
         context.subscriptions.push((this._lineTracker = new GitLineTracker()));
         context.subscriptions.push((this._tracker = new GitDocumentTracker()));
         context.subscriptions.push((this._git = new GitService()));
+        context.subscriptions.push((this._commentService = new GitCommentService()));
 
         // Since there is a bit of a chicken & egg problem with the DocumentTracker and the GitService, initialize the tracker once the GitService is loaded
         this._tracker.initialize();
@@ -110,6 +112,11 @@ export class Container {
     private static _git: GitService;
     static get git() {
         return this._git;
+    }
+
+    private static _commentService: GitCommentService;
+    static get commentService() {
+        return this._commentService;
     }
 
     private static _gitExplorer: GitExplorer | undefined;

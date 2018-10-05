@@ -22,6 +22,8 @@ import { CommandQuickPickItem, RepositoriesQuickPick } from '../quickpicks';
 import { ExplorerNode, ExplorerRefNode } from '../views/nodes';
 
 export enum Commands {
+    AddLineComment = 'gitlens.manageComments',
+    BitBuckerServiceAuth = 'gitlens.bitBucketServiceAuth',
     ClearFileAnnotations = 'gitlens.clearFileAnnotations',
     CloseUnchangedFiles = 'gitlens.closeUnchangedFiles',
     ComputingFileAnnotations = 'gitlens.computingFileAnnotations',

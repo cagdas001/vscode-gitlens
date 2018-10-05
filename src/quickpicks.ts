@@ -3,6 +3,7 @@
 export * from './quickpicks/branchesAndTagsQuickPick';
 export * from './quickpicks/branchesQuickPick';
 export * from './quickpicks/branchHistoryQuickPick';
+export * from './quickpicks/commentsQuickPick';
 export * from './quickpicks/commitFileQuickPick';
 export * from './quickpicks/commitQuickPick';
 export * from './quickpicks/commitsQuickPick';

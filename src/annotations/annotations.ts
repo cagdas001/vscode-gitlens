@@ -13,9 +13,11 @@ import {
     ShowQuickCommitDetailsCommand,
     ShowQuickCommitFileDetailsCommand
 } from '../commands';
+import { AddLineCommentCommand } from '../commands/addLineComments';
 import { FileAnnotationType } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
+import { Comment } from '../gitCommentService';
 import {
     CommitFormatter,
     GitCommit,
@@ -176,41 +178,102 @@ export class Annotations {
         markdown.isTrusted = true;
         return markdown;
     }
+    static commentStartRender(level: number): string {
+        let message = ``;
+        while (level > 0) {
+            message += `${GlyphChars.SpaceThin}${GlyphChars.ArrowRightDouble}${GlyphChars.Space}`;
+            level = level - 1;
+        }
+        return message;
+    }
+    static commentRender(level: number, ele: Comment): string {
+        let message = `\n\n`;
+        try {
+            message += this.commentStartRender(level);
+
+            message += `[\`${ele.Message}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+                line: ele.Line,
+                fileName: ele.Path,
+                id: ele.Id,
+                commit: ele.Commit
+            })} "Delete/Edit/Reply")`;
+
+            if (ele.Replies !== undefined) {
+                ele.Replies!.forEach(reply => {
+                    message += this.commentRender(level + 1, reply);
+                });
+            }
+
+            return message;
+        }
+        catch (e) {
+            console.log(e);
+            return message;
+        }
+    }
 
     static getHoverDiffMessage(
         commit: GitCommit,
         uri: GitUri,
-        chunkLine: GitDiffChunkLine | undefined
+        chunkLine: GitDiffChunkLine | undefined,
+        line: number,
+        comments?: Comment[]
     ): MarkdownString | undefined {
-        if (chunkLine === undefined || commit.previousSha === undefined) return undefined;
+        let message = '';
 
-        const codeDiff = this.getCodeDiff(chunkLine);
+        message += `[\`# Show File Comments\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+            fileName: commit.fileName,
+            commit: commit,
+            isFileComment: true
+        })} "Delete/Edit/Reply")`;
 
-        let message: string;
-        if (commit.isUncommitted) {
-            if (uri.sha !== undefined && GitService.isStagedUncommitted(uri.sha)) {
-                message = `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(commit)} "Open Changes") &nbsp; ${
+        message += `\n\n **InLine Comments :** `;
+        message += `[\`${GlyphChars.Pencil}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+            line: line,
+            fileName: commit.fileName,
+            commit: commit
+        })} "Add Comment")`;
+
+        if (comments!.length) {
+            for (const ele of comments!) {
+                // just call level 0, other children will be called recursively as replies.
+                if (!ele.ParentId) {
+                    message += `\n`;
+                    message += this.commentRender(0, ele);
+                }
+            }
+        }
+
+        if (chunkLine !== undefined && commit.previousSha === undefined) {
+            const codeDiff = this.getCodeDiff(chunkLine);
+
+            if (commit.isUncommitted) {
+                if (uri.sha !== undefined && GitService.isStagedUncommitted(uri.sha)) {
+                    message += `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(
+                        commit
+                    )} "Open Changes") &nbsp; ${GlyphChars.Dash} &nbsp; [\`${
+                        commit.previousShortSha
+                    }\`](${ShowQuickCommitDetailsCommand.getMarkdownCommandArgs(
+                        commit.previousSha!
+                    )} "Show Commit Details") ${GlyphChars.ArrowLeftRightLong} _${uri.shortSha}_\n${codeDiff}`;
+                }
+                else {
+                    message += `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(commit)} "Open Changes") &nbsp;
+                ${GlyphChars.Dash}
+                 &nbsp; _uncommitted changes_\n${codeDiff}\n`;
+                }
+            }
+            else {
+                message += `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(commit)} "Open Changes") &nbsp; ${
                     GlyphChars.Dash
                 } &nbsp; [\`${commit.previousShortSha}\`](${ShowQuickCommitDetailsCommand.getMarkdownCommandArgs(
                     commit.previousSha!
-                )} "Show Commit Details") ${GlyphChars.ArrowLeftRightLong} _${uri.shortSha}_\n${codeDiff}`;
+                )} "Show Commit Details") ${GlyphChars.ArrowLeftRightLong} [\`${
+                    commit.shortSha
+                }\`](${ShowQuickCommitDetailsCommand.getMarkdownCommandArgs(
+                    commit.sha
+                )} "Show Commit Details")\n${codeDiff}\n\n`;
             }
-            else {
-                message = `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(commit)} "Open Changes") &nbsp; ${
-                    GlyphChars.Dash
-                } &nbsp; _uncommitted changes_\n${codeDiff}`;
-            }
-        }
-        else {
-            message = `[\`Changes\`](${DiffWithCommand.getMarkdownCommandArgs(commit)} "Open Changes") &nbsp; ${
-                GlyphChars.Dash
-            } &nbsp; [\`${commit.previousShortSha}\`](${ShowQuickCommitDetailsCommand.getMarkdownCommandArgs(
-                commit.previousSha!
-            )} "Show Commit Details") ${GlyphChars.ArrowLeftRightLong} [\`${
-                commit.shortSha
-            }\`](${ShowQuickCommitDetailsCommand.getMarkdownCommandArgs(
-                commit.sha
-            )} "Show Commit Details")\n${codeDiff}`;
         }
 
         const markdown = new MarkdownString(message);
@@ -232,7 +295,10 @@ export class Annotations {
                 ? commit.previousSha
                 : undefined;
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
-        const message = this.getHoverDiffMessage(commit, uri, chunkLine);
+        const comments = await Container.commentService
+            .loadComments(commit)
+            .then(res => (res as Comment[])!.filter(c => c.Line! === line));
+        const message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
 
         return {
             hoverMessage: message

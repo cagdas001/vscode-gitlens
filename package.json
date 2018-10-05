@@ -1670,6 +1670,20 @@
                 }
             },
             {
+                "command": "gitlens.manageComments",
+                "title": "Commit Inline Comments",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/dark/icon-search.svg",
+                    "light": "images/light/icon-search.svg"
+                }
+            },
+            {
+                "command": "gitlens.bitBucketServiceAuth",
+                "title": "Bit Bucker Service Authentiacation",
+                "category": "GitLens"
+            },
+            {
                 "command": "gitlens.showLastQuickPick",
                 "title": "Show Last Opened Quick Pick",
                 "category": "GitLens"
@@ -3583,11 +3597,13 @@
         "vscode:prepublish": "npm run reset && npm run bundle"
     },
     "dependencies": {
+        "axios": "^0.18.0",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
         "iconv-lite": "0.4.23",
         "lodash.debounce": "4.0.8",
         "lodash.once": "4.1.1",
+        "node-rest-client": "^3.1.0",
         "tmp": "0.0.33",
         "tslib": "1.9.3",
         "vscode-uri": "^1.0.6"
