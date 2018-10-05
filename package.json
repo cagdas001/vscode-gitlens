@@ -1571,6 +1571,24 @@
                 }
             },
             {
+                "command": "gitlens.commentCommitFile",
+                "title": "Put comment to this file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/chat.svg",
+                    "light": "images/chat.svg"
+                }
+            },
+            {
+                "command": "gitlens.showCommentCommitFile",
+                "title": "Show comment for this file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/bookmark.svg",
+                    "light": "images/bookmark.svg"
+                }
+            },
+            {
                 "command": "gitlens.diffLineWithPrevious",
                 "title": "Compare Commit with Previous",
                 "category": "GitLens"
@@ -1658,6 +1676,11 @@
             {
                 "command": "gitlens.toggleZenMode",
                 "title": "Toggle Zen Mode",
+                "category": "GitLens"
+            },
+            {
+                "command": "gitlens.showInputComment",
+                "title": "Put Comment",
                 "category": "GitLens"
             },
             {
@@ -2035,6 +2058,11 @@
                 "category": "GitLens"
             },
             {
+                "command": "gitlens.bitbucket.login",
+                "title": "Login to Bitbucket",
+                "category": "GitLens"
+            },
+            {
                 "command": "gitlens.gitExplorer.setRenameFollowingOn",
                 "title": "Follow Renames",
                 "category": "GitLens"
@@ -2227,6 +2255,14 @@
                 },
                 {
                     "command": "gitlens.diffWithPreviousInDiff",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                },
+                {
+                    "command": "gitlens.commentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                },
+                {
+                    "command": "gitlens.showCommentCommitFile",
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
@@ -2562,6 +2598,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "gitlens.bitbucket.login",
+                    "when": "false"
+                },
+                {
                     "command": "gitlens.gitExplorer.setRenameFollowingOn",
                     "when": "false"
                 },
@@ -2708,6 +2748,16 @@
                 {
                     "command": "gitlens.diffWithPreviousInDiff",
                     "alt": "gitlens.diffWithRevision",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "group": "navigation@97"
+                },
+                {
+                    "command": "gitlens.commentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "group": "navigation@97"
+                },
+                {
+                    "command": "gitlens.showCommentCommitFile",
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
                     "group": "navigation@97"
                 },
@@ -2916,6 +2966,11 @@
                     "command": "gitlens.gitExplorer.setAutoRefreshToOff",
                     "when": "view =~ /^gitlens.gitExplorer:/ && config.gitlens.gitExplorer.autoRefresh && gitlens:gitExplorer:autoRefresh",
                     "group": "2_gitlens"
+                },
+                {
+                    "command": "gitlens.bitbucket.login",
+                    "when": "view =~ /^gitlens.gitExplorer:/",
+                    "group": "3_gitlens"
                 },
                 {
                     "command": "gitlens.gitExplorer.setRenameFollowingOn",
@@ -3583,11 +3638,13 @@
         "vscode:prepublish": "npm run reset && npm run bundle"
     },
     "dependencies": {
+        "@types/node-fetch": "^2.1.2",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
         "iconv-lite": "0.4.23",
         "lodash.debounce": "4.0.8",
         "lodash.once": "4.1.1",
+        "node-fetch": "^2.2.0",
         "tmp": "0.0.33",
         "tslib": "1.9.3",
         "vscode-uri": "^1.0.6"

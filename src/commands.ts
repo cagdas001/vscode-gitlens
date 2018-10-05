@@ -28,6 +28,7 @@ import { ResetSuppressedWarningsCommand } from './commands/resetSuppressedWarnin
 import { ShowCommitSearchCommand } from './commands/showCommitSearch';
 import { ShowGitExplorerCommand } from './commands/showGitExplorer';
 import { ShowHistoryExplorerCommand } from './commands/showHistoryExplorer';
+import { ShowInputCommentCommand } from './commands/showInputComment';
 import { ShowLastQuickPickCommand } from './commands/showLastQuickPick';
 import { ShowQuickBranchHistoryCommand } from './commands/showQuickBranchHistory';
 import { ShowQuickCommitDetailsCommand } from './commands/showQuickCommitDetails';
@@ -79,6 +80,7 @@ export * from './commands/resetSuppressedWarnings';
 export * from './commands/showCommitSearch';
 export * from './commands/showGitExplorer';
 export * from './commands/showHistoryExplorer';
+export * from './commands/showInputComment';
 export * from './commands/showLastQuickPick';
 export * from './commands/showQuickBranchHistory';
 export * from './commands/showQuickCommitDetails';
@@ -130,6 +132,7 @@ export function configureCommands(): void {
     Container.context.subscriptions.push(new ShowCommitSearchCommand());
     Container.context.subscriptions.push(new ShowGitExplorerCommand());
     Container.context.subscriptions.push(new ShowHistoryExplorerCommand());
+    Container.context.subscriptions.push(new ShowInputCommentCommand());
     Container.context.subscriptions.push(new ShowLastQuickPickCommand());
     Container.context.subscriptions.push(new ShowQuickBranchHistoryCommand());
     Container.context.subscriptions.push(new ShowQuickCommitDetailsCommand());

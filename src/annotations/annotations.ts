@@ -10,6 +10,7 @@ import {
     DiffWithCommand,
     OpenCommitInRemoteCommand,
     OpenFileRevisionCommand,
+    ShowInputCommentCommand,
     ShowQuickCommitDetailsCommand,
     ShowQuickCommitFileDetailsCommand
 } from '../commands';
@@ -27,6 +28,8 @@ import {
 } from '../gitService';
 import { Objects, Strings } from '../system';
 import { toRgba } from '../ui/shared/colors';
+import { CommentCommandType } from '../commands/showInputComment';
+import { CommentsDecoratorController } from '../comments/commentsDecoratorController';
 
 export interface ComputedHeatmap {
     cold: boolean;
@@ -218,6 +221,53 @@ export class Annotations {
         return markdown;
     }
 
+    private static getCommentCommandBar(
+        commit: GitCommit,
+        id: number
+    ) {
+        const commandBar = `[\`Reply\`](${ShowInputCommentCommand.getMarkdownCommandByIdArgs(
+            commit,
+            commit.sha,
+            id,
+            CommentCommandType.REPLY
+        )} "Reply Comment") &nbsp; [\`Edit\`](${ShowInputCommentCommand.getMarkdownCommandByIdArgs(
+            commit,
+            commit.sha,
+            id,
+            CommentCommandType.EDIT
+        )} "Edit Comment") &nbsp; [\`Delete\`](${ShowInputCommentCommand.getMarkdownCommandByIdArgs(
+            commit,
+            commit.sha,
+            id,
+            CommentCommandType.DELETE
+        )} "Delete Comment") &nbsp; `;
+        return commandBar;
+    }
+
+    private static getFileCommentCommandBar(
+        repoPath: string,
+        sha: string,
+        id: number
+    ) {
+        const commandBar = `[\`Reply\`](${ShowInputCommentCommand.getMarkdownCommandFileByIdArgs(
+            repoPath,
+            sha,
+            id,
+            CommentCommandType.REPLY
+        )} "Reply Comment") &nbsp; [\`Edit\`](${ShowInputCommentCommand.getMarkdownCommandFileByIdArgs(
+            repoPath,
+            sha,
+            id,
+            CommentCommandType.EDIT
+        )} "Edit Comment") &nbsp; [\`Delete\`](${ShowInputCommentCommand.getMarkdownCommandFileByIdArgs(
+            repoPath,
+            sha,
+            id,
+            CommentCommandType.DELETE
+        )} "Delete Comment") &nbsp; `;
+        return commandBar;
+    }
+
     private static getCodeDiff(chunkLine: GitDiffChunkLine): string {
         const previous = chunkLine.previous === undefined ? undefined : chunkLine.previous[0];
         return `\`\`\`
@@ -239,12 +289,42 @@ export class Annotations {
         } as DecorationOptions;
     }
 
-    // static detailsHover(commit: GitCommit, dateFormat: string | null, hasRemote: boolean, annotationType?: FileAnnotationType, line: number = 0): DecorationOptions {
-    //     const message = this.getHoverMessage(commit, dateFormat, hasRemote, annotationType);
-    //     return {
-    //         hoverMessage: message
-    //     } as DecorationOptions;
-    // }
+    static async commentsHover(commit: GitCommit, line: number, originalLine: number, uri: GitUri): Promise<DecorationOptions> {
+
+        const message = `[\`Comment\`](${ShowInputCommentCommand.getMarkdownCommandArgs(
+            commit,
+            commit.sha,
+            originalLine + 1
+        )} "Put Comment") &nbsp;`;
+        let commentMessage = '';
+        if (CommentsDecoratorController.showFileCommentHover) {
+            for (const comment of Container.commentsDecorator.getFileComments()) {
+                commentMessage += `\n\n__${comment.user.display_name}__\n\n${comment.content.raw}\n\n${this.getFileCommentCommandBar(CommentsDecoratorController.currentFileCommit.repoPath, CommentsDecoratorController.currentFileCommit.rsha, comment.id)}`;
+                if (comment.replies) {
+                    for (const reply of comment.replies) {
+                        commentMessage += `\n\n>__${reply.user.display_name}__\n\n>${reply.content.raw}\n\n`;
+                    }
+                }
+            }
+        }
+        else if (Container.commentsDecorator.getCommentsMap()[line]) {
+            for (const comment of Container.commentsDecorator.getCommentsMap()[line]) {
+                commentMessage += `\n\n__${comment.user.display_name}__\n\n${comment.content.raw}\n\n${this.getCommentCommandBar(commit, comment.id)}`;
+                if (comment.replies) {
+                    for (const reply of comment.replies) {
+                        commentMessage += `\n\n>__${reply.user.display_name}__\n\n>${reply.content.raw}\n\n`;
+                    }
+                }
+            }
+        }
+
+        const markdown = new MarkdownString(`${message}${commentMessage}`);
+        markdown.isTrusted = true;
+
+        return {
+            hoverMessage: markdown
+        } as DecorationOptions;
+    }
 
     static gutter(
         commit: GitCommit,

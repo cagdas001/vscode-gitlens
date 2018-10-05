@@ -19,6 +19,7 @@ import { ResultsExplorer } from './views/resultsExplorer';
 import { SearchEditor } from './webviews/searchEditor';
 import { SettingsEditor } from './webviews/settingsEditor';
 import { WelcomeEditor } from './webviews/welcomeEditor';
+import { CommentsDecoratorController } from './comments/commentsDecoratorController';
 
 export class Container {
     static initialize(context: ExtensionContext, config: IConfig) {
@@ -35,6 +36,7 @@ export class Container {
         context.subscriptions.push((this._fileAnnotationController = new FileAnnotationController()));
         context.subscriptions.push((this._lineAnnotationController = new LineAnnotationController()));
         context.subscriptions.push((this._lineHoverController = new LineHoverController()));
+        context.subscriptions.push((this._commentsDecoratorController = new CommentsDecoratorController()));
         context.subscriptions.push((this._statusBarController = new StatusBarController()));
         context.subscriptions.push((this._codeLensController = new CodeLensController()));
         context.subscriptions.push((this._keyboard = new Keyboard()));
@@ -139,6 +141,11 @@ export class Container {
     private static _lineHoverController: LineHoverController;
     static get lineHovers() {
         return this._lineHoverController;
+    }
+
+    private static _commentsDecoratorController: CommentsDecoratorController;
+    static get commentsDecorator() {
+        return this._commentsDecoratorController;
     }
 
     private static _lineTracker: GitLineTracker;

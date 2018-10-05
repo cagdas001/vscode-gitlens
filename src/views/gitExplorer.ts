@@ -11,6 +11,7 @@ import {
     TreeItem,
     TreeView,
     Uri,
+    ViewColumn,
     window
 } from 'vscode';
 import {
@@ -28,6 +29,7 @@ import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
 import { HistoryExplorer } from './historyExplorer';
 import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode, RepositoryNode } from './nodes';
+import { BitbucketAPI, URLParams, BitbucketResponse } from '../api/bitbucket';
 
 export * from './nodes';
 
@@ -70,6 +72,12 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
         commands.registerCommand(
             'gitlens.gitExplorer.setFilesLayoutToTree',
             () => this.setFilesLayout(ExplorerFilesLayout.Tree),
+            this
+        );
+
+        commands.registerCommand(
+            'gitlens.bitbucket.login',
+            () => this.bitbucketLogin(),
             this
         );
 
@@ -451,5 +459,84 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
 
     private undockHistory(switchView: boolean = true) {
         return Container.historyExplorer.undock(switchView);
+    }
+
+    private bitbucketLogin() {
+        const panel = window.createWebviewPanel(
+            'bitbucketLogin',
+            'Bitbucket Login',
+            ViewColumn.One,
+            {
+                enableScripts: true,
+                enableCommandUris: true
+            }
+        );
+
+        panel.webview.html = this.getWebviewContent();
+        panel.webview.onDidReceiveMessage(message => {
+            console.log(message);
+            const bitbucket = new BitbucketAPI('');
+            const data: URLParams = JSON.parse(message.text);
+            bitbucket.login(data.username, data.password).then(response => {
+                const data = response as BitbucketResponse;
+                if (data.error_description) {
+                    window.showErrorMessage(data.error_description);
+                }
+                else {
+                    panel.webview.postMessage({
+                        command: 'success'
+                    });
+                    BitbucketAPI.accessToken = data.access_token;
+                    console.log(response);
+                }
+            });
+        });
+    }
+
+    private getWebviewContent() {
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <script type="text/javascript">
+                const vscode = acquireVsCodeApi();
+                function get_action(form) {
+                    var data = {
+                        username: document.getElementsByName('username')[0].value,
+                        password: document.getElementsByName('password')[0].value
+                    }
+                    vscode.postMessage({
+                        command: 'login',
+                        text: JSON.stringify(data)
+                    });
+                }
+                window.addEventListener('message', event => {
+                    const message = event.data; // The json data that the extension sent
+                    switch (message.command) {
+                        case 'success':
+                            document.getElementById("loginform").style.display = "none";
+                            document.getElementById("info").textContent = "Success Login.";
+                            break;
+                    }
+                });
+            </script>
+        </head>
+        <body>
+
+        <h2>Bitbucket Login</h2>
+
+        <form id="loginform" onsubmit="get_action(this);">
+          Email:<br>
+          <input type="text" name="username" value="">
+          <br>
+          Password:<br>
+          <input type="password" name="password" value="">
+          <br><br>
+          <input type="hidden" value="password" name="grant_type" />
+          <input type="submit" value="Submit">
+        </form>
+        <span id="info"> <p>Please login with your Bitbucket account.</p> </span>
+        </body>
+        </html>
+        `;
     }
 }

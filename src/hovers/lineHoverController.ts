@@ -17,6 +17,7 @@ import { Annotations } from '../annotations/annotations';
 import { configuration } from '../configuration';
 import { Container } from '../container';
 import { LinesChangeEvent } from '../trackers/gitLineTracker';
+import { CommentsDecoratorController } from '../comments/commentsDecoratorController';
 
 export class LineHoverController implements Disposable {
     private _debugSessionEndDisposable: Disposable | undefined;
@@ -99,6 +100,7 @@ export class LineHoverController implements Disposable {
         position: Position,
         token: CancellationToken
     ): Promise<Hover | undefined> {
+        if (CommentsDecoratorController.showFileCommentHover) return undefined;
         if (!Container.lineTracker.includes(position.line)) return undefined;
 
         const lineState = Container.lineTracker.getState(position.line);
@@ -153,6 +155,7 @@ export class LineHoverController implements Disposable {
         position: Position,
         token: CancellationToken
     ): Promise<Hover | undefined> {
+        if (CommentsDecoratorController.showFileCommentHover) return undefined;
         if (!Container.lineTracker.includes(position.line)) return undefined;
 
         const lineState = Container.lineTracker.getState(position.line);
@@ -183,6 +186,44 @@ export class LineHoverController implements Disposable {
         return new Hover(hover.hoverMessage, range);
     }
 
+    async provideCommentsHover(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): Promise<Hover | undefined> {
+        if (!Container.lineTracker.includes(position.line)) return undefined;
+
+        const lineState = Container.lineTracker.getState(position.line);
+        const commit = lineState !== undefined ? lineState.commit : undefined;
+        if (commit === undefined) return undefined;
+
+        // Avoid double annotations if we are showing the whole-file hover blame annotations
+        if (Container.config.hovers.annotations.changes) {
+            const fileAnnotations = await Container.fileAnnotations.getAnnotationType(window.activeTextEditor);
+            if (fileAnnotations !== undefined) return undefined;
+        }
+
+        const wholeLine = this.debugging ? false : Container.config.hovers.currentLine.over === 'line';
+        // If we aren't showing the hover over the whole line, make sure the annotation is on
+        if (!wholeLine && Container.lineAnnotations.suspended) return undefined;
+
+        const range = document.validateRange(
+            new Range(position.line, wholeLine ? 0 : Number.MAX_SAFE_INTEGER, position.line, Number.MAX_SAFE_INTEGER)
+        );
+        if (!wholeLine && range.start.character !== position.character) return undefined;
+
+        const trackedDocument = await Container.tracker.get(document);
+        if (trackedDocument === undefined) return undefined;
+
+        const blameLine = await Container.git.getBlameForLine(trackedDocument.uri, position.line);
+        if (blameLine === undefined) return;
+
+        const hover = await Annotations.commentsHover(commit, position.line, blameLine.line.originalLine, trackedDocument.uri);
+        if (hover.hoverMessage === undefined) return undefined;
+
+        return new Hover(hover.hoverMessage, range);
+    }
+
     private register(editor: TextEditor | undefined) {
         this.unregister();
 
@@ -192,6 +233,11 @@ export class LineHoverController implements Disposable {
         if (!cfg.enabled || !cfg.currentLine.enabled || (!cfg.currentLine.details && !cfg.currentLine.changes)) return;
 
         const subscriptions = [];
+        subscriptions.push(
+            languages.registerHoverProvider({ pattern: editor.document.uri.fsPath }, {
+                provideHover: this.provideCommentsHover.bind(this)
+            } as HoverProvider)
+        );
         if (cfg.currentLine.changes) {
             subscriptions.push(
                 languages.registerHoverProvider({ pattern: editor.document.uri.fsPath }, {

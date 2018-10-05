@@ -57,6 +57,7 @@ export enum Commands {
     ShowCommitSearch = 'gitlens.showCommitSearch',
     ShowGitExplorer = 'gitlens.showGitExplorer',
     ShowHistoryExplorer = 'gitlens.showHistoryExplorer',
+    ShowInputComment = 'gitlens.showInputComment',
     ShowLastQuickPick = 'gitlens.showLastQuickPick',
     ShowQuickCommitDetails = 'gitlens.showQuickCommitDetails',
     ShowQuickCommitFileDetails = 'gitlens.showQuickCommitFileDetails',
