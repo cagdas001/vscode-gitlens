@@ -195,7 +195,8 @@ export class Annotations {
                 line: ele.Line,
                 fileName: ele.Path,
                 id: ele.Id,
-                commit: ele.Commit
+                commit: ele.Commit,
+                message: ele.Message
             })} "Delete/Edit/Reply")`;
 
             if (ele.Replies !== undefined) {

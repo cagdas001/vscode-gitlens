@@ -176,6 +176,7 @@ export class GitCommentService implements Disposable {
                         window.showErrorMessage('Incorrect Bit Bucket Service Credentials.');
                         GitCommentService.ClearCredentials();
                     }
+
                     Logger.log(e);
                     next = null;
                 });
@@ -226,10 +227,16 @@ export class GitCommentService implements Disposable {
         })
             .post(url, data)
             .then(v => {
-                console.log(v);
+                window.showInformationMessage('Comment/reply added successfully.');
             })
             .catch(e => {
-                console.log(e);
+                if (e!.response!.status === 401 || e!.response!.status === 403) {
+                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
+                    GitCommentService.ClearCredentials();
+                }
+                else {
+                    window.showErrorMessage('Failed to add comment/reply.');
+                }
             });
     }
 
@@ -259,11 +266,17 @@ export class GitCommentService implements Disposable {
             auth: auth
         })
             .put(url, data)
-            // .then(v => {
-            //     console.log(v);
-            // })
+            .then(v => {
+                window.showInformationMessage('Comment/reply edited successfully.');
+            })
             .catch(e => {
-                Logger.log(e);
+                if (e!.response!.status === 401 || e!.response!.status === 403) {
+                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
+                    GitCommentService.ClearCredentials();
+                }
+                else {
+                    window.showErrorMessage('Failed to add comment/reply.');
+                }
             });
     }
 
@@ -284,10 +297,16 @@ export class GitCommentService implements Disposable {
         })
             .delete(url)
             .then(v => {
-                console.log(v);
+                window.showInformationMessage('Comment/reply deleted successfully.');
             })
             .catch(e => {
-                console.log(e);
+                if (e!.response!.status === 401 || e!.response!.status === 403) {
+                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
+                    GitCommentService.ClearCredentials();
+                }
+                else {
+                    window.showErrorMessage('Failed to delete comment/reply.');
+                }
             });
     }
 
