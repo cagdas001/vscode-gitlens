@@ -61,7 +61,10 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
         const branches = await Container.git.getBranches(repoPath);
         const names: string[] = [];
-        Iterables.forEach(branches, b => names.push(b.getName()));
+        Iterables.forEach(branches, b => {
+            const branchName = b.remote ? `${b.getRemote()}/${b.getName()}` : b.getName();
+            names.push(branchName);
+        });
         return names;
     }
 
