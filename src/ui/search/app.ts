@@ -60,7 +60,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             this.bootstrap.branches.forEach(branch => {
                 const option = document.createElement('option');
                 option.value = branch;
-                option.innerHTML = branch;
+                const index = branch.indexOf('/');
+                option.innerHTML = index !== -1 ? branch : `(local) ${branch}`;
                 if (this.bootstrap.branch === branch) {
                     option.selected = true;
                 }
