@@ -206,18 +206,21 @@ export class Annotations {
             fileName: comment.Path,
             id: comment.Id,
             commit: comment.Commit,
+            message: comment.Message,
             type: operationTypes.Delete
         })} "Delete comment") &nbsp; [Edit](${AddLineCommentCommand.getMarkdownCommandArgs({
             line: comment.Line,
             fileName: comment.Path,
             id: comment.Id,
             commit: comment.Commit,
+            message: comment.Message,
             type: operationTypes.Edit
         })} "Edit comment") &nbsp; [Reply](${AddLineCommentCommand.getMarkdownCommandArgs({
             line: comment.Line,
             fileName: comment.Path,
             id: comment.Id,
             commit: comment.Commit,
+            message: comment.Message,
             type: operationTypes.Reply
         })} "Reply to comment")`;
         return actionsBar;
