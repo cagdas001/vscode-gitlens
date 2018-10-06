@@ -68,7 +68,7 @@ enum operationTypes {
     Delete,
     Edit,
     Reply
-};
+}
 
 export class Annotations {
     static applyHeatmap(decoration: DecorationOptions, date: Date, heatmap: ComputedHeatmap) {
@@ -226,7 +226,6 @@ export class Annotations {
         let message = `\n\n`;
         try {
             message += this.commentStartRender(level);
-          
             message += `${ele.Message}\n\n${this.getCommentActionsBar(level, ele)}`;
 
             if (ele.Replies !== undefined) {
