@@ -226,7 +226,7 @@ export class Annotations {
         let message = `\n\n`;
         try {
             message += this.commentStartRender(level);
-
+          
             message += `${ele.Message}\n\n${this.getCommentActionsBar(level, ele)}`;
 
             if (ele.Replies !== undefined) {
