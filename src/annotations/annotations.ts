@@ -60,6 +60,16 @@ let computedHeatmapColor: {
     rgb: string;
 };
 
+/**
+ * Different Comment management commands.
+ */
+enum operationTypes {
+    Create,
+    Delete,
+    Edit,
+    Reply
+}
+
 export class Annotations {
     static applyHeatmap(decoration: DecorationOptions, date: Date, heatmap: ComputedHeatmap) {
         const color = this.getHeatmapColor(date, heatmap);
@@ -181,23 +191,45 @@ export class Annotations {
     static commentStartRender(level: number): string {
         let message = ``;
         while (level > 0) {
-            message += `${GlyphChars.SpaceThin}${GlyphChars.ArrowRightDouble}${GlyphChars.Space}`;
+            message += `>`;
             level = level - 1;
         }
         return message;
+    }
+    private static getCommentActionsBar(level: number, comment: Comment): string {
+        let actionsBar = '';
+        while (level-- > 0) {
+            actionsBar += `>`;
+        }
+        actionsBar += `[Delete](${AddLineCommentCommand.getMarkdownCommandArgs({
+            line: comment.Line,
+            fileName: comment.Path,
+            id: comment.Id,
+            commit: comment.Commit,
+            message: comment.Message,
+            type: operationTypes.Delete
+        })} "Delete comment") &nbsp; [Edit](${AddLineCommentCommand.getMarkdownCommandArgs({
+            line: comment.Line,
+            fileName: comment.Path,
+            id: comment.Id,
+            commit: comment.Commit,
+            message: comment.Message,
+            type: operationTypes.Edit
+        })} "Edit comment") &nbsp; [Reply](${AddLineCommentCommand.getMarkdownCommandArgs({
+            line: comment.Line,
+            fileName: comment.Path,
+            id: comment.Id,
+            commit: comment.Commit,
+            message: comment.Message,
+            type: operationTypes.Reply
+        })} "Reply to comment")`;
+        return actionsBar;
     }
     static commentRender(level: number, ele: Comment): string {
         let message = `\n\n`;
         try {
             message += this.commentStartRender(level);
-
-            message += `[\`${ele.Message}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
-                line: ele.Line,
-                fileName: ele.Path,
-                id: ele.Id,
-                commit: ele.Commit,
-                message: ele.Message
-            })} "Delete/Edit/Reply")`;
+            message += `${ele.Message}\n\n${this.getCommentActionsBar(level, ele)}`;
 
             if (ele.Replies !== undefined) {
                 ele.Replies!.forEach(reply => {
@@ -222,7 +254,7 @@ export class Annotations {
     ): MarkdownString | undefined {
         let message = '';
 
-        message += `[\`# Show File Comments\`](${AddLineCommentCommand.getMarkdownCommandArgs({
+        message += `[**Show File Comments**](${AddLineCommentCommand.getMarkdownCommandArgs({
             fileName: commit.fileName,
             commit: commit,
             isFileComment: true
