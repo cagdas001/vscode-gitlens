@@ -42,13 +42,46 @@ interface TreeDataArray {
 }
 
 export class CommitSearches extends App<CommitSearchBootstrap> {
+    protected innerHeight: any;
     protected searchText: HTMLInputElement | null = null;
 
     constructor() {
         super('CommitSearches', bootstrap);
     }
 
+    /**
+     * This function checks if the commit details section's (right side) height exceeds
+     * the default (65% * innerHeight) value of the commit list table.
+     *
+     * If so, sets the commit list's height to that value so that
+     * both tables will grow in sync. Otherwise sets the default value.
+     *
+     * @param logsContainer The Container Div Element for the entire section
+     * @param detailsContainer The Container Div element for the commit details (right side)
+     */
+    protected adjustHeight(logsContainer: HTMLDivElement, detailsContainer: HTMLDivElement) {
+        this.innerHeight = window.innerHeight;
+        const logsContainerHeight = +logsContainer.style.maxHeight!.replace('px', '');
+
+        if (detailsContainer.scrollHeight > logsContainerHeight) {
+            logsContainer.style.maxHeight = `${detailsContainer.scrollHeight}px`;
+        }
+        else {
+            logsContainer.style.maxHeight = `${65 * this.innerHeight / 100}px`;
+        }
+    }
+
     protected onInitialize() {
+        /**
+         * Here we're setting the max-height value of the commit logs table
+         * to 65% of the content height
+         * So if the height of the table exceeds this value, user will be able to scroll down
+         */
+        this.innerHeight = window.innerHeight;
+        const commitLogList = DOM.getElementById<HTMLDivElement>('commit-logs-table-container');
+        commitLogList.style.maxHeight = `${65 * this.innerHeight / 100}px`;
+
+        const tablesContainer = DOM.getElementById<HTMLDivElement>('logs-container');
 
         const searchText = DOM.getElementById<HTMLInputElement>('searchText');
         this.searchText = searchText;
@@ -236,6 +269,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 }
                             });
                         }
+
+                    this.adjustHeight(commitLogList, tablesContainer);
                     };
 
                     const seperator = list.insertRow();
