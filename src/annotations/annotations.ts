@@ -254,12 +254,6 @@ export class Annotations {
     ): MarkdownString | undefined {
         let message = '';
 
-        message += `[**Show File Comments**](${AddLineCommentCommand.getMarkdownCommandArgs({
-            fileName: commit.fileName,
-            commit: commit,
-            isFileComment: true
-        })} "Delete/Edit/Reply")`;
-
         message += `\n\n **InLine Comments :** `;
         message += `[\`${GlyphChars.Pencil}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
             line: line,

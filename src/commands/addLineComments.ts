@@ -8,6 +8,7 @@ import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
 import { Strings } from '../system';
 import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
+import { ShowDiffMessage } from '../ui/ipc';
 
 /**
  *Encapsulates infomation to perform comments management command.
@@ -45,6 +46,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     static getMarkdownCommandArgs(args: AddLineCommentsCommandArgs): string {
         return super.getMarkdownCommandArgsCore<AddLineCommentsCommandArgs>(Commands.AddLineComment, args);
     }
+
+    static currentFileCommit: ShowDiffMessage;
 
     constructor() {
         super(Commands.AddLineComment);
