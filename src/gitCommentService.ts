@@ -1,7 +1,7 @@
 'use strict';
 import * as path from 'path';
 import Axios, { AxiosBasicCredentials } from 'axios';
-import { commands, Disposable, window } from 'vscode';
+import { commands, Disposable, window, Selection } from 'vscode';
 import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
 import { GitCommit } from './git/models/commit';
@@ -279,6 +279,7 @@ export class GitCommentService implements Disposable {
             .post(url, data)
             .then(v => {
                 window.showInformationMessage('Comment/reply added successfully.');
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -319,6 +320,7 @@ export class GitCommentService implements Disposable {
             .put(url, data)
             .then(v => {
                 window.showInformationMessage('Comment/reply edited successfully.');
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -349,6 +351,7 @@ export class GitCommentService implements Disposable {
             .delete(url)
             .then(v => {
                 window.showInformationMessage('Comment/reply deleted successfully.');
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -359,6 +362,24 @@ export class GitCommentService implements Disposable {
                     window.showErrorMessage('Failed to delete comment/reply.');
                 }
             });
+    }
+
+    private updateView() {
+        const editor = window.activeTextEditor;
+        if (editor) {
+            const firstLength = editor.document.lineAt(0).text.length;
+            const position = editor.selection.active;
+            const newPosition = position.with(0, firstLength);
+            const newSelection = new Selection(newPosition, newPosition);
+            editor.selection = newSelection;
+            setTimeout(() => {
+                const originalSelection = new Selection(position, position);
+                editor.selection = originalSelection;
+                setTimeout(() => {
+                    commands.executeCommand('editor.action.showHover');
+                }, 500);
+            }, 100);
+        }
     }
 
     dispose() {}
