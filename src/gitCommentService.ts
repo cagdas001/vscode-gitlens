@@ -1,11 +1,13 @@
 'use strict';
-
+import * as path from 'path';
 import Axios, { AxiosBasicCredentials } from 'axios';
 import { commands, Disposable, window } from 'vscode';
-import { Commands } from './commands/common';
+import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
+import { AddLineCommentCommand } from './commands/addLineComments';
+import { GitUri } from './git/gitUri';
 
 /**
  * Enum to for different comment types.
@@ -47,6 +49,55 @@ export class GitCommentService implements Disposable {
 
     private static username?: string;
     private static password?: string;
+
+
+    constructor() {
+        commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
+        commands.registerCommand('gitlens.showCommentCommitFile', this.showFileComment, this);
+    }
+
+    async commentToFile() {
+        if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
+        const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
+        const filename: string = path.relative(
+            AddLineCommentCommand.currentFileCommit.repoPath,
+            gitUri.fsPath
+        );
+        let fileCommit = {
+            sha: AddLineCommentCommand.currentFileCommit.rsha,
+            repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
+            fileName: filename
+        } as GitCommit;
+
+        commands.executeCommand(Commands.AddLineComment,
+            {
+                fileName: fileCommit.fileName,
+                commit: fileCommit
+            }
+        );
+        return;
+    }
+
+    async showFileComment() {
+        if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
+        const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
+        const filename: string = path.relative(
+            AddLineCommentCommand.currentFileCommit.repoPath,
+            gitUri.fsPath
+        );
+        let fileCommit = {
+            sha: AddLineCommentCommand.currentFileCommit.rsha,
+            repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
+            fileName: filename
+        } as GitCommit;
+
+        commands.executeCommand(Commands.AddLineComment, {
+            fileName: fileCommit.fileName,
+            commit: fileCommit,
+            isFileComment: true
+        });
+        return;
+    }
 
     /**
      * Sets credentials that can be used for authenticating with remote git server.

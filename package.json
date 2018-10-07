@@ -1571,6 +1571,24 @@
                 }
             },
             {
+                "command": "gitlens.commentCommitFile",
+                "title": "Put comment to this file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/chat.svg",
+                    "light": "images/chat.svg"
+                }
+            },
+            {
+                "command": "gitlens.showCommentCommitFile",
+                "title": "Show comment for this file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/bookmark.svg",
+                    "light": "images/bookmark.svg"
+                }
+            },
+            {
                 "command": "gitlens.diffLineWithPrevious",
                 "title": "Compare Commit with Previous",
                 "category": "GitLens"
@@ -2244,6 +2262,14 @@
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
+                    "command": "gitlens.commentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                },
+                {
+                    "command": "gitlens.showCommentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                },
+                {
                     "command": "gitlens.diffLineWithPrevious",
                     "when": "gitlens:activeFileStatus =~ /blameable/"
                 },
@@ -2722,6 +2748,16 @@
                 {
                     "command": "gitlens.diffWithPreviousInDiff",
                     "alt": "gitlens.diffWithRevision",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "group": "navigation@97"
+                },
+                {
+                    "command": "gitlens.commentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "group": "navigation@97"
+                },
+                {
+                    "command": "gitlens.showCommentCommitFile",
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
                     "group": "navigation@97"
                 },
