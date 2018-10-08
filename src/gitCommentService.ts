@@ -377,7 +377,7 @@ export class GitCommentService implements Disposable {
                 editor.selection = originalSelection;
                 setTimeout(() => {
                     commands.executeCommand('editor.action.showHover');
-                }, 500);
+                }, 100);
             }, 100);
         }
     }
