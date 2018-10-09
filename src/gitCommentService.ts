@@ -301,7 +301,14 @@ export class GitCommentService implements Disposable {
                     if (newComment.ParentId) {
                         GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(comment => {
                             if (comment.Id = newComment.ParentId) {
-                                comment.Replies.push(newComment);
+                                newComment.Type = comment.Type;
+                                newComment.Line = comment.Line;
+                                if (comment.Replies) {
+                                    comment.Replies.push(newComment);
+                                }
+                                else {
+                                    comment.Replies = [newComment];
+                                }
                             }
                             return comment;
                         })
