@@ -17,7 +17,7 @@ import { AddLineCommentCommand } from '../commands/addLineComments';
 import { FileAnnotationType } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment } from '../gitCommentService';
+import { Comment, GitCommentService } from '../gitCommentService';
 import {
     CommitFormatter,
     GitCommit,
@@ -322,9 +322,17 @@ export class Annotations {
                 ? commit.previousSha
                 : undefined;
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
-        const comments = await Container.commentService
+        let comments;
+        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments) {
+            comments = GitCommentService.lastFetchedComments;
+            GitCommentService.showCommentsCache = false;
+        }
+        else {
+            comments = await Container.commentService
             .loadComments(commit)
             .then(res => (res as Comment[])!.filter(c => c.Line! === line));
+            GitCommentService.lastFetchedComments = comments;
+        }
         const message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
 
         return {

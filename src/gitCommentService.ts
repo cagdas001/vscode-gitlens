@@ -50,6 +50,9 @@ export class GitCommentService implements Disposable {
     private static username?: string;
     private static password?: string;
 
+    public static lastFetchedComments: Comment[] | undefined;
+    public static showCommentsCache: boolean = false;
+
 
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
@@ -279,6 +282,34 @@ export class GitCommentService implements Disposable {
             .post(url, data)
             .then(v => {
                 window.showInformationMessage('Comment/reply added successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    let newComment: Comment = {
+                        Commit: commit,
+                        Message: comment,
+                        Line: line,
+                        Path: fileName,
+                        Sha: commit.sha,
+                        ParentId: parentId ? parentId : undefined,
+                        Replies: []
+                    };
+                    if (line) {
+                        newComment.Type = CommentType.Line;
+                    }
+                    else {
+                        newComment.Type = CommentType.File;
+                    }
+                    if (newComment.ParentId) {
+                        GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(comment => {
+                            if (comment.Id = newComment.ParentId) {
+                                comment.Replies.push(newComment);
+                            }
+                            return comment;
+                        })
+                    }
+                    else {
+                        GitCommentService.lastFetchedComments.push(newComment);
+                    }
+                }
                 this.updateView();
             })
             .catch(e => {
@@ -320,6 +351,14 @@ export class GitCommentService implements Disposable {
             .put(url, data)
             .then(v => {
                 window.showInformationMessage('Comment/reply edited successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
+                        if (item.Id = commentId) {
+                            item.Message = comment;
+                        }
+                        return item;
+                    });
+                }
                 this.updateView();
             })
             .catch(e => {
@@ -351,6 +390,9 @@ export class GitCommentService implements Disposable {
             .delete(url)
             .then(v => {
                 window.showInformationMessage('Comment/reply deleted successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => comment.Id !== commentId);
+                }
                 this.updateView();
             })
             .catch(e => {
@@ -373,6 +415,7 @@ export class GitCommentService implements Disposable {
             const newSelection = new Selection(newPosition, newPosition);
             editor.selection = newSelection;
             setTimeout(() => {
+                GitCommentService.showCommentsCache = true;
                 const originalSelection = new Selection(position, position);
                 editor.selection = originalSelection;
                 setTimeout(() => {
