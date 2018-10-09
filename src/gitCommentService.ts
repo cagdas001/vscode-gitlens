@@ -420,8 +420,8 @@ export class GitCommentService implements Disposable {
                 editor.selection = originalSelection;
                 setTimeout(() => {
                     commands.executeCommand('editor.action.showHover');
-                }, 100);
-            }, 100);
+                }, 500);
+            }, 200);
         }
     }
 
