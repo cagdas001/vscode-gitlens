@@ -142,6 +142,11 @@ export class Annotations {
         line: number = 0
     ): MarkdownString {
         if (AddLineCommentCommand.showFileCommitComment) return new MarkdownString();
+        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
+            if (GitCommentService.lastFetchedComments[0].Type === CommentType.File) {
+                return new MarkdownString();
+            }
+        }
 
         if (dateFormat === null) {
             dateFormat = 'MMMM Do, YYYY h:mma';
@@ -348,10 +353,14 @@ export class Annotations {
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
 
         let comments: Comment[];
-        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments && !AddLineCommentCommand.showFileCommitComment) {
+
+        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments) {
             comments = GitCommentService.lastFetchedComments;
             GitCommentService.showCommentsCache = false;
-            const message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
+            let message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
+            if (comments.length > 0 && comments[0].Type === CommentType.File) {
+                message = this.getHoverDiffMessageFileComment(comments);
+            }
             return {
                 hoverMessage: message
             } as DecorationOptions;
