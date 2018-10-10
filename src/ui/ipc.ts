@@ -48,6 +48,12 @@ export interface ShowDiffMessage {
     lsha: string;
     rsha: string;
     file: string;
+    showIndex: number;
 }
 
-export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage| ShowDiffMessage;
+export interface SaveDiffMessages {
+    type: 'saveDiffs';
+    diffs: ShowDiffMessage[];
+}
+
+export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage| ShowDiffMessage | SaveDiffMessages;

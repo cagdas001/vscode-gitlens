@@ -10,6 +10,7 @@ interface ShowDiffPost {
     repoPath: string;
     lsha?: string;
     rsha?: string;
+    showIndex?: number;
 }
 
 interface FileCommitInfo {
@@ -44,6 +45,7 @@ interface TreeDataArray {
 export class CommitSearches extends App<CommitSearchBootstrap> {
     protected innerHeight: any;
     protected searchText: HTMLInputElement | null = null;
+    private showDiffPosts: ShowDiffPost[] = [];
 
     constructor() {
         super('CommitSearches', bootstrap);
@@ -249,7 +251,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         const ul = document.createElement('ul');
                         rootLi.appendChild(ul);
                         treeUl.appendChild(rootLi);
+                        this.showDiffPosts = [];
                         this.displayTreeData(element.commit.repoPath, treeArray, ul);
+                        this._api.postMessage({
+                            type: 'saveDiffs',
+                            diffs: this.showDiffPosts
+                        });
 
                         // All nodes are expanded
                         const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
@@ -362,14 +369,16 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             const a = document.createElement('a');
             a.setAttribute('href', '#');
             a.className = 'showdiff';
-            a.onclick = () => {
+            let params: ShowDiffPost | undefined;
+            try {
                 const fileURI = item.fullPath;
-                const params: ShowDiffPost = {
+                params = {
                     type: 'showDiff',
                     file: fileURI,
                     repoPath: repoPath,
                     lsha: undefined,
-                    rsha: undefined
+                    rsha: undefined,
+                    showIndex: this.showDiffPosts.length
                 };
                 // The logic of comparison is based on Intelij Idea
                 if (item.details.length === 1) {
@@ -381,7 +390,14 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                   params.lsha = item.details![0].prevSha;
                   params.rsha = item.details![item.details!.length - 1 ].sha;
                 }
-                this._api.postMessage(params);
+                this.showDiffPosts.push(params);
+            } catch (error) {
+                // params = undefined;
+            }
+            a.onclick = () => {
+                if (params) {
+                    this._api.postMessage(params);
+                }
             };
             a.innerText = `${item.title}`;
             li.appendChild(a);
