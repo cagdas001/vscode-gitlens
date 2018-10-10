@@ -35,11 +35,10 @@ export function runApp(appName: string) {
  * If it's not, the markdown editor comes out with the initText. (the case of editing a comment)
  * It's an empty string default.
  *
- * If it gets a 'save.comment' message during the connection,
+ * Updates the dataPayload upon getting 'save.comment' message from the electron app
+ *
  * returns the payload (the text in the editor) of the data.
- * @param mode: 'new-comment'|'edit'|'reply' Comment type
  * @param initText: The editor initilizes with this text.
- * @returns data.payload: The payload of the data from the external app. (editor's value)
  */
 export function getComment(initText: string = '') {
     // setting up the IPC for communication
