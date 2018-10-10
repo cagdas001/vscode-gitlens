@@ -8,6 +8,7 @@ import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
 import { AddLineCommentCommand } from './commands/addLineComments';
 import { GitUri } from './git/gitUri';
+import { ShowDiffMessage } from './ui/ipc';
 
 /**
  * Enum to for different comment types.
@@ -49,7 +50,6 @@ export class GitCommentService implements Disposable {
 
     private static username?: string;
     private static password?: string;
-
 
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);

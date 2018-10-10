@@ -18,6 +18,8 @@ import { Container } from '../container';
 import { Logger } from '../logger';
 import { Message, SettingsChangedMessage } from '../ui/ipc';
 import { AddLineCommentCommand } from '../commands/addLineComments';
+import { GitCommentService } from '../gitCommentService';
+import { SearchEditor } from './searchEditor';
 
 export abstract class WebviewEditor<TBootstrap> implements Disposable {
     private _disposable: Disposable | undefined;
@@ -25,6 +27,8 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
     protected _panel: WebviewPanel | undefined;
 
     constructor() {
+        console.log('WebviewEditor yoyoi');
+
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this),
             ...this.registerCommands()
@@ -94,8 +98,10 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 }
                 break;
             case 'showDiff' :
-                const fileUri =  Uri.file(path.resolve(e.repoPath, e.file)) ;
+                const fileUri =  Uri.file(path.resolve(e.repoPath, e.file));
                 AddLineCommentCommand.currentFileCommit = e;
+                SearchEditor.showDiffIndex = e.showIndex;
+                SearchEditor.updateNextPreviousState();
                 commands.executeCommand('gitlens.diffWith', { repoPath: e.repoPath, lhs: {sha: e.lsha, uri: fileUri}, rhs: {sha: e.rsha, uri: fileUri} });
                 break;
             case 'search' :
@@ -103,6 +109,13 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 .with({ scheme: 'vscode-resource' })
                 .toString();
                 commands.executeCommand('gitlens.showCommitSearch', { ...e });
+                break;
+            case 'saveDiffs':
+                console.log('yoyoi');
+                console.log(e.diffs);
+
+                SearchEditor.showDiffMessages = e.diffs;
+                break;
         }
     }
 
