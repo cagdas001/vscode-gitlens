@@ -51,6 +51,9 @@ export class GitCommentService implements Disposable {
     private static username?: string;
     private static password?: string;
 
+    public static lastFetchedComments: Comment[] | undefined;
+    public static showCommentsCache: boolean = false;
+
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
         commands.registerCommand('gitlens.showCommentCommitFile', this.showFileComment, this);
@@ -96,25 +99,23 @@ export class GitCommentService implements Disposable {
         } as GitCommit;
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
-
         const editor = window.activeTextEditor;
         if (editor) {
             const firstLength = editor.document.lineAt(0).text.length;
             const position = editor.selection.active;
-            const newPosition = position.with(0, firstLength);
+            const newPosition = position.with(0, 0);
             const newSelection = new Selection(newPosition, newPosition);
             editor.selection = newSelection;
             setTimeout(() => {
-                commands.executeCommand('editor.action.showHover');
-            }, 500);
+                const newPosition = position.with(0, firstLength);
+                const originalSelection = new Selection(newPosition, newPosition);
+                editor.selection = originalSelection;
+                setTimeout(() => {
+                    commands.executeCommand('editor.action.showHover');
+                }, 500);
+            }, 200);
         }
 
-
-        // commands.executeCommand(Commands.AddLineComment, {
-        //     fileName: fileCommit.fileName,
-        //     commit: fileCommit,
-        //     isFileComment: true
-        // });
         return;
     }
 
@@ -296,8 +297,51 @@ export class GitCommentService implements Disposable {
             auth: auth
         })
             .post(url, data)
-            .then(v => {
+            .then(response => {
                 window.showInformationMessage('Comment/reply added successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    let newComment: Comment = {
+                        Id: response.data.id,
+                        Commit: commit,
+                        Message: comment,
+                        Line: line,
+                        Path: fileName,
+                        Sha: commit.sha,
+                        ParentId: parentId ? parentId : undefined,
+                        Replies: []
+                    };
+                    if (line) {
+                        newComment.Type = CommentType.Line;
+                    }
+                    else {
+                        newComment.Type = CommentType.File;
+                    }
+                    if (newComment.ParentId) {
+                        function checkReply(replies: Comment[]) {
+                            return replies.map(comment => {
+                                if (comment.Id === newComment.ParentId) {
+                                    newComment.Type = comment.Type;
+                                    newComment.Line = comment.Line;
+                                    if (comment.Replies) {
+                                        comment.Replies.push(newComment);
+                                    }
+                                    else {
+                                        comment.Replies = [newComment];
+                                    }
+                                }
+                                else if (comment.Replies) {
+                                    comment.Replies = checkReply(comment.Replies);
+                                }
+                                return comment;
+                            })
+                        }
+                        GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
+                    }
+                    else {
+                        GitCommentService.lastFetchedComments.push(newComment);
+                    }
+                }
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -338,6 +382,30 @@ export class GitCommentService implements Disposable {
             .put(url, data)
             .then(v => {
                 window.showInformationMessage('Comment/reply edited successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
+                        if (item.Id === commentId) {
+                            item.Message = comment;
+                        }
+                        else {
+                            function checkReply(replies: Comment[]) {
+                                for (const reply of replies) {
+                                    if (reply.Id === commentId) {
+                                        reply.Message = comment;
+                                    }
+                                    if (reply.Replies) {
+                                        checkReply(reply.Replies);
+                                    }
+                                }
+                            }
+                            if (item.Replies) {
+                                checkReply(item.Replies);
+                            }
+                        }
+                        return item;
+                    });
+                }
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -368,6 +436,23 @@ export class GitCommentService implements Disposable {
             .delete(url)
             .then(v => {
                 window.showInformationMessage('Comment/reply deleted successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
+                        function checkReply(replies: Comment[]) {
+                            return replies.filter(reply => {
+                                if (reply.Replies) {
+                                    checkReply(reply.Replies);
+                                }
+                                return reply.Id !== commentId
+                            });
+                        }
+                        if (comment.Replies) {
+                            comment.Replies = checkReply(comment.Replies);
+                        }
+                        return comment.Id !== commentId
+                    });
+                }
+                this.updateView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -378,6 +463,25 @@ export class GitCommentService implements Disposable {
                     window.showErrorMessage('Failed to delete comment/reply.');
                 }
             });
+    }
+
+    private updateView() {
+        const editor = window.activeTextEditor;
+        if (editor) {
+            const firstLength = editor.document.lineAt(0).text.length;
+            const position = editor.selection.active;
+            const newPosition = position.with(0, firstLength);
+            const newSelection = new Selection(newPosition, newPosition);
+            editor.selection = newSelection;
+            setTimeout(() => {
+                GitCommentService.showCommentsCache = true;
+                const originalSelection = new Selection(position, position);
+                editor.selection = originalSelection;
+                setTimeout(() => {
+                    commands.executeCommand('editor.action.showHover');
+                }, 500);
+            }, 200);
+        }
     }
 
     dispose() {}

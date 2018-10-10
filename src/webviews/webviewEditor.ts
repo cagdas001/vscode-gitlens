@@ -27,8 +27,6 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
     protected _panel: WebviewPanel | undefined;
 
     constructor() {
-        console.log('WebviewEditor yoyoi');
-
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this),
             ...this.registerCommands()
@@ -111,9 +109,6 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 commands.executeCommand('gitlens.showCommitSearch', { ...e });
                 break;
             case 'saveDiffs':
-                console.log('yoyoi');
-                console.log(e.diffs);
-
                 SearchEditor.showDiffMessages = e.diffs;
                 break;
         }

@@ -17,7 +17,7 @@ import { AddLineCommentCommand } from '../commands/addLineComments';
 import { FileAnnotationType } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment, CommentType } from '../gitCommentService';
+import { Comment, CommentType, GitCommentService } from '../gitCommentService';
 import {
     CommitFormatter,
     GitCommit,
@@ -348,6 +348,15 @@ export class Annotations {
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
 
         let comments: Comment[];
+        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments && !AddLineCommentCommand.showFileCommitComment) {
+            comments = GitCommentService.lastFetchedComments;
+            GitCommentService.showCommentsCache = false;
+            const message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
+            return {
+                hoverMessage: message
+            } as DecorationOptions;
+        }
+
         let message;
         if (AddLineCommentCommand.showFileCommitComment) {
             const allComments = await Container.commentService
@@ -358,6 +367,7 @@ export class Annotations {
             );
             AddLineCommentCommand.showFileCommitComment = false;
 
+            GitCommentService.lastFetchedComments = comments;
             message = this.getHoverDiffMessageFileComment(comments);
         }
         else {
@@ -365,6 +375,7 @@ export class Annotations {
             .loadComments(commit)
             .then(res => (res as Comment[])!);
             comments = allComments.filter(c => c.Line! === line);
+            GitCommentService.lastFetchedComments = comments;
             message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
         }
 
