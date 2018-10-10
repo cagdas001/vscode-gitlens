@@ -1589,6 +1589,24 @@
                 }
             },
             {
+                "command": "gitlens.diffFileNext",
+                "title": "Show next file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/next.svg",
+                    "light": "images/next.svg"
+                }
+            },
+            {
+                "command": "gitlens.diffFilePrevious",
+                "title": "Show previous file",
+                "category": "GitLens",
+                "icon": {
+                    "dark": "images/previous.svg",
+                    "light": "images/previous.svg"
+                }
+            },
+            {
                 "command": "gitlens.diffLineWithPrevious",
                 "title": "Compare Commit with Previous",
                 "category": "GitLens"
@@ -2270,6 +2288,14 @@
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
+                    "command": "gitlens.diffFileNext",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffNext"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffPrevious"
+                },
+                {
                     "command": "gitlens.diffLineWithPrevious",
                     "when": "gitlens:activeFileStatus =~ /blameable/"
                 },
@@ -2786,6 +2812,16 @@
                     "alt": "gitlens.toggleFileRecentChanges",
                     "when": "gitlens:activeFileStatus =~ /blameable/ && !gitlens:annotationStatus && config.gitlens.menus.editorGroup.blame",
                     "group": "navigation@100"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
+                    "group": "navigation@101"
+                },
+                {
+                    "command": "gitlens.diffFileNext",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
+                    "group": "navigation@102"
                 },
                 {
                     "command": "gitlens.computingFileAnnotations",
