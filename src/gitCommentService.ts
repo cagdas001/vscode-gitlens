@@ -280,10 +280,11 @@ export class GitCommentService implements Disposable {
             auth: auth
         })
             .post(url, data)
-            .then(v => {
+            .then(response => {
                 window.showInformationMessage('Comment/reply added successfully.');
                 if (GitCommentService.lastFetchedComments) {
                     let newComment: Comment = {
+                        Id: response.data.id,
                         Commit: commit,
                         Message: comment,
                         Line: line,
@@ -300,7 +301,7 @@ export class GitCommentService implements Disposable {
                     }
                     if (newComment.ParentId) {
                         GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(comment => {
-                            if (comment.Id = newComment.ParentId) {
+                            if (comment.Id === newComment.ParentId) {
                                 newComment.Type = comment.Type;
                                 newComment.Line = comment.Line;
                                 if (comment.Replies) {
@@ -360,8 +361,23 @@ export class GitCommentService implements Disposable {
                 window.showInformationMessage('Comment/reply edited successfully.');
                 if (GitCommentService.lastFetchedComments) {
                     GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
-                        if (item.Id = commentId) {
+                        if (item.Id === commentId) {
                             item.Message = comment;
+                        }
+                        else {
+                            function checkReply(replies: Comment[]) {
+                                for (const reply of replies) {
+                                    if (reply.Id === commentId) {
+                                        reply.Message = comment;
+                                    }
+                                    if (reply.Replies) {
+                                        checkReply(reply.Replies);
+                                    }
+                                }
+                            }
+                            if (item.Replies) {
+                                checkReply(item.Replies);
+                            }
                         }
                         return item;
                     });
@@ -398,7 +414,20 @@ export class GitCommentService implements Disposable {
             .then(v => {
                 window.showInformationMessage('Comment/reply deleted successfully.');
                 if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => comment.Id !== commentId);
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
+                        function checkReply(replies: Comment[]) {
+                            return replies.filter(reply => {
+                                if (reply.Replies) {
+                                    checkReply(reply.Replies);
+                                }
+                                return reply.Id !== commentId
+                            });
+                        }
+                        if (comment.Replies) {
+                            comment.Replies = checkReply(comment.Replies);
+                        }
+                        return comment.Id !== commentId
+                    });
                 }
                 this.updateView();
             })
