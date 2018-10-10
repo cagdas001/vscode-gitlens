@@ -300,19 +300,25 @@ export class GitCommentService implements Disposable {
                         newComment.Type = CommentType.File;
                     }
                     if (newComment.ParentId) {
-                        GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(comment => {
-                            if (comment.Id === newComment.ParentId) {
-                                newComment.Type = comment.Type;
-                                newComment.Line = comment.Line;
-                                if (comment.Replies) {
-                                    comment.Replies.push(newComment);
+                        function checkReply(replies: Comment[]) {
+                            return replies.map(comment => {
+                                if (comment.Id === newComment.ParentId) {
+                                    newComment.Type = comment.Type;
+                                    newComment.Line = comment.Line;
+                                    if (comment.Replies) {
+                                        comment.Replies.push(newComment);
+                                    }
+                                    else {
+                                        comment.Replies = [newComment];
+                                    }
                                 }
-                                else {
-                                    comment.Replies = [newComment];
+                                else if (comment.Replies) {
+                                    comment.Replies = checkReply(comment.Replies);
                                 }
-                            }
-                            return comment;
-                        })
+                                return comment;
+                            })
+                        }
+                        GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
                     }
                     else {
                         GitCommentService.lastFetchedComments.push(newComment);
