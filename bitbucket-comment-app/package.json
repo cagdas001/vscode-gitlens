@@ -1,0 +1,7 @@
+{
+  "name": "bitbucket-comment-app",
+  "version": "1.0.0",
+  "description": "An electron app that serves SimpleMDE Markdown Editor for GitLens Extension",
+  "main": "main.js",
+  "author": "Cagdas UGURLU"
+}
