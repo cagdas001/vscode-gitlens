@@ -1,7 +1,7 @@
 'use strict';
 import * as path from 'path';
 import Axios, { AxiosBasicCredentials } from 'axios';
-import { commands, Disposable, window } from 'vscode';
+import { commands, Disposable, window, Selection } from 'vscode';
 import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
 import { GitCommit } from './git/models/commit';
@@ -85,17 +85,36 @@ export class GitCommentService implements Disposable {
             AddLineCommentCommand.currentFileCommit.repoPath,
             gitUri.fsPath
         );
+
+        AddLineCommentCommand.currentFileName = filename;
+        AddLineCommentCommand.showFileCommitComment = true;
+
         let fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
             fileName: filename
         } as GitCommit;
+        AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
-        commands.executeCommand(Commands.AddLineComment, {
-            fileName: fileCommit.fileName,
-            commit: fileCommit,
-            isFileComment: true
-        });
+
+        const editor = window.activeTextEditor;
+        if (editor) {
+            const firstLength = editor.document.lineAt(0).text.length;
+            const position = editor.selection.active;
+            const newPosition = position.with(0, firstLength);
+            const newSelection = new Selection(newPosition, newPosition);
+            editor.selection = newSelection;
+            setTimeout(() => {
+                commands.executeCommand('editor.action.showHover');
+            }, 500);
+        }
+
+
+        // commands.executeCommand(Commands.AddLineComment, {
+        //     fileName: fileCommit.fileName,
+        //     commit: fileCommit,
+        //     isFileComment: true
+        // });
         return;
     }
 
