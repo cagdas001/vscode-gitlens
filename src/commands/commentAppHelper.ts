@@ -13,6 +13,7 @@ export let dataPayload: string;
  * Some environment variables are deleted for the app to run with VSCode
  * See: TODO: add stackoverflow link
  * @param appName The name of the folder containing the app
+ * @returns Spawned process
  */
 export function runApp(appName: string) {
     const spawnEnvironment = JSON.parse(JSON.stringify(process.env));
@@ -37,7 +38,6 @@ export function runApp(appName: string) {
  *
  * Updates the dataPayload upon getting 'save.comment' message from the electron app
  *
- * returns the payload (the text in the editor) of the data.
  * @param initText: The editor initilizes with this text.
  */
 export function getComment(initText: string = '') {
