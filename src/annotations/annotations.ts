@@ -142,7 +142,9 @@ export class Annotations {
         line: number = 0
     ): MarkdownString {
         if (AddLineCommentCommand.showFileCommitComment) return new MarkdownString();
-        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
+        if (GitCommentService.showCommentsCacheFile && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
+
+            GitCommentService.showCommentsCacheFile = false;
             if (GitCommentService.lastFetchedComments[0].Type === CommentType.File) {
                 return new MarkdownString();
             }

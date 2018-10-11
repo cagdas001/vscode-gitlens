@@ -53,6 +53,7 @@ export class GitCommentService implements Disposable {
 
     public static lastFetchedComments: Comment[] | undefined;
     public static showCommentsCache: boolean = false;
+    public static showCommentsCacheFile: boolean = false;
 
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
@@ -469,31 +470,21 @@ export class GitCommentService implements Disposable {
         const editor = window.activeTextEditor;
         if (editor) {
             const position = editor.selection.active;
-            const newPosition = position.with(0, 0);
+            let newPosition = position.with(0, 0);
+            if (position.line === 0) {
+                newPosition = position.with(1, 0);
+                GitCommentService.showCommentsCacheFile = true;
+            }
             const newSelection = new Selection(newPosition, newPosition);
             editor.selection = newSelection;
             GitCommentService.showCommentsCache = true;
-            if (position.line !== 0) {
+            setTimeout(() => {
+                const originalSelection = new Selection(position, position);
+                editor.selection = originalSelection;
                 setTimeout(() => {
-                    const originalSelection = new Selection(position, position);
-                    editor.selection = originalSelection;
-                    setTimeout(() => {
-                        commands.executeCommand('editor.action.showHover');
-                    }, 500);
-                }, 200);
-            }
-            else if (position.character === 0) {
-                const firstLength = editor.document.lineAt(0).text.length;
-                setTimeout(() => {
-                    const firstPosition = position.with(0, firstLength);
-                    const originalSelection = new Selection(firstPosition, firstPosition);
-                    editor.selection = originalSelection;
-                    setTimeout(() => {
-                        commands.executeCommand('editor.action.showHover');
-                    }, 500);
-                }, 200);
-
-            }
+                    commands.executeCommand('editor.action.showHover');
+                }, 500);
+            }, 200);
         }
     }
 
