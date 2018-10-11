@@ -53,6 +53,7 @@ export class GitCommentService implements Disposable {
 
     public static lastFetchedComments: Comment[] | undefined;
     public static showCommentsCache: boolean = false;
+    public static showCommentsCacheFile: boolean = false;
 
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
@@ -88,17 +89,34 @@ export class GitCommentService implements Disposable {
             AddLineCommentCommand.currentFileCommit.repoPath,
             gitUri.fsPath
         );
+
+        AddLineCommentCommand.currentFileName = filename;
+        AddLineCommentCommand.showFileCommitComment = true;
+
         let fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
             fileName: filename
         } as GitCommit;
+        AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
-        commands.executeCommand(Commands.AddLineComment, {
-            fileName: fileCommit.fileName,
-            commit: fileCommit,
-            isFileComment: true
-        });
+        const editor = window.activeTextEditor;
+        if (editor) {
+            const firstLength = editor.document.lineAt(0).text.length;
+            const position = editor.selection.active;
+            const newPosition = position.with(0, 0);
+            const newSelection = new Selection(newPosition, newPosition);
+            editor.selection = newSelection;
+            setTimeout(() => {
+                const newPosition = position.with(0, firstLength);
+                const originalSelection = new Selection(newPosition, newPosition);
+                editor.selection = originalSelection;
+                setTimeout(() => {
+                    commands.executeCommand('editor.action.showHover');
+                }, 500);
+            }, 200);
+        }
+
         return;
     }
 
@@ -451,13 +469,16 @@ export class GitCommentService implements Disposable {
     private updateView() {
         const editor = window.activeTextEditor;
         if (editor) {
-            const firstLength = editor.document.lineAt(0).text.length;
             const position = editor.selection.active;
-            const newPosition = position.with(0, firstLength);
+            let newPosition = position.with(0, 0);
+            if (position.line === 0) {
+                newPosition = position.with(1, 0);
+                GitCommentService.showCommentsCacheFile = true;
+            }
             const newSelection = new Selection(newPosition, newPosition);
             editor.selection = newSelection;
+            GitCommentService.showCommentsCache = true;
             setTimeout(() => {
-                GitCommentService.showCommentsCache = true;
                 const originalSelection = new Selection(position, position);
                 editor.selection = originalSelection;
                 setTimeout(() => {
