@@ -39,7 +39,9 @@
 		var cancelBtn = document.getElementById('cancelBtn');
 
 		saveBtn.addEventListener('click', function () {
-			ipcRenderer.send('save.comment', simplemde.value());
+			// replacing linebreaks with an zero-width unicode character
+			let replacedVal = simplemde.value().replace(/\n/g, '\n\n\u200C\n');
+			ipcRenderer.send('save.comment', replacedVal);
 		})
 
 		cancelBtn.addEventListener('click', function () {
@@ -55,14 +57,15 @@
 		document.onkeydown = function (e) {
 			e = e || window.event;
 			switch (e.which || e.keyCode) {
+				// ESC
 				case 27:
 					cancelBtn.click();
 					break;
 				case 13:
 					if (e.shiftKey) {
+						// shift + enter
 						saveBtn.click();
 					}
-
 			}
 		}
 	</script>
