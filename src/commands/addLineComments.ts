@@ -208,6 +208,12 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 if (args.type === operationTypes.Edit) {
                     // edit comment.
 
+                    // checking if it's allowed to spawn a new app
+                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                        return undefined;
+                    }
+
                     // spawn the external electron app
                     // that contains the customized UI for multiline comment
                     // currently a simple Markdown editor
@@ -218,6 +224,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                             // call service to edit the comment
                             Container.commentService.editComment(args.commit!, commentText!, args.id!);
                         }
+                        // decreasing the runningAppCount by 1
+                        const decreasedCount = commentAppHelper.runningAppCount - 1;
+                        commentAppHelper.setRunningAppCount(decreasedCount);
                     });
                     // get comment from external app
                     commentAppHelper.getComment(args.message);
@@ -225,6 +234,12 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                 if (args.type === operationTypes.Reply) {
                     // reply comment
+
+                    // checking if it's allowed to spawn a new app
+                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                        return undefined;
+                    }
 
                     // spawn the external electron app
                     // that contains the customized UI for multiline comment
@@ -242,6 +257,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                                 args.id
                             );
                         }
+                        // decreasing the runningAppCount by 1
+                        const decreasedCount = commentAppHelper.runningAppCount - 1;
+                        commentAppHelper.setRunningAppCount(decreasedCount);
                     });
                     // get comment from external app
                     commentAppHelper.getComment();
@@ -258,6 +276,12 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             else {
                 // new comment.
 
+                // checking if it's allowed to spawn a new app
+                if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                    window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                    return undefined;
+                }
+
                 // spawn the external electron app
                 // that contains the customized UI for multiline comment
                 // currently a simple Markdown editor
@@ -273,6 +297,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                             args.line
                         );
                     }
+                    // decreasing the runningAppCount by 1
+                    const decreasedCount = commentAppHelper.runningAppCount - 1;
+                    commentAppHelper.setRunningAppCount(decreasedCount);
                 });
                 // get comment from external app
                 commentAppHelper.getComment();

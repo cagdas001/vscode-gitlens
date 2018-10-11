@@ -4,6 +4,19 @@ import * as path from 'path';
 
 // This holds the text that user enters in the editor
 export let dataPayload: string;
+// holds the max allowed window number, if it's 1, you will not be allowed to run second window
+export let maxWindowAllowed = 1;
+// holds the count of running apps
+export let runningAppCount = 0;
+export let exceedsMaxWindowWarningMessage = `It's not allowed to run more than ${maxWindowAllowed} window(s)`;
+
+/**
+ * Sets the runningAppCount value to the given num
+ * @param num The new value to be assigned
+ */
+export function setRunningAppCount(num: number) {
+    runningAppCount = num;
+}
 
 /**
  * This function spawns the given electron app.
@@ -25,6 +38,9 @@ export function runApp(appName: string) {
     const electronPath = path.join(__dirname, '/../node_modules', '.bin', electronExecutable);
 
     const appPath = path.join(__dirname, appName);
+
+    // increasing the runningAppCount by 1
+    runningAppCount += 1;
     return spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
 }
 
