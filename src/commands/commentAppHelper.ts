@@ -19,6 +19,13 @@ export function setRunningAppCount(num: number) {
 }
 
 /**
+ * Clear the payload on exit
+ */
+export function clearPayload() {
+    dataPayload = '';
+}
+
+/**
  * This function spawns the given electron app.
  * The folder name of the electron app must be same with the 'appName'
  * The folder must be located at the root level of out directory.

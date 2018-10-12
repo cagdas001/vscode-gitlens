@@ -230,6 +230,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         // decreasing the runningAppCount by 1
                         const decreasedCount = commentAppHelper.runningAppCount - 1;
                         commentAppHelper.setRunningAppCount(decreasedCount);
+                        commentAppHelper.clearPayload();
                     });
                     // get comment from external app
                     commentAppHelper.getComment(args.message);
@@ -263,6 +264,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         // decreasing the runningAppCount by 1
                         const decreasedCount = commentAppHelper.runningAppCount - 1;
                         commentAppHelper.setRunningAppCount(decreasedCount);
+                        commentAppHelper.clearPayload();
                     });
                     // get comment from external app
                     commentAppHelper.getComment();
@@ -303,6 +305,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     // decreasing the runningAppCount by 1
                     const decreasedCount = commentAppHelper.runningAppCount - 1;
                     commentAppHelper.setRunningAppCount(decreasedCount);
+                    commentAppHelper.clearPayload();
                 });
                 // get comment from external app
                 commentAppHelper.getComment();
