@@ -17,7 +17,7 @@ import { AddLineCommentCommand } from '../commands/addLineComments';
 import { FileAnnotationType } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment, GitCommentService } from '../gitCommentService';
+import { Comment, CommentType, GitCommentService } from '../gitCommentService';
 import {
     CommitFormatter,
     GitCommit,
@@ -141,6 +141,15 @@ export class Annotations {
         annotationType?: FileAnnotationType,
         line: number = 0
     ): MarkdownString {
+        if (AddLineCommentCommand.showFileCommitComment) return new MarkdownString();
+        if (GitCommentService.showCommentsCacheFile && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
+
+            GitCommentService.showCommentsCacheFile = false;
+            if (GitCommentService.lastFetchedComments[0].Type === CommentType.File) {
+                return new MarkdownString();
+            }
+        }
+
         if (dateFormat === null) {
             dateFormat = 'MMMM Do, YYYY h:mma';
         }
@@ -308,6 +317,28 @@ export class Annotations {
         return markdown;
     }
 
+    static getHoverDiffMessageFileComment(
+        comments?: Comment[]
+    ): MarkdownString | undefined {
+        let message = '';
+
+        if (comments!.length) {
+            for (const ele of comments!) {
+                console.log(ele);
+                // just call level 0, other children will be called recursively as replies.
+                if (!ele.ParentId) {
+                    console.log(ele);
+                    message += `\n`;
+                    message += this.commentRender(0, ele);
+                }
+            }
+        }
+
+        const markdown = new MarkdownString(message);
+        markdown.isTrusted = true;
+        return markdown;
+    }
+
     private static getCodeDiff(chunkLine: GitDiffChunkLine): string {
         const previous = chunkLine.previous === undefined ? undefined : chunkLine.previous[0];
         return `\`\`\`
@@ -322,18 +353,42 @@ export class Annotations {
                 ? commit.previousSha
                 : undefined;
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
-        let comments;
+
+        let comments: Comment[];
+
         if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments) {
             comments = GitCommentService.lastFetchedComments;
             GitCommentService.showCommentsCache = false;
+            let message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
+            if (comments.length > 0 && comments[0].Type === CommentType.File) {
+                message = this.getHoverDiffMessageFileComment(comments);
+            }
+            return {
+                hoverMessage: message
+            } as DecorationOptions;
+        }
+
+        let message;
+        if (AddLineCommentCommand.showFileCommitComment) {
+            const allComments = await Container.commentService
+            .loadComments(AddLineCommentCommand.currentFileGitCommit)
+            .then(res => (res as Comment[])!);
+            comments = allComments.filter(
+                c => c.Path === AddLineCommentCommand.currentFileName && (c.Type === CommentType.File)
+            );
+            AddLineCommentCommand.showFileCommitComment = false;
+
+            GitCommentService.lastFetchedComments = comments;
+            message = this.getHoverDiffMessageFileComment(comments);
         }
         else {
-            comments = await Container.commentService
+            const allComments = await Container.commentService
             .loadComments(commit)
-            .then(res => (res as Comment[])!.filter(c => c.Line! === line));
+            .then(res => (res as Comment[])!);
+            comments = allComments.filter(c => c.Line! === line);
             GitCommentService.lastFetchedComments = comments;
+            message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
         }
-        const message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
 
         return {
             hoverMessage: message

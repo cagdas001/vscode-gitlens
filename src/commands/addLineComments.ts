@@ -49,6 +49,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     }
 
     static currentFileCommit: ShowDiffMessage;
+    static currentFileGitCommit: GitCommit;
+    static currentFileName: string;
+    static showFileCommitComment: boolean = false;
 
     constructor() {
         super(Commands.AddLineComment);
