@@ -3,6 +3,8 @@ const glob = require('glob');
 const nodeExternals = require('webpack-node-externals');
 const path = require('path');
 const CleanPlugin = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ExternalsPlugin = require('webpack-externals-plugin');
 const HtmlInlineSourcePlugin = require('html-webpack-inline-source-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack-plugin').default;
@@ -19,6 +21,18 @@ module.exports = function(env, argv) {
 
 function getExtensionConfig(env) {
     const plugins = [new CleanPlugin(['out'], { verbose: false })];
+    plugins.push(new CopyWebpackPlugin([
+        {
+            from: 'bitbucket-comment-app',
+            to: 'bitbucket-comment-app',
+            toType: 'dir'
+        }
+    ]));
+
+    plugins.push(new ExternalsPlugin({
+        type: 'commonjs',
+        include: __dirname + '/node_modules/electron'
+    }));
     // Comment out for now, as it errors
     // if (env.production) {
     //     plugins.push(new WebpackDeepScopeAnalysisPlugin());
@@ -35,6 +49,9 @@ function getExtensionConfig(env) {
             filename: 'extension.js',
             path: path.resolve(__dirname, 'out'),
             devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]'
+        },
+        node: {
+        __dirname: false
         },
         resolve: {
             extensions: ['.tsx', '.ts', '.js']

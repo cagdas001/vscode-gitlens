@@ -3669,12 +3669,15 @@
         "vscode:prepublish": "npm run reset && npm run bundle"
     },
     "dependencies": {
+        "@types/node-ipc": "^9.1.1",
         "axios": "^0.18.0",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
+        "electron": "^3.0.3",
         "iconv-lite": "0.4.23",
         "lodash.debounce": "4.0.8",
         "lodash.once": "4.1.1",
+        "node-ipc": "^9.1.1",
         "node-rest-client": "^3.1.0",
         "tmp": "0.0.33",
         "tslib": "1.9.3",
@@ -3705,6 +3708,8 @@
         "webpack": "4.16.5",
         "webpack-cli": "3.1.0",
         "webpack-deep-scope-plugin": "1.3.6",
-        "webpack-node-externals": "1.7.2"
+        "webpack-node-externals": "1.7.2",
+        "copy-webpack-plugin": "^4.5.2",
+        "webpack-externals-plugin": "^1.0.0"
     }
 }

@@ -7,8 +7,9 @@ import { GitCommit, GitUri } from '../gitService';
 import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
 import { Strings } from '../system';
-import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
 import { ShowDiffMessage } from '../ui/ipc';
+import * as commentAppHelper from './commentAppHelper';
+import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
 
 /**
  *Encapsulates infomation to perform comments management command.
@@ -134,6 +135,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     }
 
     async execute(editor?: TextEditor, uri?: Uri, args: AddLineCommentsCommandArgs = {}) {
+        const BITBUCKET_COMMENT_APP_NAME = 'bitbucket-comment-app';
         uri = getCommandUri(uri, editor);
 
         const gitUri = uri && (await GitUri.fromUri(uri));
@@ -149,7 +151,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
         if (args.isFileComment) {
             const allComments = await Container.commentService.loadComments(args.commit!);
             const fileComments = (allComments as Comment[])!.filter(
-                c => c.Path === args.fileName && (c.Type === CommentType.File)
+                c => c.Path === args.fileName && c.Type === CommentType.File
             );
             let fileCommands: CommandQuickPickItem[] = [];
             fileComments.forEach(element => {
@@ -208,26 +210,64 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 }
                 if (args.type === operationTypes.Edit) {
                     // edit comment.
-                    const comment = await window.showInputBox({
-                        value: args.message,
-                        prompt: `Please edit comment`
-                    } as InputBoxOptions);
 
-                    Container.commentService.editComment(args.commit!, comment!, args.id);
+                    // checking if it's allowed to spawn a new app
+                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                        return undefined;
+                    }
+
+                    // spawn the external electron app
+                    // that contains the customized UI for multiline comment
+                    // currently a simple Markdown editor
+                    const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                    app.on('exit', function() {
+                        const commentText = commentAppHelper.dataPayload;
+                        if (commentText) {
+                            // call service to edit the comment
+                            Container.commentService.editComment(args.commit!, commentText!, args.id!);
+                        }
+                        // decreasing the runningAppCount by 1
+                        const decreasedCount = commentAppHelper.runningAppCount - 1;
+                        commentAppHelper.setRunningAppCount(decreasedCount);
+                        commentAppHelper.clearPayload();
+                    });
+                    // get comment from external app
+                    commentAppHelper.getComment(args.message);
                 }
 
                 if (args.type === operationTypes.Reply) {
-                    const comment = await window.showInputBox({
-                        prompt: `Please enter your reply`
-                    } as InputBoxOptions);
+                    // reply comment
 
-                    Container.commentService.addComment(
-                        args.commit!,
-                        comment as string,
-                        args.fileName as string,
-                        args.line,
-                        args.id
-                    );
+                    // checking if it's allowed to spawn a new app
+                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                        return undefined;
+                    }
+
+                    // spawn the external electron app
+                    // that contains the customized UI for multiline comment
+                    // currently a simple Markdown editor
+                    const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                    app.on('exit', function() {
+                        const commentText = commentAppHelper.dataPayload;
+                        if (commentText) {
+                            // call service to add the comment
+                            Container.commentService.addComment(
+                                args.commit!,
+                                commentText as string,
+                                args.fileName as string,
+                                args.line,
+                                args.id
+                            );
+                        }
+                        // decreasing the runningAppCount by 1
+                        const decreasedCount = commentAppHelper.runningAppCount - 1;
+                        commentAppHelper.setRunningAppCount(decreasedCount);
+                        commentAppHelper.clearPayload();
+                    });
+                    // get comment from external app
+                    commentAppHelper.getComment();
                 }
                 if (args.type === operationTypes.Delete) {
                     // delete comment.
@@ -240,17 +280,35 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             }
             else {
                 // new comment.
-                const comment = await window.showInputBox({
-                    prompt: `Please enter your comment`
-                } as InputBoxOptions);
 
-                // call service to add the comment
-                Container.commentService.addComment(
-                    args.commit!,
-                    comment as string,
-                    args.fileName as string,
-                    args.line
-                );
+                // checking if it's allowed to spawn a new app
+                if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
+                    window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
+                    return undefined;
+                }
+
+                // spawn the external electron app
+                // that contains the customized UI for multiline comment
+                // currently a simple Markdown editor
+                const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                app.on('exit', function() {
+                    const commentText = commentAppHelper.dataPayload;
+                    if (commentText) {
+                        // call service to add the comment
+                        Container.commentService.addComment(
+                            args.commit!,
+                            commentText as string,
+                            args.fileName as string,
+                            args.line
+                        );
+                    }
+                    // decreasing the runningAppCount by 1
+                    const decreasedCount = commentAppHelper.runningAppCount - 1;
+                    commentAppHelper.setRunningAppCount(decreasedCount);
+                    commentAppHelper.clearPayload();
+                });
+                // get comment from external app
+                commentAppHelper.getComment();
             }
 
             return undefined;
