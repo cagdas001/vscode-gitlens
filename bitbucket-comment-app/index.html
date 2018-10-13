@@ -31,6 +31,8 @@
 		const { ipcRenderer } = require('electron');
 		// init the editor with the incoming value
 		ipcRenderer.once('init.editor', function (event, arg) {
+			arg = arg.replace(/\u200C/g, '');
+			arg = arg.replace(/\n\n/g, '\n');
 			simplemde.value(arg);
 			console.log('ipcRenderer: init-editor');
 		})
@@ -40,7 +42,9 @@
 
 		saveBtn.addEventListener('click', function () {
 			// replacing linebreaks with an zero-width unicode character
-			let replacedVal = simplemde.value().replace(/\n/g, '\n\n\u200C\n');
+			let replacedVal = simplemde.value().replace(/\n/g, '\n\n');
+			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
 			ipcRenderer.send('save.comment', replacedVal);
 		})
 
