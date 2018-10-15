@@ -2085,6 +2085,11 @@
                 "category": "GitLens"
             },
             {
+                "command": "gitlens.bitbucket.login",
+                "title": "Login to Bitbucket",
+                "category": "GitLens"
+            },
+            {
                 "command": "gitlens.gitExplorer.setRenameFollowingOn",
                 "title": "Follow Renames",
                 "category": "GitLens"
@@ -2628,6 +2633,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "gitlens.bitbucket.login",
+                    "when": "false"
+                },
+                {
                     "command": "gitlens.gitExplorer.setRenameFollowingOn",
                     "when": "false"
                 },
@@ -3002,6 +3011,11 @@
                     "command": "gitlens.gitExplorer.setAutoRefreshToOff",
                     "when": "view =~ /^gitlens.gitExplorer:/ && config.gitlens.gitExplorer.autoRefresh && gitlens:gitExplorer:autoRefresh",
                     "group": "2_gitlens"
+                },
+                {
+                    "command": "gitlens.bitbucket.login",
+                    "when": "view =~ /^gitlens.gitExplorer:/",
+                    "group": "3_gitlens"
                 },
                 {
                     "command": "gitlens.gitExplorer.setRenameFollowingOn",
