@@ -20,6 +20,7 @@ import { ResultsExplorer } from './views/resultsExplorer';
 import { SearchEditor } from './webviews/searchEditor';
 import { SettingsEditor } from './webviews/settingsEditor';
 import { WelcomeEditor } from './webviews/welcomeEditor';
+import { CommentsDecoratorController } from './annotations/commentsDecoratorController';
 
 export class Container {
     static initialize(context: ExtensionContext, config: IConfig) {
@@ -34,6 +35,7 @@ export class Container {
         // Since there is a bit of a chicken & egg problem with the DocumentTracker and the GitService, initialize the tracker once the GitService is loaded
         this._tracker.initialize();
 
+        context.subscriptions.push((this._commentsDecoratorController = new CommentsDecoratorController()));
         context.subscriptions.push((this._fileAnnotationController = new FileAnnotationController()));
         context.subscriptions.push((this._lineAnnotationController = new LineAnnotationController()));
         context.subscriptions.push((this._lineHoverController = new LineHoverController()));
@@ -117,6 +119,11 @@ export class Container {
     private static _commentService: GitCommentService;
     static get commentService() {
         return this._commentService;
+    }
+
+    private static _commentsDecoratorController: CommentsDecoratorController;
+    static get commentsDecorator() {
+        return this._commentsDecoratorController;
     }
 
     private static _gitExplorer: GitExplorer | undefined;

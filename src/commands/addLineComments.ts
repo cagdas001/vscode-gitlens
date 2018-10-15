@@ -1,5 +1,5 @@
 'use strict';
-import { CancellationTokenSource, InputBoxOptions, TextEditor, Uri, window } from 'vscode';
+import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
 import { Comment, CommentType } from '../gitCommentService';
@@ -275,7 +275,12 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         placeHolder: 'Are you sure you want to delete this comment (Yes/No)?',
                         ignoreFocusOut: true
                     });
-                    if (pick! === 'Yes') Container.commentService.deleteComment(args.commit!, args.id);
+                    if (pick! === 'Yes') {
+                        Container.commentService.deleteComment(args.commit!, args.id)
+                        .then(() => {
+                            Container.commentsDecorator.fetchComments();
+                        });
+                    }
                 }
             }
             else {
@@ -300,7 +305,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                             commentText as string,
                             args.fileName as string,
                             args.line
-                        );
+                        ).then(() => {
+                            Container.commentsDecorator.fetchComments();
+                        });
                     }
                     // decreasing the runningAppCount by 1
                     const decreasedCount = commentAppHelper.runningAppCount - 1;
