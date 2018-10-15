@@ -168,7 +168,8 @@ export class GitCommentService implements Disposable {
      */
     private static async getCredentials(): Promise<AxiosBasicCredentials> {
         if (!GitCommentService.username || !GitCommentService.password) {
-            await commands.executeCommand(Commands.BitBuckerServiceAuth);
+            // await commands.executeCommand(Commands.BitBuckerServiceAuth);
+            await Container.gitExplorer.bitbucketLogin();
         }
         return { username: GitCommentService.username, password: GitCommentService.password } as AxiosBasicCredentials;
     }
