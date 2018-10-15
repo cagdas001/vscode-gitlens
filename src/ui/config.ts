@@ -136,6 +136,8 @@ export interface IAdvancedConfig {
     telemetry: {
         enabled: boolean;
     };
+
+    useApiV2: boolean;
 }
 
 export interface ICodeLensConfig {
