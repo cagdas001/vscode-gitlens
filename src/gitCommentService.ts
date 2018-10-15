@@ -441,7 +441,7 @@ export class GitCommentService implements Disposable {
         const data = {
             content: comment,
             filename: fileName,
-            line_to: to || undefined,
+            line_to: parentId ? undefined : to || undefined,
             parent_id: parentId ? parentId : undefined
         };
         await Axios.create({
