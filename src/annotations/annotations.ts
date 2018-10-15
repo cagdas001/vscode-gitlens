@@ -142,8 +142,11 @@ export class Annotations {
         line: number = 0
     ): MarkdownString {
         if (AddLineCommentCommand.showFileCommitComment) return new MarkdownString();
-        if (GitCommentService.showCommentsCacheFile && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
-
+        if (
+            GitCommentService.showCommentsCacheFile &&
+            GitCommentService.lastFetchedComments &&
+            GitCommentService.lastFetchedComments.length > 0
+        ) {
             GitCommentService.showCommentsCacheFile = false;
             if (GitCommentService.lastFetchedComments[0].Type === CommentType.File) {
                 return new MarkdownString();
@@ -317,9 +320,7 @@ export class Annotations {
         return markdown;
     }
 
-    static getHoverDiffMessageFileComment(
-        comments?: Comment[]
-    ): MarkdownString | undefined {
+    static getHoverDiffMessageFileComment(comments?: Comment[]): MarkdownString | undefined {
         let message = '';
 
         if (comments!.length) {
@@ -371,10 +372,10 @@ export class Annotations {
         let message;
         if (AddLineCommentCommand.showFileCommitComment) {
             const allComments = await Container.commentService
-            .loadComments(AddLineCommentCommand.currentFileGitCommit)
-            .then(res => (res as Comment[])!);
+                .loadComments(AddLineCommentCommand.currentFileGitCommit)
+                .then(res => (res as Comment[])!);
             comments = allComments.filter(
-                c => c.Path === AddLineCommentCommand.currentFileName && (c.Type === CommentType.File)
+                c => c.Path === AddLineCommentCommand.currentFileName && c.Type === CommentType.File
             );
             AddLineCommentCommand.showFileCommitComment = false;
 
@@ -382,9 +383,7 @@ export class Annotations {
             message = this.getHoverDiffMessageFileComment(comments);
         }
         else {
-            const allComments = await Container.commentService
-            .loadComments(commit)
-            .then(res => (res as Comment[])!);
+            const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
             comments = allComments.filter(c => c.Line! === line);
             GitCommentService.lastFetchedComments = comments;
             message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
