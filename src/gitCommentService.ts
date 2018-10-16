@@ -613,8 +613,7 @@ export class GitCommentService implements Disposable {
         if (Container.config.advanced.useApiV2) {
             return this.editCommentV1(commit, comment, commentId)
         } else {
-            Logger.warn('Editing a comment is not supported in version 2. Using version 1 instead.')
-            return this.editCommentV1(commit, comment, commentId)
+            return this.editCommentV2(commit, comment, commentId)
         }
     }
 
@@ -683,6 +682,71 @@ export class GitCommentService implements Disposable {
     }
 
     /**
+     * Edit comment on Git Remote server (via API version 2).
+     * @param commit Commit to be used for editing
+     * @param comment New value
+     * @param commentId Comment to be edited.
+     */
+    async editCommentV2(commit: GitCommit, comment: string, commentId: number): Promise<void> {
+        if (!comment) {
+            return;
+        }
+        const baseUrl = this.V2_BaseURL;
+        const path = await this.getRemoteRepoPath(commit.repoPath);
+        if (!path) {
+            return;
+        }
+        const auth = await GitCommentService.getCredentials();
+        const sha = commit.sha;
+        const url = `${baseUrl}/${path}/commit/${sha}/comments/${commentId}`;
+        const data = {
+            content: {
+                raw: comment
+            }
+        };
+        await Axios.create({
+            auth: auth
+        })
+            .put(url, data)
+            .then(v => {
+                window.showInformationMessage('Comment/reply edited successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
+                        if (item.Id === commentId) {
+                            item.Message = comment;
+                        }
+                        else {
+                            function checkReply(replies: Comment[]) {
+                                for (const reply of replies) {
+                                    if (reply.Id === commentId) {
+                                        reply.Message = comment;
+                                    }
+                                    if (reply.Replies) {
+                                        checkReply(reply.Replies);
+                                    }
+                                }
+                            }
+                            if (item.Replies) {
+                                checkReply(item.Replies);
+                            }
+                        }
+                        return item;
+                    });
+                }
+                this.updateView();
+            })
+            .catch(e => {
+                if (e!.response!.status === 401 || e!.response!.status === 403) {
+                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
+                    GitCommentService.ClearCredentials();
+                }
+                else {
+                    window.showErrorMessage('Failed to add comment/reply.');
+                }
+            });
+    }
+
+    /**
      * Deletes comment/reply on Git remote server.
      * @param commit commit to be used for deleting comment
      * @param commentId comment to be deleted.
@@ -691,8 +755,7 @@ export class GitCommentService implements Disposable {
         if (Container.config.advanced.useApiV2) {
             return this.deleteCommentV1(commit, commentId)
         } else {
-            Logger.warn('Deleting a comment is not supported in version 2. Using version 1 instead.')
-            return this.deleteCommentV1(commit, commentId)
+            return this.deleteCommentV2(commit, commentId)
         }
     }
 
@@ -707,6 +770,53 @@ export class GitCommentService implements Disposable {
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         const url = `${baseUrl}/${path}/changesets/${sha}/comments/${commentId}`;
+
+        await Axios.create({
+            auth: auth
+        })
+            .delete(url)
+            .then(v => {
+                window.showInformationMessage('Comment/reply deleted successfully.');
+                if (GitCommentService.lastFetchedComments) {
+                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
+                        function checkReply(replies: Comment[]) {
+                            return replies.filter(reply => {
+                                if (reply.Replies) {
+                                    checkReply(reply.Replies);
+                                }
+                                return reply.Id !== commentId
+                            });
+                        }
+                        if (comment.Replies) {
+                            comment.Replies = checkReply(comment.Replies);
+                        }
+                        return comment.Id !== commentId
+                    });
+                }
+                this.updateView();
+            })
+            .catch(e => {
+                if (e!.response!.status === 401 || e!.response!.status === 403) {
+                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
+                    GitCommentService.ClearCredentials();
+                }
+                else {
+                    window.showErrorMessage('Failed to delete comment/reply.');
+                }
+            });
+    }
+
+    /**
+     * Deletes comment/reply on Git remote server (via API version 2).
+     * @param commit commit to be used for deleting comment
+     * @param commentId comment to be deleted.
+     */
+    async deleteCommentV2(commit: GitCommit, commentId: number): Promise<void> {
+        const baseUrl = this.V2_BaseURL;
+        const auth = await GitCommentService.getCredentials();
+        const sha = commit.sha;
+        const path = await this.getRemoteRepoPath(commit.repoPath);
+        const url = `${baseUrl}/${path}/commit/${sha}/comments/${commentId}`;
 
         await Axios.create({
             auth: auth
