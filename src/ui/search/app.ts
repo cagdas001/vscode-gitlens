@@ -391,7 +391,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                   params.rsha = item.details![item.details!.length - 1 ].sha;
                 }
                 this.showDiffPosts.push(params);
-            } catch (error) {
+            }
+            catch (error) {
                 // params = undefined;
             }
             a.onclick = () => {
@@ -418,6 +419,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             const author = DOM.getElementById<HTMLInputElement>('author')!.value;
             const before = DOM.getElementById<HTMLInputElement>('before')!.value;
             const after = DOM.getElementById<HTMLInputElement>('after')!.value;
+            const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
             that._api.postMessage({
                 type: 'search',
                 search: searchText,
@@ -425,7 +427,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 author: author,
                 since: that.getSince(),
                 before: before,
-                after: after
+                after: after,
+                showMergeCommits: showMergeCommits
             });
         });
    }
