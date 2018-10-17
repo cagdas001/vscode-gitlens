@@ -8,7 +8,6 @@ import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
 import { AddLineCommentCommand } from './commands/addLineComments';
 import { GitUri } from './git/gitUri';
-import { ShowDiffMessage } from './ui/ipc';
 
 /**
  * Enum to for different comment types.
@@ -152,11 +151,25 @@ export class GitCommentService implements Disposable {
     }
 
     /**
+     * true if user logged in to bitbucket,
+     * false otherwise
+     */
+    static isLoggedIn(): boolean {
+        if (!GitCommentService.username || !GitCommentService.password) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    /**
      * Prompts user to enter remote repository credentials.
      */
     private static async getCredentials(): Promise<AxiosBasicCredentials> {
         if (!GitCommentService.username || !GitCommentService.password) {
-            await commands.executeCommand(Commands.BitBuckerServiceAuth);
+            // await commands.executeCommand(Commands.BitBuckerServiceAuth);
+            await Container.gitExplorer.bitbucketLogin();
         }
         return { username: GitCommentService.username, password: GitCommentService.password } as AxiosBasicCredentials;
     }
@@ -195,12 +208,17 @@ export class GitCommentService implements Disposable {
                                 comment.Id = c.id;
                             }
                             //  if (c.inline && c.inline.to !== undefined) {
-                            comment.Line = (c.inline.to as number)! - 1;
-                            if (comment.Line === -1) {
-                                comment.Type = CommentType.File;
+                            //comment.Line = (c.inline.to as number)! - 1;
+
+                            // If comment is a file comment, there is no inline field.
+                            // Therefore it enters the catch block with above usage.
+                            // this prevents the rest of comments from being loaded
+                            if (c.inline && c.inline.to && c.inline.to > 0) {
+                                comment.Line = c.inline.to - 1;
+                                comment.Type = CommentType.Line;
                             }
                             else {
-                                comment.Type = CommentType.Line;
+                                comment.Type = CommentType.File;
                             }
                             // }
                             if (c.inline && c.inline.path) {
@@ -244,6 +262,7 @@ export class GitCommentService implements Disposable {
                     return result;
                 })
                 .catch(e => {
+                    console.log(e);
                     if (e!.response!.status === 401 || e!.response!.status === 403) {
                         window.showErrorMessage('Incorrect Bit Bucket Service Credentials.');
                         GitCommentService.ClearCredentials();

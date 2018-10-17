@@ -11,7 +11,8 @@ import {
     TreeItem,
     TreeView,
     Uri,
-    window
+    window,
+    ViewColumn
 } from 'vscode';
 import {
     configuration,
@@ -28,6 +29,7 @@ import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
 import { HistoryExplorer } from './historyExplorer';
 import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode, RepositoryNode } from './nodes';
+import { GitCommentService } from '../gitCommentService';
 
 export * from './nodes';
 
@@ -103,7 +105,11 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
             () => this.switchTo(GitExplorerView.Repository),
             this
         );
-
+        commands.registerCommand(
+            'gitlens.bitbucket.login',
+            () => this.bitbucketLogin(),
+            this
+        );
         commands.registerCommand('gitlens.gitExplorer.undockHistory', this.undockHistory, this);
 
         Container.context.subscriptions.push(
@@ -451,5 +457,75 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
 
     private undockHistory(switchView: boolean = true) {
         return Container.historyExplorer.undock(switchView);
+    }
+
+    public bitbucketLogin(): Promise<any> {
+        const panel = window.createWebviewPanel(
+            'bitbucketLogin',
+            'Bitbucket Login',
+            ViewColumn.One,
+            {
+                enableScripts: true,
+                enableCommandUris: true
+            }
+        );
+        panel.webview.html = this.getWebviewContent();
+        const promise = new Promise((resolve, reject) => {
+            panel.webview.onDidReceiveMessage(message => {
+                console.log(message);
+                const data: any = JSON.parse(message.text);
+                GitCommentService.UseCredentials(data.username!, data.password!);
+                panel.webview.postMessage({
+                    command: 'success'
+                });
+                resolve();
+                panel.dispose();
+            });
+        });
+        return promise;
+    }
+    private getWebviewContent() {
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <script type="text/javascript">
+                const vscode = acquireVsCodeApi();
+                function get_action(form) {
+                    var data = {
+                        username: document.getElementsByName('username')[0].value,
+                        password: document.getElementsByName('password')[0].value
+                    }
+                    vscode.postMessage({
+                        command: 'login',
+                        text: JSON.stringify(data)
+                    });
+                }
+                window.addEventListener('message', event => {
+                    const message = event.data; // The json data that the extension sent
+                    switch (message.command) {
+                        case 'success':
+                            document.getElementById("loginform").style.display = "none";
+                            document.getElementById("info").textContent = "Success Login.";
+                            break;
+                    }
+                });
+            </script>
+        </head>
+        <body>
+        <h2>Bitbucket Login</h2>
+        <form id="loginform" onsubmit="get_action(this);">
+          Email:<br>
+          <input type="text" name="username" value="">
+          <br>
+          Password:<br>
+          <input type="password" name="password" value="">
+          <br><br>
+          <input type="hidden" value="password" name="grant_type" />
+          <input type="submit" value="Submit">
+        </form>
+        <span id="info"> <p>Please login with your Bitbucket account.</p> </span>
+        </body>
+        </html>
+        `;
     }
 }
