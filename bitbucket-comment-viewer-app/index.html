@@ -102,7 +102,7 @@
         var contentDiv = document.createElement('div');
         contentDiv.className = 'cmmnt-content';
         contentDiv.innerHTML =
-        `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a> - <span class="pubdate">posted 6 days ago</span></header>
+        `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a></header>
         ${converter.makeHtml(comment.Message)}
           <footer><a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="del(this);" class="userlink">Delete</a></footer>`;
         item.appendChild(contentDiv);
