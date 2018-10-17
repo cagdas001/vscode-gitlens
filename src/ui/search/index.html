@@ -31,14 +31,18 @@
                     </select>
                     <input type="text" id="author" width="10" placeholder="enter author here" />
                     <!-- </div> -->
-                    <div class="sub-container">
-                        <select class="since" id="since" name="since" aria-placeholder="since">
-                            <option value="-1">All</option>
-                            <option value="-1">-- Select --</option>
-                            <option value="1 days ago">Last 24 hours</option>
-                            <option value="7 days ago">Last 7 days</option>
-                        </select>
-                    </div>
+                    <select class="since" id="since" name="since" aria-placeholder="since">
+                        <option value="-1">All</option>
+                        <option value="-1">-- Select --</option>
+                        <option value="1 days ago">Last 24 hours</option>
+                        <option value="7 days ago">Last 7 days</option>
+                    </select>
+
+                    <label class="control control--checkbox">
+                        Show Merge Commits
+                        <input type="checkbox" id="showMergeCommits" />
+                        <div class="control__indicator"></div>
+                    </label>
                     <input type="text" id="after" placeholder="after" title="after" onfocus="(this.type='date')" onblur="(this.type='text')" />
                     <input type="text" id="before" placeholder="before" title="before" onfocus="(this.type='date')"
                         onblur="(this.type='text')" />
