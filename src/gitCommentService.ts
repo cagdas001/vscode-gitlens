@@ -175,18 +175,20 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Loads all comments for the given commit.
+     * Loads all comments for the given commit (via API version 1).
      * @param commit commit
      */
     async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
-        const baseUrl = this.V2_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const result: Comment[] = [];
         const commentsMap = new Map<Number, Comment>();
 
@@ -197,38 +199,64 @@ export class GitCommentService implements Disposable {
             })
                 .get(next)
                 .then(v => {
-                    const items = v!.data!.values! as any[];
+                    const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
                     items!.forEach(c => {
                         if (!c!.deleted) {
                             const comment = { Commit: commit } as Comment;
-                            if (c!.content && c!.content.raw) {
-                                comment.Message = c.content.raw;
-                            }
-                            if (c.id) {
-                                comment.Id = c.id;
-                            }
-                            //  if (c.inline && c.inline.to !== undefined) {
-                            //comment.Line = (c.inline.to as number)! - 1;
+                            if (isV2) {
+                                if (c!.content && c!.content.raw) {
+                                    comment.Message = c.content.raw;
+                                }
+                                if (c.id) {
+                                    comment.Id = c.id;
+                                }
 
-                            // If comment is a file comment, there is no inline field.
-                            // Therefore it enters the catch block with above usage.
-                            // this prevents the rest of comments from being loaded
-                            if (c.inline && c.inline.to && c.inline.to > 0) {
-                                comment.Line = c.inline.to - 1;
-                                comment.Type = CommentType.Line;
+                                // If comment is a file comment, there is no inline field.
+                                // Therefore it enters the catch block with above usage.
+                                // this prevents the rest of comments from being loaded
+                                if (c.inline && c.inline.to && c.inline.to > 0) {
+                                    comment.Line = c.inline.to - 1;
+                                    comment.Type = CommentType.Line;
+                                }
+                                else {
+                                    comment.Type = CommentType.File;
+                                }
+
+                                if (c.inline && c.inline.path) {
+                                    comment.Path = c.inline.path;
+                                }
+                                if (c.commit && c.commit.hash) {
+                                    comment.Sha = c.commit.hash;
+                                }
+                                if (c.parent && c.parent.id) {
+                                    comment.ParentId = c.parent.id;
+                                }
                             }
                             else {
-                                comment.Type = CommentType.File;
-                            }
-                            // }
-                            if (c.inline && c.inline.path) {
-                                comment.Path = c.inline.path;
-                            }
-                            if (c.commit && c.commit.hash) {
-                                comment.Sha = c.commit.hash;
-                            }
-                            if (c.parent && c.parent.id) {
-                                comment.ParentId = c.parent.id;
+                                if (c!.content) {
+                                    comment.Message = c.content;
+                                }
+                                if (c.comment_id) {
+                                    comment.Id = c.comment_id;
+                                }
+
+                                if (c.line_to && c.line_to > 0) {
+                                    comment.Line = c.line_to - 1;
+                                    comment.Type = CommentType.Line;
+                                }
+                                else {
+                                    comment.Type = CommentType.File;
+                                }
+
+                                if (c.filename) {
+                                    comment.Path = c.filename;
+                                }
+                                if (c.node) {
+                                    comment.Sha = c.node;
+                                }
+                                if (c.parent_id) {
+                                    comment.ParentId = c.parent_id;
+                                }
                             }
 
                             // Note: There is a bug in BitBucker API. It doesnot add Line number when returing reply.
@@ -247,7 +275,7 @@ export class GitCommentService implements Disposable {
                                 }
                             }
 
-                            commentsMap.set(c.id, comment);
+                            commentsMap.set(isV2 ? c.id : c.comment_id, comment);
 
                             result.push(comment);
                         }
@@ -277,7 +305,7 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Adds a comment on remote server.
+     * Adds a comment on remote server (via API version 1).
      * @param commit commit id
      * @param comment comment to be added
      * @param fileName File Name to comment on.
@@ -294,16 +322,18 @@ export class GitCommentService implements Disposable {
         if (!comment) {
             return;
         }
-        const baseUrl = this.V2_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const to = line! + 1;
-        const data = {
+        const data = isV2 ? {
             content: {
                 raw: comment
             },
@@ -312,6 +342,11 @@ export class GitCommentService implements Disposable {
                 to: to || undefined
             },
             parent: parentId ? { id: parentId } : undefined
+        } : {
+            content: comment,
+            filename: fileName,
+            line_to: parentId ? undefined : to || undefined,
+            parent_id: parentId ? parentId : undefined
         };
         await Axios.create({
             auth: auth
@@ -321,7 +356,7 @@ export class GitCommentService implements Disposable {
                 window.showInformationMessage('Comment/reply added successfully.');
                 if (GitCommentService.lastFetchedComments) {
                     let newComment: Comment = {
-                        Id: response.data.id,
+                        Id: isV2 ? response.data.id : response.data.comment_id,
                         Commit: commit,
                         Message: comment,
                         Line: line,
@@ -353,7 +388,7 @@ export class GitCommentService implements Disposable {
                                     comment.Replies = checkReply(comment.Replies);
                                 }
                                 return comment;
-                            })
+                            });
                         }
                         GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
                     }
@@ -375,7 +410,7 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Edit comment on Git Remote server.
+     * Edit comment on Git Remote server (via API version 1).
      * @param commit Commit to be used for editing
      * @param comment New value
      * @param commentId Comment to be edited.
@@ -384,15 +419,21 @@ export class GitCommentService implements Disposable {
         if (!comment) {
             return;
         }
-        const baseUrl = this.V1_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/${commentId}`;
-        const data = {
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
+        const data = isV2 ? {
+            content: {
+                raw: comment
+            }
+        } : {
             content: comment,
             comment_id: commentId
         };
@@ -439,16 +480,18 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Deletes comment/reply on Git remote server.
+     * Deletes comment/reply on Git remote server (via API version 1).
      * @param commit commit to be used for deleting comment
      * @param commentId comment to be deleted.
      */
     async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
-        const baseUrl = this.V1_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/${commentId}`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
         await Axios.create({
             auth: auth
@@ -463,13 +506,13 @@ export class GitCommentService implements Disposable {
                                 if (reply.Replies) {
                                     checkReply(reply.Replies);
                                 }
-                                return reply.Id !== commentId
+                                return reply.Id !== commentId;
                             });
                         }
                         if (comment.Replies) {
                             comment.Replies = checkReply(comment.Replies);
                         }
-                        return comment.Id !== commentId
+                        return comment.Id !== commentId;
                     });
                 }
                 this.updateView();
