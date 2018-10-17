@@ -30,7 +30,7 @@
 		require('./renderer.js');
 		const { ipcRenderer } = require('electron');
 		// init the editor with the incoming value
-		ipcRenderer.once('init.editor', function (event, arg) {
+		ipcRenderer.on('init.editor', function (event, arg) {
 			arg = arg.replace(/\u200C/g, '');
 			arg = arg.replace(/\n\n/g, '\n');
 			simplemde.value(arg);

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <title>Gitlens Comment Viewer</title>
+  <script src="showdown.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <script src="bootstrap.min.js"></script>
+</head>
+
+<body>
+  <button id="addBtn" type="button" class="btn btn-outline-secondary float-left" style="margin-left: 20px; margin-top: 10px;">Add Comment</button>
+  <div id="w">
+    <div id="container">
+      <ul id="comments">
+      </ul>
+    </div>
+  </div>
+  <script>
+    // var converter = new showdown.Converter();
+
+    const logger = require('electron').remote.require('./logger');
+
+    require('./renderer.js');
+		const { ipcRenderer } = require('electron');
+
+    var comments = [
+      {
+        Message: ' Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam porttitor dui bibendum mi euismod imperdiet. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec pellentesque nec felis nec venenatis. Curabitur quis est dui. Cras at ligula est. Vivamus hendrerit aliquam interdum. Nulla vel sollicitudin enim. Mauris luctus convallis risus et dapibus. Cras luctus bibendum aliquam. Morbi id vestibulum nulla.',
+        Id: 1,
+        Name: 'Afrisal Yodi Purnama',
+        Replies: [
+        {
+          Message: '![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")',
+          Id: 1,
+          Name: 'Afrisal Yodi Purnama',
+          Replies: [
+          {
+            Message: 'This is comment message reply of reply',
+            Id: 1,
+            Name: 'Sukoco'
+          }]
+        }
+        ]
+      },
+      {
+        Message: '## This is comment message yang kedua',
+        Id: 2,
+        Name: 'Afrisal Yodi Purnama'
+      }
+    ];
+
+    function reply(data) {
+      ipcRenderer.send('reply.comment',
+        {
+          Id: data.getAttribute('commentId'),
+          Line: data.getAttribute('line'),
+          Path: data.getAttribute('path'),
+          Message: data.getAttribute('message'),
+          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+        }
+      );
+    }
+
+    function edit(data) {
+			ipcRenderer.send('edit.comment', {
+          Id: data.getAttribute('commentId'),
+          Line: data.getAttribute('line'),
+          Path: data.getAttribute('path'),
+          Message: data.getAttribute('message'),
+          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+        }
+      );
+    }
+
+    function del(data) {
+			ipcRenderer.send('delete.comment', {
+          Id: data.getAttribute('commentId'),
+          Line: data.getAttribute('line'),
+          Path: data.getAttribute('path'),
+          Message: data.getAttribute('message'),
+          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+      });
+    }
+
+    var showdown  = require('showdown'),
+    converter = new showdown.Converter();
+    var commentUl = document.getElementById('comments');
+
+    function render(comments, ul) {
+      for (var i = 0; i < comments.length; i++) {
+        var comment = comments[i];
+        var item = document.createElement('li');
+        item.className = 'cmmnt';
+
+        var avatarDiv = document.createElement('div');
+        avatarDiv.className = 'avatar';
+        avatarDiv.innerHTML = `<a href="javascript:void(0);"><img src="images/default.png" width="40" height="40" alt="default avatar"></a>`;
+        item.appendChild(avatarDiv);
+
+        var contentDiv = document.createElement('div');
+        contentDiv.className = 'cmmnt-content';
+        contentDiv.innerHTML =
+        `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a> - <span class="pubdate">posted 6 days ago</span></header>
+        ${converter.makeHtml(comment.Message)}
+          <footer><a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="del(this);" class="userlink">Delete</a></footer>`;
+        item.appendChild(contentDiv);
+
+        if (comment.Replies && comment.Replies.length > 0) {
+          var repliesUl = document.createElement('ul');
+          repliesUl.className = 'replies';
+          render(comment.Replies, repliesUl);
+          item.appendChild(repliesUl);
+        }
+
+        ul.appendChild(item);
+      }
+    }
+
+    // send ui.ready message to main process when the window loaded
+		window.addEventListener('load', function () {
+			ipcRenderer.send('ui.ready');
+    })
+
+    // init the editor with the incoming value
+		ipcRenderer.on('init.editor', function (event, arg) {
+      commentUl.innerHTML = '';
+      if (arg.length == 0) {
+        commentUl.innerText = 'No Comments Found';
+      }
+      else render(arg, commentUl);
+
+    })
+
+    var addBtn = document.getElementById('addBtn');
+
+		addBtn.addEventListener('click', function () {
+			ipcRenderer.send('add.comment');
+		})
+
+  </script>
+</body>
+</html>

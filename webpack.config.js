@@ -29,6 +29,14 @@ function getExtensionConfig(env) {
         }
     ]));
 
+    plugins.push(new CopyWebpackPlugin([
+        {
+            from: 'bitbucket-comment-viewer-app',
+            to: 'bitbucket-comment-viewer-app',
+            toType: 'dir'
+        }
+    ]));
+
     plugins.push(new ExternalsPlugin({
         type: 'commonjs',
         include: __dirname + '/node_modules/electron'

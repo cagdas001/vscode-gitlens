@@ -1584,6 +1584,15 @@
                 "title": "Show comment for this file",
                 "category": "GitLens",
                 "icon": {
+                    "dark": "images/bookmark-red.svg",
+                    "light": "images/bookmark-red.svg"
+                }
+            },
+            {
+                "command": "gitlens.showCommentCommitLine",
+                "title": "Show comment for this line",
+                "category": "GitLens",
+                "icon": {
                     "dark": "images/bookmark.svg",
                     "light": "images/bookmark.svg"
                 }
@@ -2293,6 +2302,10 @@
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
+                    "command": "gitlens.showCommentCommitLine",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                },
+                {
                     "command": "gitlens.diffFileNext",
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffNext"
                 },
@@ -2793,6 +2806,11 @@
                 },
                 {
                     "command": "gitlens.showCommentCommitFile",
+                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "group": "navigation@97"
+                },
+                {
+                    "command": "gitlens.showCommentCommitLine",
                     "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
                     "group": "navigation@97"
                 },
@@ -3693,6 +3711,7 @@
         "lodash.once": "4.1.1",
         "node-ipc": "^9.1.1",
         "node-rest-client": "^3.1.0",
+        "showdown": "^1.8.6",
         "tmp": "0.0.33",
         "tslib": "1.9.3",
         "vscode-uri": "^1.0.6"
