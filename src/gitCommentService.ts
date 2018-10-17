@@ -175,31 +175,20 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Loads all comments for the given commit.
-     * @param commit commit
-     */
-    async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
-        if (Container.config.advanced.useApiV2) {
-            return this.loadCommentsV2(commit);
-        } else {
-            return this.loadCommentsV1(commit);
-        }
-    }
-
-
-    /**
      * Loads all comments for the given commit (via API version 1).
      * @param commit commit
      */
-    async loadCommentsV1(commit: GitCommit): Promise<void | Comment[] | undefined> {
-        const baseUrl = this.V1_BaseURL;
+    async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const result: Comment[] = [];
         const commentsMap = new Map<Number, Comment>();
 
@@ -210,36 +199,64 @@ export class GitCommentService implements Disposable {
             })
                 .get(next)
                 .then(v => {
-                    const items = v!.data! as any[];
+                    const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
                     items!.forEach(c => {
                         if (!c!.deleted) {
                             const comment = { Commit: commit } as Comment;
-                            if (c!.content) {
-                                comment.Message = c.content;
-                            }
-                            if (c.comment_id) {
-                                comment.Id = c.comment_id;
-                            }
+                            if (isV2) {
+                                if (c!.content && c!.content.raw) {
+                                    comment.Message = c.content.raw;
+                                }
+                                if (c.id) {
+                                    comment.Id = c.id;
+                                }
 
-                            // If comment is a file comment, there is no inline field.
-                            // Therefore it enters the catch block with above usage.
-                            // this prevents the rest of comments from being loaded
-                            if (c.line_to && c.line_to > 0) {
-                                comment.Line = c.line_to - 1;
-                                comment.Type = CommentType.Line;
+                                // If comment is a file comment, there is no inline field.
+                                // Therefore it enters the catch block with above usage.
+                                // this prevents the rest of comments from being loaded
+                                if (c.inline && c.inline.to && c.inline.to > 0) {
+                                    comment.Line = c.inline.to - 1;
+                                    comment.Type = CommentType.Line;
+                                }
+                                else {
+                                    comment.Type = CommentType.File;
+                                }
+
+                                if (c.inline && c.inline.path) {
+                                    comment.Path = c.inline.path;
+                                }
+                                if (c.commit && c.commit.hash) {
+                                    comment.Sha = c.commit.hash;
+                                }
+                                if (c.parent && c.parent.id) {
+                                    comment.ParentId = c.parent.id;
+                                }
                             }
                             else {
-                                comment.Type = CommentType.File;
-                            }
-                            // }
-                            if (c.filename) {
-                                comment.Path = c.filename;
-                            }
-                            if (c.node) {
-                                comment.Sha = c.node;
-                            }
-                            if (c.parent_id) {
-                                comment.ParentId = c.parent_id;
+                                if (c!.content) {
+                                    comment.Message = c.content;
+                                }
+                                if (c.comment_id) {
+                                    comment.Id = c.comment_id;
+                                }
+
+                                if (c.line_to && c.line_to > 0) {
+                                    comment.Line = c.line_to - 1;
+                                    comment.Type = CommentType.Line;
+                                }
+                                else {
+                                    comment.Type = CommentType.File;
+                                }
+
+                                if (c.filename) {
+                                    comment.Path = c.filename;
+                                }
+                                if (c.node) {
+                                    comment.Sha = c.node;
+                                }
+                                if (c.parent_id) {
+                                    comment.ParentId = c.parent_id;
+                                }
                             }
 
                             // Note: There is a bug in BitBucker API. It doesnot add Line number when returing reply.
@@ -258,7 +275,7 @@ export class GitCommentService implements Disposable {
                                 }
                             }
 
-                            commentsMap.set(c.comment_id, comment);
+                            commentsMap.set(isV2 ? c.id : c.comment_id, comment);
 
                             result.push(comment);
                         }
@@ -288,109 +305,7 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Loads all comments for the given commit (via API version 2).
-     * @param commit commit
-     */
-    async loadCommentsV2(commit: GitCommit): Promise<void | Comment[] | undefined> {
-        const baseUrl = this.V2_BaseURL;
-        const path = await this.getRemoteRepoPath(commit.repoPath);
-        if (!path) {
-            return;
-        }
-        const auth = await GitCommentService.getCredentials();
-        const sha = commit.sha;
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/`;
-        const result: Comment[] = [];
-        const commentsMap = new Map<Number, Comment>();
-
-        let next: string | null | undefined = url;
-        while (next) {
-            await Axios.create({
-                auth: auth
-            })
-                .get(next)
-                .then(v => {
-                    const items = v!.data!.values! as any[];
-                    items!.forEach(c => {
-                        if (!c!.deleted) {
-                            const comment = { Commit: commit } as Comment;
-                            if (c!.content && c!.content.raw) {
-                                comment.Message = c.content.raw;
-                            }
-                            if (c.id) {
-                                comment.Id = c.id;
-                            }
-                            //  if (c.inline && c.inline.to !== undefined) {
-                            //comment.Line = (c.inline.to as number)! - 1;
-
-                            // If comment is a file comment, there is no inline field.
-                            // Therefore it enters the catch block with above usage.
-                            // this prevents the rest of comments from being loaded
-                            if (c.inline && c.inline.to && c.inline.to > 0) {
-                                comment.Line = c.inline.to - 1;
-                                comment.Type = CommentType.Line;
-                            }
-                            else {
-                                comment.Type = CommentType.File;
-                            }
-                            // }
-                            if (c.inline && c.inline.path) {
-                                comment.Path = c.inline.path;
-                            }
-                            if (c.commit && c.commit.hash) {
-                                comment.Sha = c.commit.hash;
-                            }
-                            if (c.parent && c.parent.id) {
-                                comment.ParentId = c.parent.id;
-                            }
-
-                            // Note: There is a bug in BitBucker API. It doesnot add Line number when returing reply.
-                            // so check the parent and normalize.
-                            if (comment.ParentId!) {
-                                const parent = commentsMap.get(comment.ParentId!);
-                                if (parent!) {
-                                    comment.Line = parent!.Line;
-                                    comment.Type = parent!.Type;
-                                    if (parent!.Replies) {
-                                        parent!.Replies.push(comment);
-                                    }
-                                    else {
-                                        parent!.Replies = [comment];
-                                    }
-                                }
-                            }
-
-                            commentsMap.set(c.id, comment);
-
-                            result.push(comment);
-                        }
-                    });
-                    console.log(v);
-                    if (v!.data!.next) {
-                        next = v!.data!.next;
-                    }
-                    else {
-                        next = null;
-                    }
-                    return result;
-                })
-                .catch(e => {
-                    console.log(e);
-                    if (e!.response!.status === 401 || e!.response!.status === 403) {
-                        window.showErrorMessage('Incorrect Bit Bucket Service Credentials.');
-                        GitCommentService.ClearCredentials();
-                    }
-
-                    Logger.log(e);
-                    next = null;
-                });
-        }
-
-        return result.filter(c => c.ParentId === undefined);
-    }
-
-    /**
-     * Adds a comment on remote server.
+     * Adds a comment on remote server (via API version 1).
      * @param commit commit id
      * @param comment comment to be added
      * @param fileName File Name to comment on.
@@ -404,41 +319,30 @@ export class GitCommentService implements Disposable {
         line?: number,
         parentId?: number
     ): Promise<void> {
-        if (Container.config.advanced.useApiV2) {
-            return this.addCommentV2(commit, comment, fileName, line, parentId)
-        } else {
-            return this.addCommentV1(commit, comment, fileName, line, parentId)
-        }
-    }
-
-    /**
-     * Adds a comment on remote server (via API version 1).
-     * @param commit commit id
-     * @param comment comment to be added
-     * @param fileName File Name to comment on.
-     * @param line Line number for the comment.
-     * @param parentId Parent id to be specified for replying to a comment.
-     */
-    async addCommentV1(
-        commit: GitCommit,
-        comment: string,
-        fileName: string,
-        line?: number,
-        parentId?: number
-    ): Promise<void> {
         if (!comment) {
             return;
         }
-        const baseUrl = this.V1_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const to = line! + 1;
-        const data = {
+        const data = isV2 ? {
+            content: {
+                raw: comment
+            },
+            inline: {
+                path: fileName,
+                to: to || undefined
+            },
+            parent: parentId ? { id: parentId } : undefined
+        } : {
             content: comment,
             filename: fileName,
             line_to: parentId ? undefined : to || undefined,
@@ -452,7 +356,7 @@ export class GitCommentService implements Disposable {
                 window.showInformationMessage('Comment/reply added successfully.');
                 if (GitCommentService.lastFetchedComments) {
                     let newComment: Comment = {
-                        Id: response.data.comment_id,
+                        Id: isV2 ? response.data.id : response.data.comment_id,
                         Commit: commit,
                         Message: comment,
                         Line: line,
@@ -484,7 +388,7 @@ export class GitCommentService implements Disposable {
                                     comment.Replies = checkReply(comment.Replies);
                                 }
                                 return comment;
-                            })
+                            });
                         }
                         GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
                     }
@@ -503,118 +407,6 @@ export class GitCommentService implements Disposable {
                     window.showErrorMessage('Failed to add comment/reply.');
                 }
             });
-    }
-
-    /**
-     * Adds a comment on remote server (via API version 2).
-     * @param commit commit id
-     * @param comment comment to be added
-     * @param fileName File Name to comment on.
-     * @param line Line number for the comment.
-     * @param parentId Parent id to be specified for replying to a comment.
-     */
-    async addCommentV2(
-        commit: GitCommit,
-        comment: string,
-        fileName: string,
-        line?: number,
-        parentId?: number
-    ): Promise<void> {
-        if (!comment) {
-            return;
-        }
-        const baseUrl = this.V2_BaseURL;
-        const path = await this.getRemoteRepoPath(commit.repoPath);
-        if (!path) {
-            return;
-        }
-        const auth = await GitCommentService.getCredentials();
-        const sha = commit.sha;
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/`;
-        const to = line! + 1;
-        const data = {
-            content: {
-                raw: comment
-            },
-            inline: {
-                path: fileName,
-                to: to || undefined
-            },
-            parent: parentId ? { id: parentId } : undefined
-        };
-        await Axios.create({
-            auth: auth
-        })
-            .post(url, data)
-            .then(response => {
-                window.showInformationMessage('Comment/reply added successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    let newComment: Comment = {
-                        Id: response.data.id,
-                        Commit: commit,
-                        Message: comment,
-                        Line: line,
-                        Path: fileName,
-                        Sha: commit.sha,
-                        ParentId: parentId ? parentId : undefined,
-                        Replies: []
-                    };
-                    if (line) {
-                        newComment.Type = CommentType.Line;
-                    }
-                    else {
-                        newComment.Type = CommentType.File;
-                    }
-                    if (newComment.ParentId) {
-                        function checkReply(replies: Comment[]) {
-                            return replies.map(comment => {
-                                if (comment.Id === newComment.ParentId) {
-                                    newComment.Type = comment.Type;
-                                    newComment.Line = comment.Line;
-                                    if (comment.Replies) {
-                                        comment.Replies.push(newComment);
-                                    }
-                                    else {
-                                        comment.Replies = [newComment];
-                                    }
-                                }
-                                else if (comment.Replies) {
-                                    comment.Replies = checkReply(comment.Replies);
-                                }
-                                return comment;
-                            })
-                        }
-                        GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
-                    }
-                    else {
-                        GitCommentService.lastFetchedComments.push(newComment);
-                    }
-                }
-                this.updateView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to add comment/reply.');
-                }
-            });
-    }
-
-    /**
-     * Edit comment on Git Remote server.
-     * @param commit Commit to be used for editing
-     * @param comment New value
-     * @param commentId Comment to be edited.
-     */
-    async editComment(commit: GitCommit, comment: string, commentId: number): Promise<void> {
-        if (Container.config.advanced.useApiV2) {
-            return this.editCommentV1(commit, comment, commentId)
-        } else {
-            return this.editCommentV2(commit, comment, commentId)
-        }
     }
 
     /**
@@ -623,19 +415,25 @@ export class GitCommentService implements Disposable {
      * @param comment New value
      * @param commentId Comment to be edited.
      */
-    async editCommentV1(commit: GitCommit, comment: string, commentId: number): Promise<void> {
+    async editComment(commit: GitCommit, comment: string, commentId: number): Promise<void> {
         if (!comment) {
             return;
         }
-        const baseUrl = this.V1_BaseURL;
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/${commentId}`;
-        const data = {
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
+        const data = isV2 ? {
+            content: {
+                raw: comment
+            }
+        } : {
             content: comment,
             comment_id: commentId
         };
@@ -682,94 +480,18 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Edit comment on Git Remote server (via API version 2).
-     * @param commit Commit to be used for editing
-     * @param comment New value
-     * @param commentId Comment to be edited.
-     */
-    async editCommentV2(commit: GitCommit, comment: string, commentId: number): Promise<void> {
-        if (!comment) {
-            return;
-        }
-        const baseUrl = this.V2_BaseURL;
-        const path = await this.getRemoteRepoPath(commit.repoPath);
-        if (!path) {
-            return;
-        }
-        const auth = await GitCommentService.getCredentials();
-        const sha = commit.sha;
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/${commentId}`;
-        const data = {
-            content: {
-                raw: comment
-            }
-        };
-        await Axios.create({
-            auth: auth
-        })
-            .put(url, data)
-            .then(v => {
-                window.showInformationMessage('Comment/reply edited successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
-                        if (item.Id === commentId) {
-                            item.Message = comment;
-                        }
-                        else {
-                            function checkReply(replies: Comment[]) {
-                                for (const reply of replies) {
-                                    if (reply.Id === commentId) {
-                                        reply.Message = comment;
-                                    }
-                                    if (reply.Replies) {
-                                        checkReply(reply.Replies);
-                                    }
-                                }
-                            }
-                            if (item.Replies) {
-                                checkReply(item.Replies);
-                            }
-                        }
-                        return item;
-                    });
-                }
-                this.updateView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to add comment/reply.');
-                }
-            });
-    }
-
-    /**
-     * Deletes comment/reply on Git remote server.
-     * @param commit commit to be used for deleting comment
-     * @param commentId comment to be deleted.
-     */
-    async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
-        if (Container.config.advanced.useApiV2) {
-            return this.deleteCommentV1(commit, commentId)
-        } else {
-            return this.deleteCommentV2(commit, commentId)
-        }
-    }
-
-    /**
      * Deletes comment/reply on Git remote server (via API version 1).
      * @param commit commit to be used for deleting comment
      * @param commentId comment to be deleted.
      */
-    async deleteCommentV1(commit: GitCommit, commentId: number): Promise<void> {
-        const baseUrl = this.V1_BaseURL;
+    async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
+        const isV2 = Container.config.advanced.useApiV2;
+        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);
-        const url = `${baseUrl}/${path}/changesets/${sha}/comments/${commentId}`;
+        const commitStr = isV2 ? 'commit' : 'changesets';
+        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
         await Axios.create({
             auth: auth
@@ -784,60 +506,13 @@ export class GitCommentService implements Disposable {
                                 if (reply.Replies) {
                                     checkReply(reply.Replies);
                                 }
-                                return reply.Id !== commentId
+                                return reply.Id !== commentId;
                             });
                         }
                         if (comment.Replies) {
                             comment.Replies = checkReply(comment.Replies);
                         }
-                        return comment.Id !== commentId
-                    });
-                }
-                this.updateView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to delete comment/reply.');
-                }
-            });
-    }
-
-    /**
-     * Deletes comment/reply on Git remote server (via API version 2).
-     * @param commit commit to be used for deleting comment
-     * @param commentId comment to be deleted.
-     */
-    async deleteCommentV2(commit: GitCommit, commentId: number): Promise<void> {
-        const baseUrl = this.V2_BaseURL;
-        const auth = await GitCommentService.getCredentials();
-        const sha = commit.sha;
-        const path = await this.getRemoteRepoPath(commit.repoPath);
-        const url = `${baseUrl}/${path}/commit/${sha}/comments/${commentId}`;
-
-        await Axios.create({
-            auth: auth
-        })
-            .delete(url)
-            .then(v => {
-                window.showInformationMessage('Comment/reply deleted successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
-                        function checkReply(replies: Comment[]) {
-                            return replies.filter(reply => {
-                                if (reply.Replies) {
-                                    checkReply(reply.Replies);
-                                }
-                                return reply.Id !== commentId
-                            });
-                        }
-                        if (comment.Replies) {
-                            comment.Replies = checkReply(comment.Replies);
-                        }
-                        return comment.Id !== commentId
+                        return comment.Id !== commentId;
                     });
                 }
                 this.updateView();
