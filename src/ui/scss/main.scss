@@ -1079,6 +1079,19 @@ ul {
     }
 }
 
+
+table#logs {
+ width: 100%;
+ table-layout: fixed;
+    td {
+        width: 100%;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+    }
+}
+
 ul.tree {
 	padding: 5px;
 	margin: 5px;
