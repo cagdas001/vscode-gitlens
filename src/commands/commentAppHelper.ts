@@ -43,9 +43,9 @@ export function clearPayload() {
  */
 export function runApp(appName: string) {
 
-    if (currentProcess) {
-        currentProcess.kill();
-    }
+    // if (currentProcess) {
+    //     currentProcess.kill();
+    // }
 
     const spawnEnvironment = JSON.parse(JSON.stringify(process.env));
     delete spawnEnvironment.ATOM_SHELL_INTERNAL_RUN_AS_NODE;
@@ -117,7 +117,7 @@ export function getComment(initText: string = '') {
     });
 }
 
-let ipcForCommentViewer : any;
+let ipcForCommentViewer = new ipc.IPC;
 /**
  * Initialize comment to show on the electron app
  * @param comments: Comments to show.
@@ -125,17 +125,18 @@ let ipcForCommentViewer : any;
 export function initComment(comments: Comment[]) {
     // setting up the IPC for communication
 
-    ipc.config.id = 'vscode-comment-viewer';
-    ipc.config.retry = 1000;
-    ipc.connectToNet('bitbucketCommentViewerApp', function() {
-        ipc.of.bitbucketCommentViewerApp.on('connect', function() {
-            ipc.log('connected...');
-            ipc.of.bitbucketCommentViewerApp.emit('app.message', {
-                id: ipc.config.id,
+    ipcForCommentViewer.config.id = 'vscode-comment-viewer';
+    ipcForCommentViewer.config.retry = 1000;
+    ipcForCommentViewer.config.networkPort = 8001;
+    ipcForCommentViewer.connectToNet('bitbucketCommentViewerApp', function() {
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.on('connect', function() {
+            ipcForCommentViewer.log('connected...');
+            ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+                id: ipcForCommentViewer.config.id,
                 command: 'connected'
             });
         });
-        ipc.of.bitbucketCommentViewerApp.on('app.message', function(data: any) {
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.on('app.message', function(data: any) {
             if (data.command === 'reply.comment') {
                 const comment = data.payload;
 
@@ -181,14 +182,14 @@ export function initComment(comments: Comment[]) {
             }
             else if (data.command === 'ui.ready' && comments) {
                 // ui is ready, init the markdown editor with initText
-                ipc.of.bitbucketCommentViewerApp.emit('app.message', {
-                    id: ipc.config.id,
+                ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+                    id: ipcForCommentViewer.config.id,
                     command: 'init.editor',
                     payload: comments
                 });
             }
             else if (data.command === 'close') {
-                ipc.disconnect('bitbucketCommentViewerApp');
+                ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
             }
         });
     });
@@ -199,8 +200,8 @@ export function initComment(comments: Comment[]) {
  * @param comments: Comments to show.
  */
 export function showComment(comments: Comment[]) {
-    ipc.of.bitbucketCommentViewerApp.emit('app.message', {
-        id: ipc.config.id,
+    ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+        id: ipcForCommentViewer.config.id,
         command: 'init.editor',
         payload: comments
     });

@@ -33,6 +33,7 @@ function createWindow() {
     // node-ipc configurations
     ipc.config.id = 'bitbucketCommentViewerApp';
     ipc.config.retry = 1500;
+    ipc.config.networkPort = 8001;
     ipc.config.maxConnections = 1;
 
     ipc.serveNet(function() {
@@ -67,7 +68,7 @@ function createWindow() {
                     command: 'reply.comment',
                     payload: arg
                 });
-                close(null, null);
+                // close(null, null);
             });
             ipcMain.on('edit.comment', function(event, arg) {
                 // send comment to the VSCode app
@@ -76,7 +77,7 @@ function createWindow() {
                     command: 'edit.comment',
                     payload: arg
                 });
-                close(null, null);
+                // close(null, null);
             });
             ipcMain.on('delete.comment', function(event, arg) {
                 // send comment to the VSCode app
@@ -85,7 +86,7 @@ function createWindow() {
                     command: 'delete.comment',
                     payload: arg
                 });
-                close(null, null);
+                // close(null, null);
             });
             ipcMain.on('add.comment', function(event, arg) {
                 // send comment to the VSCode app
@@ -93,6 +94,9 @@ function createWindow() {
                     id: ipc.config.id,
                     command: 'add.comment'
                 });
+                // close(null, null);
+            });
+            ipcMain.on('close', function(event, arg) {
                 close(null, null);
             });
             // it's taking some time for the app to be ready

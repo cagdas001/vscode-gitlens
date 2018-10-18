@@ -11,6 +11,7 @@
 
 <body>
   <button id="addBtn" type="button" class="btn btn-outline-secondary float-left" style="margin-left: 20px; margin-top: 10px;">Add Comment</button>
+  <button id="closeBtn" type="button" class="btn btn-outline-danger float-right" style="margin-right: 20px; margin-top: 10px;">Close</button>
   <div id="w">
     <div id="container">
       <ul id="comments">
@@ -24,32 +25,6 @@
 
     require('./renderer.js');
 		const { ipcRenderer } = require('electron');
-
-    var comments = [
-      {
-        Message: ' Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam porttitor dui bibendum mi euismod imperdiet. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec pellentesque nec felis nec venenatis. Curabitur quis est dui. Cras at ligula est. Vivamus hendrerit aliquam interdum. Nulla vel sollicitudin enim. Mauris luctus convallis risus et dapibus. Cras luctus bibendum aliquam. Morbi id vestibulum nulla.',
-        Id: 1,
-        Name: 'Afrisal Yodi Purnama',
-        Replies: [
-        {
-          Message: '![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")',
-          Id: 1,
-          Name: 'Afrisal Yodi Purnama',
-          Replies: [
-          {
-            Message: 'This is comment message reply of reply',
-            Id: 1,
-            Name: 'Sukoco'
-          }]
-        }
-        ]
-      },
-      {
-        Message: '## This is comment message yang kedua',
-        Id: 2,
-        Name: 'Afrisal Yodi Purnama'
-      }
-    ];
 
     function reply(data) {
       ipcRenderer.send('reply.comment',
@@ -134,9 +109,13 @@
     })
 
     var addBtn = document.getElementById('addBtn');
+    var closeBtn = document.getElementById('closeBtn');
 
 		addBtn.addEventListener('click', function () {
 			ipcRenderer.send('add.comment');
+		})
+		closeBtn.addEventListener('click', function () {
+			ipcRenderer.send('close');
 		})
 
   </script>
