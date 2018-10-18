@@ -6,20 +6,16 @@
 	<title>Enter Your Comment</title>
 	<link rel="stylesheet" href="simplemde.min.css">
 	<link rel="stylesheet" href="bootstrap.min.css">
-	<script src="simplemde.min.js"></script>
-	<script src="bootstrap.min.js"></script>
 </head>
 
 <body>
-	<!-- All of the Node.js APIs are available in this renderer process. -->
-	<!-- We are using Node.js <script>document.write(process.versions.node)</script> -->
-
 	<textarea id="markdown-editor">
 	</textarea>
 	<button id="cancelBtn" type="button" class="btn btn-outline-secondary float-right" style="margin-right: 10px">Cancel</button>
 	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
-
+	<script src="simplemde.min.js"></script>
+	<script src="bootstrap.min.js"></script>
 	<script>
 		// Editor
 		var simplemde = new SimpleMDE({
@@ -29,19 +25,21 @@
 		});
 		require('./renderer.js');
 		const { ipcRenderer } = require('electron');
-		// init the editor with the incoming value
-		ipcRenderer.once('init.editor', function (event, arg) {
+		// init the editor with incoming value
+		ipcRenderer.on('init.editor', function (event, arg) {
+			// some conversions for BitBucket Markdown integration
+			// see the gitlab ticket for details
 			arg = arg.replace(/\u200C/g, '');
 			arg = arg.replace(/\n\n/g, '\n');
 			simplemde.value(arg);
-			console.log('ipcRenderer: init-editor');
 		})
 
 		var saveBtn = document.getElementById('saveBtn');
 		var cancelBtn = document.getElementById('cancelBtn');
 
 		saveBtn.addEventListener('click', function () {
-			// replacing linebreaks with an zero-width unicode character
+			// some conversions for BitBucket Markdown integration
+			// see the gitlab ticket for details
 			let replacedVal = simplemde.value().replace(/\n/g, '\n\n');
 			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
 			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
