@@ -1,3 +1,5 @@
+@import "control";
+
 html {
     height: 100%;
 }
@@ -1061,13 +1063,32 @@ ul {
         }
     }
     .commit-label{
+        display: flex;
+        align-items: center;
         font-weight: bold;
+        .icon-merge {
+            font-size: 21px;
+            margin-right: 4px;
+        }
     }
     .details-row{
         padding: 100px;
         background-color: turquoise;
         width: 100%;
         color: dimgray;
+    }
+}
+
+
+table#logs {
+ width: 100%;
+ table-layout: fixed;
+    td {
+        width: 100%;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
     }
 }
 

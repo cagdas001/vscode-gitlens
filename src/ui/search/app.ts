@@ -163,8 +163,9 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
-                c1.innerHTML = `<div class='commit-label'> ${element.label} </div> <div> ${element.description}</div>
-                `;
+
+                const isMergeCommits = element.hasOwnProperty('commit') && element.commit.parentShas.length > 1;
+                c1.innerHTML = `<div class='commit-label'>${isMergeCommits ? `<span class="icon-merge">Ⓜ</span>` : ''}${element.label}</div><div>${element.description}</div>`;
 
                 if (!element.commit) {
                     r1.hidden = true;
@@ -261,7 +262,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // All nodes are expanded
                         const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
                         for (const treeNode of treeHtml) {
-                            treeNode.addEventListener('click', function(e) {
+                            treeNode.addEventListener('click', event => {
                                 const parent  = (event.target as HTMLElement)['parentElement'] as HTMLElement;
                                 const classList = parent.classList;
                                 if (classList.contains('open')) {
@@ -391,14 +392,17 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                   params.rsha = item.details![item.details!.length - 1 ].sha;
                 }
                 this.showDiffPosts.push(params);
-            } catch (error) {
+            }
+            catch (error) {
                 // params = undefined;
             }
-            a.onclick = () => {
-                if (params) {
-                    this._api.postMessage(params);
-                }
-            };
+            if (item.details && item.details.length === 1) {
+                a.onclick = () => {
+                    if (params) {
+                        this._api.postMessage(params);
+                    }
+                };
+            }
             a.innerText = `${item.title}`;
             li.appendChild(a);
             selectedFiles.appendChild(li);
@@ -414,20 +418,30 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected onBind() {
         const that = this;
         DOM.listenAll('.postme', 'click', function(this: HTMLButtonElement) {
-            const searchText = DOM.getElementById<HTMLInputElement>('searchText')!.value;
-            const author = DOM.getElementById<HTMLInputElement>('author')!.value;
-            const before = DOM.getElementById<HTMLInputElement>('before')!.value;
-            const after = DOM.getElementById<HTMLInputElement>('after')!.value;
-            that._api.postMessage({
-                type: 'search',
-                search: searchText,
-                branch: that.getBranch(),
-                author: author,
-                since: that.getSince(),
-                before: before,
-                after: after
-            });
+            that.doSearch();
         });
+
+        DOM.listenAll('#showMergeCommits', 'change', function(this: HTMLButtonElement) {
+            that.doSearch();
+        });
+   }
+
+   protected doSearch() {
+       const searchText = DOM.getElementById<HTMLInputElement>('searchText')!.value;
+       const author = DOM.getElementById<HTMLInputElement>('author')!.value;
+       const before = DOM.getElementById<HTMLInputElement>('before')!.value;
+       const after = DOM.getElementById<HTMLInputElement>('after')!.value;
+       const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
+       this._api.postMessage({
+           type: 'search',
+           search: searchText,
+           branch: this.getBranch(),
+           author: author,
+           since: this.getSince(),
+           before: before,
+           after: after,
+           showMergeCommits: showMergeCommits
+       });
    }
 
     protected getBranch(): string {

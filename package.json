@@ -1424,6 +1424,12 @@
                     "default": true,
                     "description": "Specifies whether to enable GitLens telemetry (even if enabled still abides by the overall `telemetry.enableTelemetry` setting",
                     "scope": "window"
+                },
+                "gitlens.advanced.useApiV2": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specifies whether to use BitBucket API version 2",
+                    "scope": "window"
                 }
             }
         },

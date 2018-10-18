@@ -30,6 +30,7 @@ export interface ShowCommitSearchCommandArgs {
     since?: string;
     before?: Date;
     after?: Date;
+    showMergeCommits?: boolean;
 
     goBackCommand?: CommandQuickPickItem;
 }
@@ -110,13 +111,13 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
         if (searchByValuesMap.size === 0) {
             searchByValuesMap.set(GitRepoSearchBy.Message, args.search);
         }
-
         const searchLabel: string | undefined = undefined;
         const progressCancellation = CommitsQuickPick.showProgress(searchLabel!);
 
         try {
             const log = await Container.git.getLogForSearch(repoPath, searchByValuesMap, {
-                maxCount: args.maxCount
+                maxCount: args.maxCount,
+                showMergeCommits: args.showMergeCommits,
             });
 
             if (progressCancellation.token.isCancellationRequested) return undefined;
