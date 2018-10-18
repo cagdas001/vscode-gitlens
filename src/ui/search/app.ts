@@ -163,8 +163,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
-                c1.innerHTML = `<div class='commit-label'> ${element.label} </div> <div> ${element.description}</div>
-                `;
+                c1.innerHTML = `<div class='commit-label'>${element.label}</div><div>${element.description}</div>`;
 
                 if (!element.commit) {
                     r1.hidden = true;
