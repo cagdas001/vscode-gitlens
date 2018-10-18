@@ -261,7 +261,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // All nodes are expanded
                         const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
                         for (const treeNode of treeHtml) {
-                            treeNode.addEventListener('click', function(e) {
+                            treeNode.addEventListener('click', event => {
                                 const parent  = (event.target as HTMLElement)['parentElement'] as HTMLElement;
                                 const classList = parent.classList;
                                 if (classList.contains('open')) {
@@ -391,14 +391,17 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                   params.rsha = item.details![item.details!.length - 1 ].sha;
                 }
                 this.showDiffPosts.push(params);
-            } catch (error) {
+            }
+            catch (error) {
                 // params = undefined;
             }
-            a.onclick = () => {
-                if (params) {
-                    this._api.postMessage(params);
-                }
-            };
+            if (item.details && item.details.length === 1) {
+                a.onclick = () => {
+                    if (params) {
+                        this._api.postMessage(params);
+                    }
+                };
+            }
             a.innerText = `${item.title}`;
             li.appendChild(a);
             selectedFiles.appendChild(li);
@@ -418,6 +421,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             const author = DOM.getElementById<HTMLInputElement>('author')!.value;
             const before = DOM.getElementById<HTMLInputElement>('before')!.value;
             const after = DOM.getElementById<HTMLInputElement>('after')!.value;
+            const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
             that._api.postMessage({
                 type: 'search',
                 search: searchText,
@@ -425,7 +429,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 author: author,
                 since: that.getSince(),
                 before: before,
-                after: after
+                after: after,
+                showMergeCommits: showMergeCommits
             });
         });
    }
