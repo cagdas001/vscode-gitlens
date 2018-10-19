@@ -1,6 +1,11 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import * as ipc from 'node-ipc';
 import * as path from 'path';
+import { Comment, GitCommentService } from '../gitCommentService';
+import { commands } from 'vscode';
+import { Commands } from './common';
+import { operationTypes } from './addLineComments';
+import { GitCommit } from '../git/git';
 
 // This holds the text that user enters in the editor
 export let dataPayload: string;
@@ -9,6 +14,7 @@ export let maxWindowAllowed = 1;
 // holds the count of running apps
 export let runningAppCount = 0;
 export let exceedsMaxWindowWarningMessage = `It's not allowed to run more than ${maxWindowAllowed} window(s)`;
+let currentProcess: ChildProcess;
 
 /**
  * Sets the runningAppCount value to the given num
@@ -36,6 +42,11 @@ export function clearPayload() {
  * @returns Spawned process
  */
 export function runApp(appName: string) {
+
+    // if (currentProcess) {
+    //     currentProcess.kill();
+    // }
+
     const spawnEnvironment = JSON.parse(JSON.stringify(process.env));
     delete spawnEnvironment.ATOM_SHELL_INTERNAL_RUN_AS_NODE;
     delete spawnEnvironment.ELECTRON_RUN_AS_NODE;
@@ -47,8 +58,20 @@ export function runApp(appName: string) {
     const appPath = path.join(__dirname, appName);
 
     // increasing the runningAppCount by 1
-    runningAppCount += 1;
-    return spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
+    if (appName == 'bitbucket-comment-app') runningAppCount += 1;
+    const app = spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
+
+    app.stdout.on('data', (data) => {
+    });
+
+    app.stderr.on('data', (data) => {
+    });
+
+    app.on('close', (code) => {
+    });
+
+    currentProcess = app;
+    return app;
 }
 
 /**
@@ -91,5 +114,100 @@ export function getComment(initText: string = '') {
                 ipc.disconnect('bitbucketCommentApp');
             }
         });
+    });
+}
+
+let ipcForCommentViewer = new ipc.IPC;
+/**
+ * Initialize comment to show on the electron app
+ * @param comments: Comments to show.
+ */
+export function initComment(comments: Comment[]) {
+    // setting up the IPC for communication
+
+    ipcForCommentViewer.config.id = 'vscode-comment-viewer';
+    ipcForCommentViewer.config.retry = 1000;
+    ipcForCommentViewer.config.networkPort = 8001;
+    ipcForCommentViewer.connectToNet('bitbucketCommentViewerApp', function() {
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.on('connect', function() {
+            ipcForCommentViewer.log('connected...');
+            ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+                id: ipcForCommentViewer.config.id,
+                command: 'connected'
+            });
+        });
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.on('app.message', function(data: any) {
+            if (data.command === 'reply.comment') {
+                const comment = data.payload;
+
+                commands.executeCommand(Commands.AddLineComment, {
+                    line: +comment.Line,
+                    fileName: comment.Path,
+                    id: +comment.Id,
+                    commit: comment.Commit as GitCommit,
+                    message: comment.Message,
+                    type: operationTypes.Reply
+                });
+            }
+            else if (data.command === 'edit.comment') {
+                const comment = data.payload;
+                commands.executeCommand(Commands.AddLineComment, {
+                    line: +comment.Line,
+                    fileName: comment.Path,
+                    id: +comment.Id,
+                    commit: comment.Commit as GitCommit,
+                    message: comment.Message,
+                    type: operationTypes.Edit
+                });
+            }
+            else if (data.command === 'delete.comment') {
+                const comment = data.payload;
+                commands.executeCommand(Commands.AddLineComment, {
+                    line: +comment.Line,
+                    fileName: comment.Path,
+                    id: +comment.Id,
+                    commit: comment.Commit as GitCommit,
+                    message: comment.Message,
+                    type: operationTypes.Delete
+                });
+            }
+            else if (data.command === 'add.comment') {
+                commands.executeCommand(Commands.AddLineComment,
+                    {
+                        fileName: GitCommentService.commentViewerFilename,
+                        commit: GitCommentService.commentViewerCommit,
+                        line: GitCommentService.commentViewerLine != -1 ? GitCommentService.commentViewerLine : undefined
+                    }
+                );
+            }
+            else if (data.command === 'ui.ready' && comments) {
+                // ui is ready, init the markdown editor with initText
+                ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+                    id: ipcForCommentViewer.config.id,
+                    command: 'init.editor',
+                    payload: comments
+                });
+            }
+            else if (data.command === 'close') {
+                ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
+            }
+        });
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+            id: ipcForCommentViewer.config.id,
+            command: 'init.editor',
+            payload: comments
+        });
+    });
+}
+
+/**
+ * Show comment on running comment viewer app
+ * @param comments: Comments to show.
+ */
+export function showComment(comments: Comment[]) {
+    ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+        id: ipcForCommentViewer.config.id,
+        command: 'init.editor',
+        payload: comments
     });
 }

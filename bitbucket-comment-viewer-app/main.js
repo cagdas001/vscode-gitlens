@@ -16,8 +16,8 @@ function createWindow() {
         frame: false,
         toolbar: false,
         skipTaskbar: true,
-        width: 500,
-        height: 450
+        width: 750,
+        height: 480
     });
 
     mainWindow.loadFile('index.html');
@@ -31,8 +31,9 @@ function createWindow() {
     });
 
     // node-ipc configurations
-    ipc.config.id = 'bitbucketCommentApp';
+    ipc.config.id = 'bitbucketCommentViewerApp';
     ipc.config.retry = 1500;
+    ipc.config.networkPort = 8001;
     ipc.config.maxConnections = 1;
 
     ipc.serveNet(function() {
@@ -54,17 +55,48 @@ function createWindow() {
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
+
                 mainWindow.webContents.send('init.editor', data.payload);
+                mainWindow.show();
+                mainWindow.focus();
             }
 
-            ipcMain.on('save.comment', function(event, arg) {
+            ipcMain.on('reply.comment', function(event, arg) {
                 // send comment to the VSCode app
                 ipc.server.emit(socket, 'app.message', {
                     id: ipc.config.id,
-                    command: 'save.comment',
+                    command: 'reply.comment',
                     payload: arg
                 });
-                // once saved, close
+                // close(null, null);
+            });
+            ipcMain.on('edit.comment', function(event, arg) {
+                // send comment to the VSCode app
+                ipc.server.emit(socket, 'app.message', {
+                    id: ipc.config.id,
+                    command: 'edit.comment',
+                    payload: arg
+                });
+                // close(null, null);
+            });
+            ipcMain.on('delete.comment', function(event, arg) {
+                // send comment to the VSCode app
+                ipc.server.emit(socket, 'app.message', {
+                    id: ipc.config.id,
+                    command: 'delete.comment',
+                    payload: arg
+                });
+                // close(null, null);
+            });
+            ipcMain.on('add.comment', function(event, arg) {
+                // send comment to the VSCode app
+                ipc.server.emit(socket, 'app.message', {
+                    id: ipc.config.id,
+                    command: 'add.comment'
+                });
+                // close(null, null);
+            });
+            ipcMain.on('close', function(event, arg) {
                 close(null, null);
             });
             // it's taking some time for the app to be ready
