@@ -3709,6 +3709,7 @@
     "dependencies": {
         "@types/node-ipc": "^9.1.1",
         "axios": "^0.18.0",
+        "axios-retry": "^3.1.1",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
         "electron": "^3.0.3",

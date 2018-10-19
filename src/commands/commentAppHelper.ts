@@ -192,6 +192,11 @@ export function initComment(comments: Comment[]) {
                 ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
             }
         });
+        ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
+            id: ipcForCommentViewer.config.id,
+            command: 'init.editor',
+            payload: comments
+        });
     });
 }
 

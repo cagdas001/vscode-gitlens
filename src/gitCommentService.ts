@@ -8,6 +8,7 @@ import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
 import { AddLineCommentCommand } from './commands/addLineComments';
 import { GitUri } from './git/gitUri';
+import axiosRetry from 'axios-retry';
 import { runApp, showComment, initComment } from './commands/commentAppHelper';
 
 /**
@@ -106,6 +107,12 @@ export class GitCommentService implements Disposable {
         } as GitCommit;
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
+        await GitCommentService.getCredentials();
+        let app;
+        if (!GitCommentService.commentViewerActive) {
+            app = runApp('bitbucket-comment-viewer-app');
+        }
+
         const allComments = await Container.commentService
         .loadComments(AddLineCommentCommand.currentFileGitCommit)
         .then(res => (res as Comment[])!);
@@ -115,16 +122,16 @@ export class GitCommentService implements Disposable {
 
         GitCommentService.lastFetchedComments = comments;
 
-        if (!GitCommentService.commentViewerActive) {
-            const app = await runApp('bitbucket-comment-viewer-app');
+        if (!GitCommentService.commentViewerActive && app) {
             GitCommentService.commentViewerActive = true;
             app.on('exit', function() {
                 GitCommentService.commentViewerActive = false;
             });
             initComment(comments);
         }
-        else showComment(comments);
-
+        else {
+            showComment(comments);
+        }
         GitCommentService.commentViewerCommit = fileCommit;
         GitCommentService.commentViewerFilename = filename;
         GitCommentService.commentViewerLine = -1;
@@ -133,7 +140,6 @@ export class GitCommentService implements Disposable {
 
     async refreshView() {
         if (GitCommentService.lastFetchedComments) {
-            console.log('JUMLAHNYA akhir = ' + GitCommentService.lastFetchedComments.length);
 
             if (!GitCommentService.commentViewerActive) {
                 const app = await runApp('bitbucket-comment-viewer-app');
@@ -164,6 +170,11 @@ export class GitCommentService implements Disposable {
         const commit = lineState !== undefined ? lineState.commit : undefined;
         if (commit === undefined) return undefined;
 
+        await GitCommentService.getCredentials();
+        let app;
+        if (!GitCommentService.commentViewerActive) {
+            app = await runApp('bitbucket-comment-viewer-app');
+        }
         const allComments = await Container.commentService
         .loadComments(commit)
         .then(res => (res as Comment[])!);
@@ -171,8 +182,7 @@ export class GitCommentService implements Disposable {
         GitCommentService.lastFetchedComments = comments;
         console.log('JUMLAHNYA awal = ' + GitCommentService.lastFetchedComments.length);
 
-        if (!GitCommentService.commentViewerActive) {
-            const app = await runApp('bitbucket-comment-viewer-app');
+        if (!GitCommentService.commentViewerActive && app) {
             GitCommentService.commentViewerActive = true;
             app.on('exit', function() {
                 GitCommentService.commentViewerActive = false;
@@ -262,10 +272,11 @@ export class GitCommentService implements Disposable {
 
         let next: string | null | undefined = url;
         while (next) {
-            await Axios.create({
+            const client = await Axios.create({
                 auth: auth
-            })
-                .get(next)
+            });
+            await axiosRetry(client, { retries: 3 });
+            await client.get(next)
                 .then(v => {
                     const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
                     items!.forEach(c => {
@@ -438,7 +449,8 @@ export class GitCommentService implements Disposable {
                         Path: fileName,
                         Sha: commit.sha,
                         ParentId: parentId ? parentId : undefined,
-                        Replies: []
+                        Replies: [],
+                        Name: 'You'
                     };
                     if (line) {
                         newComment.Type = CommentType.Line;
