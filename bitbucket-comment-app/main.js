@@ -26,8 +26,7 @@ function createWindow() {
         frame: false,
         skipTaskbar: true,
         width: 500,
-        height: 450,
-        opacity: 0.85
+        height: 450
     });
 
     mainWindow.loadFile('index.html');
