@@ -1162,7 +1162,7 @@ export class GitService implements Disposable {
     async getLogForSearch(
         repoPath: string,
         searchByMap: Map<GitRepoSearchBy, string>,
-        options: { maxCount?: number, showMergeCommits?: boolean } = {}
+        options: { maxCount?: number; showMergeCommits?: boolean } = {}
     ): Promise<GitLog | undefined> {
         Logger.log(`getLogForSearch('${repoPath}', '${searchByMap}', ${options.maxCount})`);
 
@@ -1216,7 +1216,7 @@ export class GitService implements Disposable {
             }
             searchArgs = [...searchArgs, ...args];
 
-            if (!options.showMergeCommits) {
+            if (!options.showMergeCommits && options.showMergeCommits !== undefined) {
                 searchArgs = [...searchArgs, '--no-merges'];
             }
         });

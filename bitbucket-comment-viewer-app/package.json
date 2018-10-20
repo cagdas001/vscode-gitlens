@@ -1,0 +1,7 @@
+{
+  "name": "bitbucket-comment-viewer-app",
+  "version": "1.0.0",
+  "description": "An electron app that serves Comment Viewer for GitLens Extension",
+  "main": "main.js",
+  "author": "Afrisal Yodi Purnama"
+}

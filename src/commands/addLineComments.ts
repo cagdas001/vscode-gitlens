@@ -29,7 +29,7 @@ export interface AddLineCommentsCommandArgs {
 /**
  * Different Comment management commands.
  */
-enum operationTypes {
+export enum operationTypes {
     Create,
     Delete,
     Edit,
@@ -213,14 +213,13 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                     // checking if it's allowed to spawn a new app
                     if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
                         return undefined;
                     }
 
                     // spawn the external electron app
                     // that contains the customized UI for multiline comment
                     // currently a simple Markdown editor
-                    const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                    const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
                     app.on('exit', function() {
                         const commentText = commentAppHelper.dataPayload;
                         if (commentText) {
@@ -241,14 +240,13 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                     // checking if it's allowed to spawn a new app
                     if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                        window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
                         return undefined;
                     }
 
                     // spawn the external electron app
                     // that contains the customized UI for multiline comment
                     // currently a simple Markdown editor
-                    const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                    const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
                     app.on('exit', function() {
                         const commentText = commentAppHelper.dataPayload;
                         if (commentText) {
@@ -288,14 +286,13 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                 // checking if it's allowed to spawn a new app
                 if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                    window.showWarningMessage(commentAppHelper.exceedsMaxWindowWarningMessage);
                     return undefined;
                 }
 
                 // spawn the external electron app
                 // that contains the customized UI for multiline comment
                 // currently a simple Markdown editor
-                const app = commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
+                const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
                 app.on('exit', function() {
                     const commentText = commentAppHelper.dataPayload;
                     if (commentText) {
