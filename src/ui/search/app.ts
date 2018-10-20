@@ -203,10 +203,14 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             }
                         }
                         else {
+                            let branches = '';
+                            if (Array.isArray(element.commit.branches) && element.commit.branches.length > 0) {
+                                branches = `<div>In ${element.commit.branches.length} branches: ${element.commit.branches.join(', ')}</div>`;
+                            }
                             // add a commit to the list of selected commits
                             const selectedCommitRow =  document.createElement('li' );
                             selectedCommitRow.id = `selected-` + r1.id;
-                            selectedCommitRow.innerHTML = `<div class='commit-label'> ${element.label} </div> <div>${element.commit._shortSha} ${element.detail}</div>`;
+                            selectedCommitRow.innerHTML = `<div class='commit-label'> ${element.label} </div> <div>${element.commit._shortSha} ${element.detail}</div>${branches}`;
                             commitedList!.appendChild(selectedCommitRow);
 
                             // get the list of commited files

@@ -50,6 +50,7 @@ export abstract class GitCommit {
     readonly originalFileName: string | undefined;
     previousFileName: string | undefined;
     workingFileName?: string;
+    public branches?: string[];
 
     protected readonly _fileName: string;
     protected _previousSha: string | undefined;
@@ -158,6 +159,10 @@ export abstract class GitCommit {
     }
 
     private _dateFormatter?: Dates.IDateFormatter;
+
+    setBranches(branches: string[]) {
+        this.branches = branches;
+    }
 
     formatDate(format?: string | null) {
         if (format == null) {

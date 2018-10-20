@@ -9,6 +9,7 @@ import { GitStatusFileStatus, IGitStatusFile } from './status';
 export class GitLogCommit extends GitCommit {
     nextSha?: string;
     nextFileName?: string;
+    public branches?: string[];
 
     constructor(
         type: GitCommitType,
@@ -57,6 +58,11 @@ export class GitLogCommit extends GitCommit {
         if (this._resolvedPreviousFileSha !== undefined) return this._resolvedPreviousFileSha;
 
         return this.isFile && this.previousSha ? this.previousSha : `${this.sha}^`;
+    }
+
+    setBranches(branches: string[]) {
+        this.branches = branches;
+        super.setBranches(branches);
     }
 
     getDiffStatus(): string {
