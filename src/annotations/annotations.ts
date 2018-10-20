@@ -261,27 +261,9 @@ export class Annotations {
         commit: GitCommit,
         uri: GitUri,
         chunkLine: GitDiffChunkLine | undefined,
-        line: number,
-        comments?: Comment[]
+        line: number
     ): MarkdownString | undefined {
         let message = '';
-
-        message += `\n\n **InLine Comments :** `;
-        message += `[\`${GlyphChars.Pencil}\`](${AddLineCommentCommand.getMarkdownCommandArgs({
-            line: line,
-            fileName: commit.fileName,
-            commit: commit
-        })} "Add Comment")`;
-
-        if (comments!.length) {
-            for (const ele of comments!) {
-                // just call level 0, other children will be called recursively as replies.
-                if (!ele.ParentId) {
-                    message += `\n`;
-                    message += this.commentRender(0, ele);
-                }
-            }
-        }
 
         if (chunkLine !== undefined && commit.previousSha === undefined) {
             const codeDiff = this.getCodeDiff(chunkLine);
@@ -355,39 +337,9 @@ export class Annotations {
                 : undefined;
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
 
-        let comments: Comment[];
-
-        if (GitCommentService.showCommentsCache && GitCommentService.lastFetchedComments) {
-            comments = GitCommentService.lastFetchedComments;
-            GitCommentService.showCommentsCache = false;
-            let message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
-            if (comments.length > 0 && comments[0].Type === CommentType.File) {
-                message = this.getHoverDiffMessageFileComment(comments);
-            }
-            return {
-                hoverMessage: message
-            } as DecorationOptions;
-        }
-
         let message;
-        if (AddLineCommentCommand.showFileCommitComment) {
-            const allComments = await Container.commentService
-                .loadComments(AddLineCommentCommand.currentFileGitCommit)
-                .then(res => (res as Comment[])!);
-            comments = allComments.filter(
-                c => c.Path === AddLineCommentCommand.currentFileName && c.Type === CommentType.File
-            );
-            AddLineCommentCommand.showFileCommitComment = false;
 
-            GitCommentService.lastFetchedComments = comments;
-            message = this.getHoverDiffMessageFileComment(comments);
-        }
-        else {
-            const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
-            comments = allComments.filter(c => c.Line! === line);
-            GitCommentService.lastFetchedComments = comments;
-            message = this.getHoverDiffMessage(commit, uri, chunkLine, line, comments);
-        }
+        message = this.getHoverDiffMessage(commit, uri, chunkLine, line);
 
         return {
             hoverMessage: message

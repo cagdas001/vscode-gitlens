@@ -163,8 +163,9 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
-                c1.innerHTML = `<div class='commit-label'> ${element.label} </div> <div> ${element.description}</div>
-                `;
+
+                const isMergeCommits = element.hasOwnProperty('commit') && element.commit.parentShas.length > 1;
+                c1.innerHTML = `<div class='commit-label'>${isMergeCommits ? `<span class="icon-merge">Ⓜ</span>` : ''}${element.label}</div><div>${element.description}</div>`;
 
                 if (!element.commit) {
                     r1.hidden = true;
@@ -202,10 +203,14 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             }
                         }
                         else {
+                            let branches = '';
+                            if (Array.isArray(element.commit.branches) && element.commit.branches.length > 0) {
+                                branches = `<div>In ${element.commit.branches.length} branches: ${element.commit.branches.join(', ')}</div>`;
+                            }
                             // add a commit to the list of selected commits
                             const selectedCommitRow =  document.createElement('li' );
                             selectedCommitRow.id = `selected-` + r1.id;
-                            selectedCommitRow.innerHTML = `<div class='commit-label'> ${element.label} </div> <div>${element.commit._shortSha} ${element.detail}</div>`;
+                            selectedCommitRow.innerHTML = `<div class='commit-label'> ${element.label} </div> <div>${element.commit._shortSha} ${element.detail}</div>${branches}`;
                             commitedList!.appendChild(selectedCommitRow);
 
                             // get the list of commited files
@@ -417,22 +422,30 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected onBind() {
         const that = this;
         DOM.listenAll('.postme', 'click', function(this: HTMLButtonElement) {
-            const searchText = DOM.getElementById<HTMLInputElement>('searchText')!.value;
-            const author = DOM.getElementById<HTMLInputElement>('author')!.value;
-            const before = DOM.getElementById<HTMLInputElement>('before')!.value;
-            const after = DOM.getElementById<HTMLInputElement>('after')!.value;
-            const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
-            that._api.postMessage({
-                type: 'search',
-                search: searchText,
-                branch: that.getBranch(),
-                author: author,
-                since: that.getSince(),
-                before: before,
-                after: after,
-                showMergeCommits: showMergeCommits
-            });
+            that.doSearch();
         });
+
+        DOM.listenAll('#showMergeCommits', 'change', function(this: HTMLButtonElement) {
+            that.doSearch();
+        });
+   }
+
+   protected doSearch() {
+       const searchText = DOM.getElementById<HTMLInputElement>('searchText')!.value;
+       const author = DOM.getElementById<HTMLInputElement>('author')!.value;
+       const before = DOM.getElementById<HTMLInputElement>('before')!.value;
+       const after = DOM.getElementById<HTMLInputElement>('after')!.value;
+       const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
+       this._api.postMessage({
+           type: 'search',
+           search: searchText,
+           branch: this.getBranch(),
+           author: author,
+           since: this.getSince(),
+           before: before,
+           after: after,
+           showMergeCommits: showMergeCommits
+       });
    }
 
     protected getBranch(): string {

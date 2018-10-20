@@ -32,7 +32,7 @@ export interface AddLineCommentsCommandArgs {
 /**
  * Different Comment management commands.
  */
-enum operationTypes {
+export enum operationTypes {
     Create,
     Delete,
     Edit,

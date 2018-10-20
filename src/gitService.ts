@@ -1162,7 +1162,7 @@ export class GitService implements Disposable {
     async getLogForSearch(
         repoPath: string,
         searchByMap: Map<GitRepoSearchBy, string>,
-        options: { maxCount?: number, showMergeCommits?: boolean } = {}
+        options: { maxCount?: number; showMergeCommits?: boolean } = {}
     ): Promise<GitLog | undefined> {
         Logger.log(`getLogForSearch('${repoPath}', '${searchByMap}', ${options.maxCount})`);
 
@@ -1216,7 +1216,7 @@ export class GitService implements Disposable {
             }
             searchArgs = [...searchArgs, ...args];
 
-            if (!options.showMergeCommits) {
+            if (!options.showMergeCommits && options.showMergeCommits !== undefined) {
                 searchArgs = [...searchArgs, '--no-merges'];
             }
         });
@@ -1236,6 +1236,21 @@ export class GitService implements Disposable {
             );
 
             if (log !== undefined) {
+                // fetch the branches contains the commit
+                for (const commit of log.commits.values()) {
+                    if (commit !== undefined) {
+                        if (commit.isMerge) {
+                            const branchesString = await Git.branch_contains(repoPath, commit.sha, { all: true });
+                            const branches = branchesString
+                                .replace('*', '')
+                                .split('\n')
+                                .map(branch => branch.trim().replace(/^remotes\//gi, ''))
+                                .filter(branch => branch);
+                            commit.setBranches(branches);
+                        }
+                    }
+                }
+
                 const opts = { ...options };
                 log.query = (maxCount: number | undefined) =>
                     this.getLogForSearch(repoPath, searchByMap, { ...opts, maxCount: maxCount });

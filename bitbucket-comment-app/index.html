@@ -25,6 +25,7 @@
 		});
 		require('./renderer.js');
 		const { ipcRenderer } = require('electron');
+
 		// init the editor with incoming value
 		ipcRenderer.on('init.editor', function (event, arg) {
 			// some conversions for BitBucket Markdown integration

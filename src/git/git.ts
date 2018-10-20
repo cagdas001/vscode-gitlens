@@ -370,13 +370,19 @@ export class Git {
         return gitCommand({ cwd: repoPath }, ...params);
     }
 
-    static branch_contains(repoPath: string, ref: string, options: { remote: boolean } = { remote: false }) {
-        const params = ['-c', 'color.branch=false', 'branch', '--contains'];
+    static async branch_contains(repoPath: string, ref: string, options: { remote?: boolean, all?: boolean } = { remote: false, all: false }) {
+        const params = ['-c', 'color.branch=false', 'branch'];
         if (options.remote) {
             params.push('-r');
         }
 
-        return gitCommand({ cwd: repoPath }, ...params, ref);
+        if (options.all) {
+            params.push('-a');
+        }
+
+        params.push('--contains');
+
+        return await gitCommand({ cwd: repoPath }, ...params, ref);
     }
 
     static checkout(repoPath: string, fileName: string, sha: string) {

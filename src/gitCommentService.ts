@@ -8,6 +8,8 @@ import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
 import { AddLineCommentCommand } from './commands/addLineComments';
 import { GitUri } from './git/gitUri';
+import axiosRetry from 'axios-retry';
+import { runApp, showComment, initComment } from './commands/commentAppHelper';
 
 /**
  * Enum to for different comment types.
@@ -31,6 +33,7 @@ export class Comment {
     Path?: string;
     Sha?: string;
     Replies: Comment[] = [];
+    Name?: string;
 }
 
 /**
@@ -54,9 +57,15 @@ export class GitCommentService implements Disposable {
     public static showCommentsCache: boolean = false;
     public static showCommentsCacheFile: boolean = false;
 
+    public static commentViewerActive: boolean = false;
+    public static commentViewerLine: number = -1;
+    public static commentViewerCommit: GitCommit;
+    public static commentViewerFilename: string;
+
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
         commands.registerCommand('gitlens.showCommentCommitFile', this.showFileComment, this);
+        commands.registerCommand('gitlens.showCommentCommitLine', this.showLineComment, this);
     }
 
     async commentToFile() {
@@ -90,7 +99,6 @@ export class GitCommentService implements Disposable {
         );
 
         AddLineCommentCommand.currentFileName = filename;
-        AddLineCommentCommand.showFileCommitComment = true;
 
         let fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
@@ -99,22 +107,93 @@ export class GitCommentService implements Disposable {
         } as GitCommit;
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
-        const editor = window.activeTextEditor;
-        if (editor) {
-            const firstLength = editor.document.lineAt(0).text.length;
-            const position = editor.selection.active;
-            const newPosition = position.with(0, 0);
-            const newSelection = new Selection(newPosition, newPosition);
-            editor.selection = newSelection;
-            setTimeout(() => {
-                const newPosition = position.with(0, firstLength);
-                const originalSelection = new Selection(newPosition, newPosition);
-                editor.selection = originalSelection;
-                setTimeout(() => {
-                    commands.executeCommand('editor.action.showHover');
-                }, 500);
-            }, 200);
+        await GitCommentService.getCredentials();
+        let app;
+        if (!GitCommentService.commentViewerActive) {
+            app = runApp('bitbucket-comment-viewer-app');
         }
+
+        const allComments = await Container.commentService
+        .loadComments(AddLineCommentCommand.currentFileGitCommit)
+        .then(res => (res as Comment[])!);
+        const comments = allComments.filter(
+            c => c.Path === AddLineCommentCommand.currentFileName && (c.Type === CommentType.File)
+        );
+
+        GitCommentService.lastFetchedComments = comments;
+
+        if (!GitCommentService.commentViewerActive && app) {
+            GitCommentService.commentViewerActive = true;
+            app.on('exit', function() {
+                GitCommentService.commentViewerActive = false;
+            });
+            initComment(comments);
+        }
+        else {
+            showComment(comments);
+        }
+        GitCommentService.commentViewerCommit = fileCommit;
+        GitCommentService.commentViewerFilename = filename;
+        GitCommentService.commentViewerLine = -1;
+        return;
+    }
+
+    async refreshView() {
+        if (GitCommentService.lastFetchedComments) {
+
+            if (!GitCommentService.commentViewerActive) {
+                const app = await runApp('bitbucket-comment-viewer-app');
+                GitCommentService.commentViewerActive = true;
+                app.on('exit', function() {
+                    GitCommentService.commentViewerActive = false;
+                });
+                initComment(GitCommentService.lastFetchedComments);
+            }
+            else showComment(GitCommentService.lastFetchedComments);
+        }
+    }
+
+    async showLineComment() {
+        if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
+        const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
+        const filename: string = path.relative(
+            AddLineCommentCommand.currentFileCommit.repoPath,
+            gitUri.fsPath
+        );
+
+        AddLineCommentCommand.currentFileName = filename;
+
+        const editor = window.activeTextEditor;
+        const position = editor.selection.active;
+
+        const lineState = Container.lineTracker.getState(position.line);
+        const commit = lineState !== undefined ? lineState.commit : undefined;
+        if (commit === undefined) return undefined;
+
+        await GitCommentService.getCredentials();
+        let app;
+        if (!GitCommentService.commentViewerActive) {
+            app = await runApp('bitbucket-comment-viewer-app');
+        }
+        const allComments = await Container.commentService
+        .loadComments(commit)
+        .then(res => (res as Comment[])!);
+        const comments = allComments.filter(c => c.Line! === position.line);
+        GitCommentService.lastFetchedComments = comments;
+        console.log('JUMLAHNYA awal = ' + GitCommentService.lastFetchedComments.length);
+
+        if (!GitCommentService.commentViewerActive && app) {
+            GitCommentService.commentViewerActive = true;
+            app.on('exit', function() {
+                GitCommentService.commentViewerActive = false;
+            });
+            initComment(comments);
+        }
+        else showComment(comments);
+
+        GitCommentService.commentViewerCommit = commit;
+        GitCommentService.commentViewerFilename = filename;
+        GitCommentService.commentViewerLine = position.line;
 
         return;
     }
@@ -168,7 +247,6 @@ export class GitCommentService implements Disposable {
      */
     private static async getCredentials(): Promise<AxiosBasicCredentials> {
         if (!GitCommentService.username || !GitCommentService.password) {
-            // await commands.executeCommand(Commands.BitBuckerServiceAuth);
             await Container.gitExplorer.bitbucketLogin();
         }
         return { username: GitCommentService.username, password: GitCommentService.password } as AxiosBasicCredentials;
@@ -194,10 +272,11 @@ export class GitCommentService implements Disposable {
 
         let next: string | null | undefined = url;
         while (next) {
-            await Axios.create({
+            const client = await Axios.create({
                 auth: auth
-            })
-                .get(next)
+            });
+            await axiosRetry(client, { retries: 3 });
+            await client.get(next)
                 .then(v => {
                     const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
                     items!.forEach(c => {
@@ -209,6 +288,9 @@ export class GitCommentService implements Disposable {
                                 }
                                 if (c.id) {
                                     comment.Id = c.id;
+                                }
+                                if (c.user.display_name) {
+                                    comment.Name = c.user.display_name;
                                 }
 
                                 // If comment is a file comment, there is no inline field.
@@ -235,6 +317,9 @@ export class GitCommentService implements Disposable {
                             else {
                                 if (c!.content) {
                                     comment.Message = c.content;
+                                }
+                                if (c.display_name) {
+                                    comment.Name = c.display_name;
                                 }
                                 if (c.comment_id) {
                                     comment.Id = c.comment_id;
@@ -348,6 +433,7 @@ export class GitCommentService implements Disposable {
             line_to: parentId ? undefined : to || undefined,
             parent_id: parentId ? parentId : undefined
         };
+
         await Axios.create({
             auth: auth
         })
@@ -363,7 +449,8 @@ export class GitCommentService implements Disposable {
                         Path: fileName,
                         Sha: commit.sha,
                         ParentId: parentId ? parentId : undefined,
-                        Replies: []
+                        Replies: [],
+                        Name: 'You'
                     };
                     if (line) {
                         newComment.Type = CommentType.Line;
@@ -374,7 +461,7 @@ export class GitCommentService implements Disposable {
                     if (newComment.ParentId) {
                         function checkReply(replies: Comment[]) {
                             return replies.map(comment => {
-                                if (comment.Id === newComment.ParentId) {
+                                if (comment.Id == newComment.ParentId) {
                                     newComment.Type = comment.Type;
                                     newComment.Line = comment.Line;
                                     if (comment.Replies) {
@@ -396,7 +483,7 @@ export class GitCommentService implements Disposable {
                         GitCommentService.lastFetchedComments.push(newComment);
                     }
                 }
-                this.updateView();
+                this.refreshView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -404,7 +491,9 @@ export class GitCommentService implements Disposable {
                     GitCommentService.ClearCredentials();
                 }
                 else {
-                    window.showErrorMessage('Failed to add comment/reply.');
+                    console.log(e.response);
+
+                    window.showErrorMessage('Failed to add comment/reply. ');
                 }
             });
     }
@@ -445,13 +534,13 @@ export class GitCommentService implements Disposable {
                 window.showInformationMessage('Comment/reply edited successfully.');
                 if (GitCommentService.lastFetchedComments) {
                     GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
-                        if (item.Id === commentId) {
+                        if (item.Id == commentId) {
                             item.Message = comment;
                         }
                         else {
                             function checkReply(replies: Comment[]) {
                                 for (const reply of replies) {
-                                    if (reply.Id === commentId) {
+                                    if (reply.Id == commentId) {
                                         reply.Message = comment;
                                     }
                                     if (reply.Replies) {
@@ -466,7 +555,7 @@ export class GitCommentService implements Disposable {
                         return item;
                     });
                 }
-                this.updateView();
+                this.refreshView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
@@ -506,16 +595,19 @@ export class GitCommentService implements Disposable {
                                 if (reply.Replies) {
                                     checkReply(reply.Replies);
                                 }
-                                return reply.Id !== commentId;
+                                return reply.Id != commentId
                             });
                         }
                         if (comment.Replies) {
                             comment.Replies = checkReply(comment.Replies);
                         }
-                        return comment.Id !== commentId;
+
+                        return comment.Id != commentId
                     });
+                    console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
+
                 }
-                this.updateView();
+                this.refreshView();
             })
             .catch(e => {
                 if (e!.response!.status === 401 || e!.response!.status === 403) {
