@@ -261,7 +261,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // All nodes are expanded
                         const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
                         for (const treeNode of treeHtml) {
-                            treeNode.addEventListener('click', function(e) {
+                            treeNode.addEventListener('click', event => {
                                 const parent  = (event.target as HTMLElement)['parentElement'] as HTMLElement;
                                 const classList = parent.classList;
                                 if (classList.contains('open')) {
@@ -395,11 +395,13 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             catch (error) {
                 // params = undefined;
             }
-            a.onclick = () => {
-                if (params) {
-                    this._api.postMessage(params);
-                }
-            };
+            if (item.details && item.details.length === 1) {
+                a.onclick = () => {
+                    if (params) {
+                        this._api.postMessage(params);
+                    }
+                };
+            }
             a.innerText = `${item.title}`;
             li.appendChild(a);
             selectedFiles.appendChild(li);
