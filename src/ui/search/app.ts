@@ -219,8 +219,9 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             // If label and full message lengths are not same, there are more lines
                             if (element.label.length < element.commit.message.length) {
                                 // replace the last three dots with link
-                                const threeDotsEnd = element.label.length;
-                                const threeDotsStart = threeDotsEnd - 1;
+                                element.label = element.label
+                                    .replace(/\u2026/g, '')
+                                    .replace(/\u00a0/g, '');
                                 showMoreLink = document.createElement('a');
                                 showMoreLink.href = '#';
                                 showMoreLink.innerHTML = '... >';
@@ -230,14 +231,11 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 showMoreLink.setAttribute('fullmsg', element.commit.message);
                                 showMoreLink.setAttribute('summary', element.label);
                                 showMoreLink.addEventListener('click', this.showMoreLess);
-                                element.label = (element.label as string).substring(0, threeDotsStart);
                             }
                             // add a commit to the list of selected commits
                             const selectedCommitRow = document.createElement('li');
                             selectedCommitRow.id = `selected-` + r1.id;
-                            selectedCommitRow.innerHTML = `<div class='commit-label'> ${element.label} </div> <div>${
-                                element.commit._shortSha
-                            } ${element.detail}</div>${branches}`;
+                            selectedCommitRow.innerHTML = `<div class='commit-label'>${element.label}</div><div>${element.commit._shortSha}${element.detail}</div>${branches}`;
                             // add show more link
                             if (showMoreLink) {
                                 const commitLabel = selectedCommitRow.getElementsByClassName('commit-label').item(0);
@@ -473,7 +471,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         const idStartIndex = 'show-more-'.length;
         const idEndIndex = element.id.length;
         const sha = element.id.substring(idStartIndex, idEndIndex);
-        console.log(sha);
         const selectedCommit = DOM.getElementById(`selected-commit-${sha}`);
         const commitLabel = selectedCommit.getElementsByClassName('commit-label').item(0);
         const action = element.getAttribute('action');
