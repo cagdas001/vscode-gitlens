@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en-US">
+
 <head>
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
   <title>Gitlens Comment Viewer</title>
@@ -10,8 +11,12 @@
 </head>
 
 <body>
-  <button id="addBtn" type="button" class="btn btn-outline-secondary float-left" style="margin-left: 20px; margin-top: 10px;">Add Comment</button>
-  <button id="closeBtn" type="button" class="btn btn-outline-danger float-right" style="margin-right: 20px; margin-top: 10px;">Close</button>
+  <div class="fixed-top" style="margin-top: 10px;">
+    <button id="addBtn" type="button" class="btn btn-outline-secondary float-left" style="margin-left: 20px;">Add
+      Comment</button>
+    <button id="closeBtn" type="button" class="btn btn-outline-danger float-right" style="margin-right: 20px;">Close</button>
+  </div>
+
   <div id="w">
     <div id="container">
       <ul id="comments">
@@ -24,7 +29,7 @@
     const logger = require('electron').remote.require('./logger');
 
     require('./renderer.js');
-		const { ipcRenderer } = require('electron');
+    const { ipcRenderer } = require('electron');
 
     function reply(data) {
       ipcRenderer.send('reply.comment',
@@ -39,28 +44,28 @@
     }
 
     function edit(data) {
-			ipcRenderer.send('edit.comment', {
-          Id: data.getAttribute('commentId'),
-          Line: data.getAttribute('line'),
-          Path: data.getAttribute('path'),
-          Message: data.getAttribute('message'),
-          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
-        }
+      ipcRenderer.send('edit.comment', {
+        Id: data.getAttribute('commentId'),
+        Line: data.getAttribute('line'),
+        Path: data.getAttribute('path'),
+        Message: data.getAttribute('message'),
+        Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+      }
       );
     }
 
     function del(data) {
-			ipcRenderer.send('delete.comment', {
-          Id: data.getAttribute('commentId'),
-          Line: data.getAttribute('line'),
-          Path: data.getAttribute('path'),
-          Message: data.getAttribute('message'),
-          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+      ipcRenderer.send('delete.comment', {
+        Id: data.getAttribute('commentId'),
+        Line: data.getAttribute('line'),
+        Path: data.getAttribute('path'),
+        Message: data.getAttribute('message'),
+        Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
       });
     }
 
-    var showdown  = require('showdown'),
-    converter = new showdown.Converter();
+    var showdown = require('showdown'),
+      converter = new showdown.Converter();
     var commentUl = document.getElementById('comments');
 
     function render(comments, ul) {
@@ -77,9 +82,9 @@
         var contentDiv = document.createElement('div');
         contentDiv.className = 'cmmnt-content';
         contentDiv.innerHTML =
-        `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a></header>
+          `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a></header>
         ${converter.makeHtml(comment.Message)}
-          <footer><a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="del(this);" class="userlink">Delete</a></footer>`;
+          <footer><a href="#!" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#!" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#!" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="del(this);" class="userlink">Delete</a></footer>`;
         item.appendChild(contentDiv);
 
         if (comment.Replies && comment.Replies.length > 0) {
@@ -94,13 +99,13 @@
     }
 
     // send ui.ready message to main process when the window loaded
-		window.addEventListener('load', function () {
+    window.addEventListener('load', function () {
       commentUl.innerHTML = 'Loading...';
-			ipcRenderer.send('ui.ready');
+      ipcRenderer.send('ui.ready');
     })
 
     // init the editor with the incoming value
-		ipcRenderer.on('init.editor', function (event, arg) {
+    ipcRenderer.on('init.editor', function (event, arg) {
       commentUl.innerHTML = '';
       if (arg.length == 0) {
         commentUl.innerText = 'No Comments Found';
@@ -112,13 +117,14 @@
     var addBtn = document.getElementById('addBtn');
     var closeBtn = document.getElementById('closeBtn');
 
-		addBtn.addEventListener('click', function () {
-			ipcRenderer.send('add.comment');
-		})
-		closeBtn.addEventListener('click', function () {
-			ipcRenderer.send('close');
-		})
+    addBtn.addEventListener('click', function () {
+      ipcRenderer.send('add.comment');
+    })
+    closeBtn.addEventListener('click', function () {
+      ipcRenderer.send('close');
+    })
 
   </script>
 </body>
+
 </html>
