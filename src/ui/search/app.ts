@@ -214,17 +214,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 } branches: ${element.commit.branches.join(', ')}</div>`;
                             }
 
-                            /*// Git service returns only first line of message for summary
-                            // If label has not '...', this means that's already all the message
-                            // If it has, there are more lines after first line
-                            const commitLabelLastIndex = element.label.length - 1;
-                            const threeDotsStartIndex = commitLabelLastIndex - 3;
-                            const possibleThreeDots = (element.label as string).substr(threeDotsStartIndex, 3);
-                            // If last 3 characters of label are three dots
-                            // There may be more lines, we need to show full message
-                            if (possibleThreeDots === '...') {
-
-                            }*/
                             let showMoreLink: HTMLAnchorElement | undefined;
                             // Git service returns only first line of message for label
                             // If label and full message lengths are not same, there are more lines
