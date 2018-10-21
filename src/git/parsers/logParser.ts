@@ -120,7 +120,7 @@ export class GitLogParser {
 
                     if (entry.summary !== undefined) {
                         // Remove the trailing newline
-                        entry.summary = entry.summary.slice(0, -1);
+                        entry.summary = entry.summary.replace(/\n/g,' ');
                     }
                     break;
 
