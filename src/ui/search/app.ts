@@ -438,7 +438,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             catch (error) {
                 // params = undefined;
             }
-            if (item.details && item.details.length === 1) {
+            if (item.details && item.details.length >= 1) {
                 a.onclick = () => {
                     if (params) {
                         this._api.postMessage(params);
