@@ -117,7 +117,7 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
         try {
             const log = await Container.git.getLogForSearch(repoPath, searchByValuesMap, {
                 maxCount: args.maxCount,
-                showMergeCommits: args.showMergeCommits,
+                showMergeCommits: args.showMergeCommits
             });
 
             if (progressCancellation.token.isCancellationRequested) return undefined;
