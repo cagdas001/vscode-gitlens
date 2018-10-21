@@ -165,7 +165,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 const c1 = r1.insertCell();
 
                 const isMergeCommits = element.hasOwnProperty('commit') && element.commit.parentShas.length > 1;
-                c1.innerHTML = `<div class='commit-label'>${isMergeCommits ? `<span class="icon-merge">Ⓜ</span>` : ''}${
+                c1.innerHTML = `<div class='commit-label commit-label--list'>${isMergeCommits ? `<span class="icon-merge">Ⓜ</span>` : ''}${
                     element.label
                 }</div><div>${element.description}</div>`;
 
