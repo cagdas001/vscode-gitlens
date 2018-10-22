@@ -35,6 +35,10 @@ a:hover { text-decoration: underline; }
 /* page layout structure */
 #w { display: block; width: 700px; margin: 0 auto; padding-top: 65px; }
 
+#buttons-container {
+  background: #e3e0ef url('images/bg.png');
+}
+
 #container {
   display: block;
   width: 100%;
