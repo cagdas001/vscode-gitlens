@@ -60,13 +60,15 @@
     }
 
     function del(data) {
-      ipcRenderer.send('delete.comment', {
-        Id: data.getAttribute('commentId'),
-        Line: data.getAttribute('line'),
-        Path: data.getAttribute('path'),
-        Message: data.getAttribute('message'),
-        Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
-      });
+      if (window.confirm('Are you sure to delete this comment?')) {
+        ipcRenderer.send('delete.comment', {
+          Id: data.getAttribute('commentId'),
+          Line: data.getAttribute('line'),
+          Path: data.getAttribute('path'),
+          Message: data.getAttribute('message'),
+          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+        });
+      }
     }
 
     var showdown = require('showdown'),

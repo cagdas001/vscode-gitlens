@@ -301,17 +301,12 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 else if (args.type === operationTypes.Edit || args.type === operationTypes.Reply) {
                     this.showOrRunApp(args);
                 }
-                else if (args.type === operationTypes.Delete) {
-                    // delete comment.
-                    const pick = await window.showQuickPick(['Yes', 'No'], {
-                        placeHolder: 'Are you sure you want to delete this comment (Yes/No)?',
-                        ignoreFocusOut: true
+
+                if (args.type === operationTypes.Delete) {
+                    Container.commentService.deleteComment(args.commit!, args.id)
+                    .then(() => {
+                        Container.commentsDecorator.fetchComments();
                     });
-                    if (pick! === 'Yes') {
-                        Container.commentService.deleteComment(args.commit!, args.id).then(() => {
-                            Container.commentsDecorator.fetchComments();
-                        });
-                    }
                 }
             }
             else {
