@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 	<meta charset="UTF-8">
 	<title>Enter Your Comment</title>
 	<link rel="stylesheet" href="simplemde.min.css">
 	<link rel="stylesheet" href="bootstrap.min.css">
 </head>
-
 <body>
 	<textarea id="markdown-editor">
 	</textarea>
@@ -15,15 +13,14 @@
 	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
 	<script src="simplemde.min.js"></script>
-	<script src="bootstrap.min.js"></script>
 	<script>
 		// Editor
 		var simplemde = new SimpleMDE({
 			element: document.getElementById("markdown-editor"),
+			toolbar: ["heading", "bold", "italic", "ordered-list", "unordered-list", "quote", "code", "link", "preview"],
 			autofocus: true,
 			placeholder: "Write your comment..."
 		});
-		require('./renderer.js');
 		const { ipcRenderer } = require('electron');
 
 		// init the editor with incoming value
@@ -73,5 +70,4 @@
 		}
 	</script>
 </body>
-
 </html>

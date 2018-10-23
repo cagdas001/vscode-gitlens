@@ -1,7 +1,7 @@
 // ipcMain and ipcRenderer for Communication between electron main/renderer processes
 // node-ipc for communication between electron and vscode extension host (they're independent processes)
 // electron's ipc modules are not helpful to send (or receive) data to external apps
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const ipc = require('node-ipc');
 
 // connectionString is an unique identifier for each process spawned (or ExternalApp instance)
@@ -26,22 +26,24 @@ function createWindow() {
         frame: false,
         skipTaskbar: true,
         width: 500,
-        height: 450
+        height: 450,
+        alwaysOnTop: true
     });
 
     mainWindow.loadFile('index.html');
 
+    // the app now stays always on top - it's currently unnecessary
     // pressing Ctrl + Space will bring the app to the front
-    const shortcut = globalShortcut.register('CommandOrControl+1', () => {
+    /*const shortcut = globalShortcut.register('CommandOrControl+1', () => {
         mainWindow.focus();
-    });
+    });*/
 
     // Open the DevTools.
-    //mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function() {
-        globalShortcut.unregister('CommandOrControl+1');
+        // globalShortcut.unregister('CommandOrControl+1');
         mainWindow = null;
     });
 
@@ -67,7 +69,7 @@ function createWindow() {
             if (data.command === 'init.editor') {
                 mainWindow.webContents.send('init.editor', data.payload);
             } else if (data.command === 'hide') {
-                mainWindow.minimize();
+                mainWindow.hide();
             } else if (data.command === 'show') {
                 mainWindow.show();
             } else if (data.command === 'exit') {

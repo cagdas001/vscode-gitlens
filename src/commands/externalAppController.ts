@@ -94,7 +94,7 @@ export class ExternalApp {
             });
             ipc.of[connectionString].on('app.message', function(data: any) {
                 const message = JSON.stringify(data);
-                self.eventEmitter.emit('app.message', message);
+                self.eventEmitter.emit('vscode.app.message', message);
             });
         });
     }

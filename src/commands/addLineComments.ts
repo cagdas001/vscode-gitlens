@@ -60,13 +60,15 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     static showFileCommitComment: boolean = false;
 
     // required parameters for bitBucketCommentApp
-    private eventEmitter = new EventEmitter();
+    private eventEmitter: EventEmitter;
     private BITBUCKET_COMMENT_APP_NAME = 'bitbucket-comment-app';
     private BITBUCKET_COMMENT_APP_PATH = path.join(__dirname, this.BITBUCKET_COMMENT_APP_NAME);
     private electronPath = externalAppController.getElectronPath();
 
     constructor() {
         super(Commands.AddLineComment);
+        this.eventEmitter = new EventEmitter();
+        this.eventEmitter.on('vscode.app.message', this.onMessage);
     }
 
     /**
@@ -75,9 +77,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
      */
     onMessage(message: any) {
         const data = JSON.parse(message);
+        const commentArgs = commentApp.getCommentArgs();
         // make sure we're getting the message from correct window
         if (data.id === commentApp.getConnectionString() && data.command === 'save.comment') {
-            const commentArgs = commentApp.getCommentArgs();
             if (!commentArgs.id) {
                 // new comment
                 Container.commentService
@@ -109,9 +111,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             commentApp.setCommentArgs({} as AddLineCommentsCommandArgs);
         }
         else if (data.id === commentApp.getConnectionString() && data.command === 'ui.ready') {
-            if (commentApp.getCommentArgs().type === operationTypes.Edit) {
-                commentApp.initEditor(commentApp.getCommentArgs()!.message!);
-            }
+            const initText = commentArgs.type === operationTypes.Edit ? commentArgs.message! : ''; 
+            commentApp.initEditor(commentArgs.message!);
         }
         else if (data.id === commentApp.getConnectionString() && data.command === 'close') {
             commentApp.close();
@@ -142,7 +143,6 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             }
             commentApp = new CommentApp(this.electronPath, this.BITBUCKET_COMMENT_APP_PATH, this.eventEmitter, args);
             commentApp.setKeepOpen(true);
-            this.eventEmitter.on('app.message', this.onMessage);
             commentApp.run();
             commentApp.setUpConnection();
         }
