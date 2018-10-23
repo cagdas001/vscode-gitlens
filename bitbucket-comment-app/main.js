@@ -21,7 +21,6 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         maximizable: false,
         resizable: false,
-        minimizable: false,
         fullscreenable: false,
         frame: false,
         skipTaskbar: true,
@@ -69,7 +68,7 @@ function createWindow() {
             if (data.command === 'init.editor') {
                 mainWindow.webContents.send('init.editor', data.payload);
             } else if (data.command === 'hide') {
-                mainWindow.hide();
+                mainWindow.minimize();
             } else if (data.command === 'show') {
                 mainWindow.show();
             } else if (data.command === 'exit') {
