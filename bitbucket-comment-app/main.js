@@ -66,7 +66,11 @@ function createWindow() {
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
-                mainWindow.webContents.send('init.editor', data.payload);
+                // some conversions for BitBucket Markdown integration
+                // see the gitlab ticket for details
+                let text = data.payload.replace(/\u200C/g, '');
+                text = text.replace(/\n\n/g, '\n');
+                mainWindow.webContents.send('init.editor', text);
             } else if (data.command === 'hide') {
                 mainWindow.minimize();
             } else if (data.command === 'show') {
@@ -76,11 +80,16 @@ function createWindow() {
             }
 
             ipcMain.on('save.comment', function(event, arg) {
+                // some conversions for BitBucket Markdown integration
+                // see the gitlab ticket for details
+                let replacedVal = arg.replace(/\n/g, '\n\n');
+                replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+                replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
                 // send comment to the VSCode app
                 ipc.server.emit(socket, 'app.message', {
                     id: ipc.config.id,
                     command: 'save.comment',
-                    payload: arg
+                    payload: replacedVal
                 });
                 // once saved, close
                 close();

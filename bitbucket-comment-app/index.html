@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<meta charset="UTF-8">
 	<title>Enter Your Comment</title>
 	<link rel="stylesheet" href="simplemde.min.css">
 	<link rel="stylesheet" href="bootstrap.min.css">
 </head>
+
 <body>
 	<textarea id="markdown-editor">
 	</textarea>
@@ -17,7 +19,7 @@
 		// Editor
 		var simplemde = new SimpleMDE({
 			element: document.getElementById("markdown-editor"),
-			toolbar: ["heading", "bold", "italic", "ordered-list", "unordered-list", "quote", "code", "link", "preview"],
+			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
 			autofocus: true,
 			placeholder: "Write your comment..."
 		});
@@ -25,10 +27,6 @@
 
 		// init the editor with incoming value
 		ipcRenderer.on('init.editor', function (event, arg) {
-			// some conversions for BitBucket Markdown integration
-			// see the gitlab ticket for details
-			arg = arg.replace(/\u200C/g, '');
-			arg = arg.replace(/\n\n/g, '\n');
 			simplemde.value(arg);
 		})
 
@@ -36,12 +34,7 @@
 		var cancelBtn = document.getElementById('cancelBtn');
 
 		saveBtn.addEventListener('click', function () {
-			// some conversions for BitBucket Markdown integration
-			// see the gitlab ticket for details
-			let replacedVal = simplemde.value().replace(/\n/g, '\n\n');
-			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
-			replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
-			ipcRenderer.send('save.comment', replacedVal);
+			ipcRenderer.send('save.comment', simplemde.value());
 		})
 
 		cancelBtn.addEventListener('click', function () {
@@ -70,4 +63,5 @@
 		}
 	</script>
 </body>
+
 </html>
