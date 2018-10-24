@@ -35,13 +35,15 @@
     var commentsMap = new Map();
 
     function reply(data) {
+      let commentID = data.getAttribute('commentID');
+      let comment = commentsMap[commentID];
       ipcRenderer.send('reply.comment',
         {
-          Id: data.getAttribute('commentId'),
-          Line: data.getAttribute('line'),
-          Path: data.getAttribute('path'),
-          Message: data.getAttribute('message'),
-          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+          Id: comment.Id,
+          Line: comment.Line,
+          Path: comment.Path,
+          Message: comment.Message,
+          Commit: comment.Commit
         }
       );
     }
@@ -60,13 +62,15 @@
     }
 
     function del(data) {
+      let commentID = data.getAttribute('commentID');
+      let comment = commentsMap[commentID];
       if (window.confirm('Are you sure to delete this comment?')) {
         ipcRenderer.send('delete.comment', {
-          Id: data.getAttribute('commentId'),
-          Line: data.getAttribute('line'),
-          Path: data.getAttribute('path'),
-          Message: data.getAttribute('message'),
-          Commit: JSON.parse(decodeURIComponent(data.getAttribute('commit')))
+          Id: comment.Id,
+          Line: comment.Line,
+          Path: comment.Path,
+          Message: comment.Message,
+          Commit: comment.Commit
         });
       }
     }
@@ -93,7 +97,7 @@
         contentDiv.innerHTML =
           `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a></header>
         ${converter.makeHtml(comment.Message)}
-          <footer><a href="#!" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#!" commentId="${comment.Id}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#!" commentId="${comment.Id}" line="${comment.Line}" path="${comment.Path}" commit="${encodeURIComponent(JSON.stringify(comment.Commit))}" message="${comment.Message}" onclick="del(this);" class="userlink">Delete</a></footer>`;
+          <footer><a href="#!" commentId="${comment.Id}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#!" commentId="${comment.Id}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#!" commentId="${comment.Id}" onclick="del(this);" class="userlink">Delete</a></footer>`;
         item.appendChild(contentDiv);
 
         if (comment.Replies && comment.Replies.length > 0) {
