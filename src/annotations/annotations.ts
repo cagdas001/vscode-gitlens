@@ -142,8 +142,11 @@ export class Annotations {
         line: number = 0
     ): MarkdownString {
         if (AddLineCommentCommand.showFileCommitComment) return new MarkdownString();
-        if (GitCommentService.showCommentsCacheFile && GitCommentService.lastFetchedComments && GitCommentService.lastFetchedComments.length > 0){
-
+        if (
+            GitCommentService.showCommentsCacheFile &&
+            GitCommentService.lastFetchedComments &&
+            GitCommentService.lastFetchedComments.length > 0
+        ) {
             GitCommentService.showCommentsCacheFile = false;
             if (GitCommentService.lastFetchedComments[0].Type === CommentType.File) {
                 return new MarkdownString();
@@ -299,9 +302,7 @@ export class Annotations {
         return markdown;
     }
 
-    static getHoverDiffMessageFileComment(
-        comments?: Comment[]
-    ): MarkdownString | undefined {
+    static getHoverDiffMessageFileComment(comments?: Comment[]): MarkdownString | undefined {
         let message = '';
 
         if (comments!.length) {
@@ -337,6 +338,7 @@ export class Annotations {
         const chunkLine = await Container.git.getDiffForLine(uri, line, sha);
 
         let message;
+
         message = this.getHoverDiffMessage(commit, uri, chunkLine, line);
 
         return {

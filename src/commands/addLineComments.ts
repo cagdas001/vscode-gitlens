@@ -1,4 +1,6 @@
 'use strict';
+import { EventEmitter } from 'events';
+import * as path from 'path';
 import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
@@ -8,8 +10,9 @@ import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
 import { Strings } from '../system';
 import { ShowDiffMessage } from '../ui/ipc';
-import * as commentAppHelper from './commentAppHelper';
+import { CommentApp } from './commentAppController';
 import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
+import * as externalAppController from './externalAppController';
 
 /**
  *Encapsulates infomation to perform comments management command.
@@ -36,6 +39,9 @@ export enum operationTypes {
     Reply
 }
 
+// the app instance
+let commentApp: CommentApp;
+
 /**
  * Command to add/edit/delete/reply an inline or file comment.
  */
@@ -53,8 +59,92 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     static currentFileName: string;
     static showFileCommitComment: boolean = false;
 
+    // required parameters for bitBucketCommentApp
+    private eventEmitter: EventEmitter;
+    private BITBUCKET_COMMENT_APP_NAME = 'bitbucket-comment-app';
+    private BITBUCKET_COMMENT_APP_PATH = path.join(__dirname, this.BITBUCKET_COMMENT_APP_NAME);
+    private electronPath = externalAppController.getElectronPath();
+
     constructor() {
         super(Commands.AddLineComment);
+        this.eventEmitter = new EventEmitter();
+        this.eventEmitter.on('vscode.app.message', this.onMessage);
+    }
+
+    /**
+     * onMessage event for node-ipc connections
+     * @param message Message data from the external app
+     */
+    onMessage(message: any) {
+        const data = JSON.parse(message);
+        const commentArgs = commentApp.getCommentArgs();
+        // make sure we're getting the message from correct window
+        if (data.id === commentApp.getConnectionString() && data.command === 'save.comment') {
+            if (!commentArgs.id) {
+                // new comment
+                Container.commentService
+                    .addComment(
+                        commentArgs.commit!,
+                        data.payload as string,
+                        commentArgs.fileName as string,
+                        commentArgs.line
+                    )
+                    .then(() => {
+                        Container.commentsDecorator.fetchComments();
+                    });
+            }
+            else if (commentArgs.type === operationTypes.Reply) {
+                // reply
+                Container.commentService.addComment(
+                    commentArgs.commit!,
+                    data.payload as string,
+                    commentArgs.fileName as string,
+                    commentArgs.line,
+                    commentArgs.id
+                );
+            }
+            else if (commentArgs.type === operationTypes.Edit) {
+                // edit
+                Container.commentService.editComment(commentArgs.commit!, data.payload!, commentArgs.id!);
+            }
+            // clear the args of instance
+            commentApp.setCommentArgs({} as AddLineCommentsCommandArgs);
+        }
+        else if (data.id === commentApp.getConnectionString() && data.command === 'ui.ready') {
+            const initText = commentArgs.type === operationTypes.Edit ? commentArgs.message! : '';
+            commentApp.initEditor(commentArgs.message!);
+        }
+        else if (data.id === commentApp.getConnectionString() && data.command === 'close') {
+            commentApp.close();
+        }
+    }
+
+    /**
+     * This function decides automatically if it needs to run a new app,
+     * or just show (un-hide) the current open app.
+     *
+     * If there are running instance, and keepOpen is set to true
+     * then shows the running instance.
+     *
+     * Otherwise spawns a new one.
+     * @param args Comment arguments
+     */
+    showOrRunApp(args: AddLineCommentsCommandArgs) {
+        if (commentApp && commentApp.isRunning() && commentApp.getKeepOpen()) {
+            commentApp.setCommentArgs(args);
+            const initText = args.type === operationTypes.Edit ? args.message! : '';
+            commentApp.initEditor(initText);
+            commentApp.show();
+        }
+        else {
+            if (!externalAppController.isAllowedToRun()) {
+                window.showWarningMessage(externalAppController.exceedsMaxWindowWarningMessage);
+                return;
+            }
+            commentApp = new CommentApp(this.electronPath, this.BITBUCKET_COMMENT_APP_PATH, this.eventEmitter, args);
+            commentApp.run();
+            commentApp.setUpConnection();
+        }
     }
 
     /**
@@ -135,7 +225,6 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     }
 
     async execute(editor?: TextEditor, uri?: Uri, args: AddLineCommentsCommandArgs = {}) {
-        const BITBUCKET_COMMENT_APP_NAME = 'bitbucket-comment-app';
         uri = getCommandUri(uri, editor);
 
         const gitUri = uri && (await GitUri.fromUri(uri));
@@ -208,65 +297,10 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                     if (pick instanceof CommandQuickPickItem) return pick.execute();
                 }
-                if (args.type === operationTypes.Edit) {
-                    // edit comment.
-
-                    // checking if it's allowed to spawn a new app
-                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                        return undefined;
-                    }
-
-                    // spawn the external electron app
-                    // that contains the customized UI for multiline comment
-                    // currently a simple Markdown editor
-                    const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
-                    app.on('exit', function() {
-                        const commentText = commentAppHelper.dataPayload;
-                        if (commentText) {
-                            // call service to edit the comment
-                            Container.commentService.editComment(args.commit!, commentText!, args.id!);
-                        }
-                        // decreasing the runningAppCount by 1
-                        const decreasedCount = commentAppHelper.runningAppCount - 1;
-                        commentAppHelper.setRunningAppCount(decreasedCount);
-                        commentAppHelper.clearPayload();
-                    });
-                    // get comment from external app
-                    commentAppHelper.getComment(args.message);
+                else if (args.type === operationTypes.Edit || args.type === operationTypes.Reply) {
+                    this.showOrRunApp(args);
                 }
 
-                if (args.type === operationTypes.Reply) {
-                    // reply comment
-
-                    // checking if it's allowed to spawn a new app
-                    if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                        return undefined;
-                    }
-
-                    // spawn the external electron app
-                    // that contains the customized UI for multiline comment
-                    // currently a simple Markdown editor
-                    const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
-                    app.on('exit', function() {
-                        const commentText = commentAppHelper.dataPayload;
-                        if (commentText) {
-                            // call service to add the comment
-                            Container.commentService.addComment(
-                                args.commit!,
-                                commentText as string,
-                                args.fileName as string,
-                                args.line,
-                                args.id
-                            );
-                        }
-                        // decreasing the runningAppCount by 1
-                        const decreasedCount = commentAppHelper.runningAppCount - 1;
-                        commentAppHelper.setRunningAppCount(decreasedCount);
-                        commentAppHelper.clearPayload();
-                    });
-                    // get comment from external app
-                    commentAppHelper.getComment();
-                }
                 if (args.type === operationTypes.Delete) {
                     Container.commentService.deleteComment(args.commit!, args.id)
                     .then(() => {
@@ -275,37 +309,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 }
             }
             else {
-                // new comment.
-
-                // checking if it's allowed to spawn a new app
-                if (commentAppHelper.runningAppCount >= commentAppHelper.maxWindowAllowed) {
-                    return undefined;
-                }
-
-                // spawn the external electron app
-                // that contains the customized UI for multiline comment
-                // currently a simple Markdown editor
-                const app = await commentAppHelper.runApp(BITBUCKET_COMMENT_APP_NAME);
-                app.on('exit', function() {
-                    const commentText = commentAppHelper.dataPayload;
-                    if (commentText) {
-                        // call service to add the comment
-                        Container.commentService.addComment(
-                            args.commit!,
-                            commentText as string,
-                            args.fileName as string,
-                            args.line
-                        ).then(() => {
-                            Container.commentsDecorator.fetchComments();
-                        });
-                    }
-                    // decreasing the runningAppCount by 1
-                    const decreasedCount = commentAppHelper.runningAppCount - 1;
-                    commentAppHelper.setRunningAppCount(decreasedCount);
-                    commentAppHelper.clearPayload();
-                });
-                // get comment from external app
-                commentAppHelper.getComment();
+                this.showOrRunApp(args);
             }
 
             return undefined;

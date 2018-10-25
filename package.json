@@ -1430,6 +1430,12 @@
                     "default": false,
                     "description": "Specifies whether to use BitBucket API version 2",
                     "scope": "window"
+                },
+                "gitlens.externalApp.keepOpen": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Keep the comment app open in background for quicker response.",
+                    "scope": "window"
                 }
             }
         },
@@ -3712,7 +3718,7 @@
         "axios-retry": "^3.1.1",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
-        "electron": "^3.0.3",
+        "electron": "^3.0.5",
         "iconv-lite": "0.4.23",
         "lodash.debounce": "4.0.8",
         "lodash.once": "4.1.1",

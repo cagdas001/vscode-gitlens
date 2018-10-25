@@ -57,8 +57,6 @@ export function runApp(appName: string) {
 
     const appPath = path.join(__dirname, appName);
 
-    // increasing the runningAppCount by 1
-    if (appName == 'bitbucket-comment-app') runningAppCount += 1;
     const app = spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
 
     app.stdout.on('data', (data) => {
@@ -127,8 +125,7 @@ export function initComment(comments: Comment[]) {
 
     ipcForCommentViewer.config.id = 'vscode-comment-viewer';
     ipcForCommentViewer.config.retry = 1000;
-    ipcForCommentViewer.config.networkPort = 8001;
-    ipcForCommentViewer.connectToNet('bitbucketCommentViewerApp', function() {
+    ipcForCommentViewer.connectTo('bitbucketCommentViewerApp', function() {
         ipcForCommentViewer.of.bitbucketCommentViewerApp.on('connect', function() {
             ipcForCommentViewer.log('connected...');
             ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
@@ -191,11 +188,6 @@ export function initComment(comments: Comment[]) {
             else if (data.command === 'close') {
                 ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
             }
-        });
-        ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
-            id: ipcForCommentViewer.config.id,
-            command: 'init.editor',
-            payload: comments
         });
     });
 }
