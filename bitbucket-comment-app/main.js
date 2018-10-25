@@ -14,7 +14,13 @@ let connectionString = process.argv[2];
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow,
+    uiReady = false;
+// it's taking a bit time for the app to be ready
+// we have to wait for the app to be ready for some operations (like init.editor)
+ipcMain.once('ui.ready', function(event, arg) {
+    uiReady = true;
+});
 
 function createWindow() {
     // Create the browser window.
@@ -53,8 +59,24 @@ function createWindow() {
     let connectionSocket;
 
     ipc.serve(function() {
+        function sendUIReady() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'ui.ready'
+            });
+        }
         ipc.server.on('app.message', function(data, socket) {
             connectionSocket = socket;
+
+            // if ui becomes ready before the client connected
+            // an error will be thrown
+            if (data.command === 'connected') {
+                if (uiReady) {
+                    sendUIReady();
+                } else {
+                    ipcMain.once('ui.ready', sendUIReady);
+                }
+            }
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
@@ -105,14 +127,6 @@ function createWindow() {
             });
             // once saved, close
             close();
-        });
-        // it's taking a bit time for the app to be ready
-        // we have to wait for the app to be ready for some operations (like init.editor)
-        ipcMain.once('ui.ready', function(event, arg) {
-            ipc.server.emit(connectionSocket, 'app.message', {
-                id: ipc.config.id,
-                command: 'ui.ready'
-            });
         });
         ipcMain.on('close', close);
     });
