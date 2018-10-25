@@ -4,79 +4,131 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const ipc = require('node-ipc');
 
+// connectionString is an unique identifier for each process spawned (or ExternalApp instance)
+// we're passing it as an command line argument to the app
+// so they (external app and VSCode) both know and can communicate each other
+if (process.argv.length < 3) {
+    app.quit();
+}
+let connectionString = process.argv[2];
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow,
+    uiReady = false;
+// it's taking a bit time for the app to be ready
+// we have to wait for the app to be ready for some operations (like init.editor)
+ipcMain.once('ui.ready', function(event, arg) {
+    uiReady = true;
+});
 
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
         maximizable: false,
-        resizeable: false,
+        resizable: false,
+        fullscreenable: false,
         frame: false,
-        toolbar: false,
         skipTaskbar: true,
         width: 500,
-        height: 450
+        height: 450,
+        alwaysOnTop: true
     });
 
     mainWindow.loadFile('index.html');
 
+    // the app now stays always on top - it's currently unnecessary
+    // pressing Ctrl + Space will bring the app to the front
+    /*const shortcut = globalShortcut.register('CommandOrControl+1', () => {
+        mainWindow.focus();
+    });*/
+
     // Open the DevTools.
-    //mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function() {
+        // globalShortcut.unregister('CommandOrControl+1');
         mainWindow = null;
     });
 
     // node-ipc configurations
-    ipc.config.id = 'bitbucketCommentApp';
+    ipc.config.id = connectionString;
     ipc.config.retry = 1500;
     ipc.config.maxConnections = 1;
+    let connectionSocket;
 
-    ipc.serveNet(function() {
+    ipc.serve(function() {
+        function sendUIReady() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'ui.ready'
+            });
+        }
         ipc.server.on('app.message', function(data, socket) {
-            /**
-             * Send a close message to VSCode
-             * And quits the app
-             * @param {*} event Not required for this function
-             * @param {*} arg Not required for this function
-             */
-            function close(event, arg) {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'close'
-                });
-                //ipc.server.stop();
-                app.quit(); // remote.getCurrentWindow().close();
+            connectionSocket = socket;
+
+            // if ui becomes ready before the client connected
+            // an error will be thrown
+            if (data.command === 'connected') {
+                if (uiReady) {
+                    sendUIReady();
+                } else {
+                    ipcMain.once('ui.ready', sendUIReady);
+                }
             }
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
-                mainWindow.webContents.send('init.editor', data.payload);
+                // some conversions for BitBucket Markdown integration
+                // see the gitlab ticket for details
+                let text = data.payload.replace(/\u200C/g, '');
+                text = text.replace(/\n\n/g, '\n');
+                mainWindow.webContents.send('init.editor', text);
+            } else if (data.command === 'hide') {
+                // hide dock icon on macOS
+                if (process.platform === 'darwin') {
+                    app.dock.hide();
+                }
+                mainWindow.hide();
+            } else if (data.command === 'show') {
+                // show dock icon on macOS
+                if (process.platform === 'darwin') {
+                    app.dock.show();
+                }
+                mainWindow.show();
+            } else if (data.command === 'exit') {
+                ipc.server.stop();
+                app.quit();
             }
-
-            ipcMain.on('save.comment', function(event, arg) {
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'save.comment',
-                    payload: arg
-                });
-                // once saved, close
-                close(null, null);
-            });
-            // it's taking some time for the app to be ready
-            // we have to wait for the app to be ready for some operations (like init.editor)
-            ipcMain.on('ui.ready', function(event, arg) {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'ui.ready'
-                });
-            });
-            ipcMain.on('close', close);
         });
+        /**
+         * Send a close message to VSCode
+         * The VSCode will back with a 'hide' or 'exit' message according to keepOpen parameter.
+         */
+        function close() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'close'
+            });
+        }
+
+        ipcMain.on('save.comment', function(event, arg) {
+            // some conversions for BitBucket Markdown integration
+            // see the gitlab ticket for details
+            let replacedVal = arg.replace(/\n/g, '\n\n');
+            replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+            replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'save.comment',
+                payload: replacedVal
+            });
+            // once saved, close
+            close();
+        });
+        ipcMain.on('close', close);
     });
     ipc.server.start();
 }

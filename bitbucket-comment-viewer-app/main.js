@@ -6,7 +6,8 @@ const ipc = require('node-ipc');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow,
+    uiReady = false;
 
 function createWindow() {
     // Create the browser window.
@@ -33,82 +34,91 @@ function createWindow() {
     // node-ipc configurations
     ipc.config.id = 'bitbucketCommentViewerApp';
     ipc.config.retry = 1500;
-    ipc.config.networkPort = 8001;
     ipc.config.maxConnections = 1;
+    let connectionSocket;
+    // it's taking a bit time for the app to be ready
+    // we have to wait for the app to be ready for some operations (like init.editor)
+    ipcMain.once('ui.ready', function() {
+        uiReady = true;
+    });
 
-    ipc.serveNet(function() {
+    ipc.serve(function() {
+        function sendUIReady() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'ui.ready'
+            });
+        }
         ipc.server.on('app.message', function(data, socket) {
-            /**
-             * Send a close message to VSCode
-             * And quits the app
-             * @param {*} event Not required for this function
-             * @param {*} arg Not required for this function
-             */
-            function close(event, arg) {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'close'
-                });
-                //ipc.server.stop();
-                app.quit(); // remote.getCurrentWindow().close();
+            connectionSocket = socket;
+
+            if (data.command === 'connected') {
+                // the ui became ready before the client connected
+                // send the ready message
+                if (uiReady) {
+                    sendUIReady();
+                } else {
+                    // client connected but ui is still not ready
+                    // add a listener
+                    ipcMain.once('ui.ready', sendUIReady);
+                }
             }
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
-
                 mainWindow.webContents.send('init.editor', data.payload);
                 mainWindow.show();
                 mainWindow.focus();
             }
-
-            ipcMain.on('reply.comment', function(event, arg) {
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'reply.comment',
-                    payload: arg
-                });
-                // close(null, null);
-            });
-            ipcMain.on('edit.comment', function(event, arg) {
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'edit.comment',
-                    payload: arg
-                });
-                // close(null, null);
-            });
-            ipcMain.on('delete.comment', function(event, arg) {
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'delete.comment',
-                    payload: arg
-                });
-                // close(null, null);
-            });
-            ipcMain.on('add.comment', function(event, arg) {
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'add.comment'
-                });
-                // close(null, null);
-            });
-            ipcMain.on('close', function(event, arg) {
-                close(null, null);
-            });
-            // it's taking some time for the app to be ready
-            // we have to wait for the app to be ready for some operations (like init.editor)
-            ipcMain.on('ui.ready', function(event, arg) {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'ui.ready'
-                });
-            });
-            ipcMain.on('close', close);
         });
+        /**
+         * Send a close message to VSCode
+         * And quits the app
+         */
+        function close() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'close'
+            });
+            app.quit();
+        }
+
+        ipcMain.on('reply.comment', function(event, arg) {
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'reply.comment',
+                payload: arg
+            });
+            // close(null, null);
+        });
+        ipcMain.on('edit.comment', function(event, arg) {
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'edit.comment',
+                payload: arg
+            });
+            // close(null, null);
+        });
+        ipcMain.on('delete.comment', function(event, arg) {
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'delete.comment',
+                payload: arg
+            });
+            // close(null, null);
+        });
+        ipcMain.on('add.comment', function(event, arg) {
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'add.comment'
+            });
+            // close(null, null);
+        });
+        ipcMain.on('close', close);
     });
     ipc.server.start();
 }
