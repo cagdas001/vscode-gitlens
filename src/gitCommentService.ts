@@ -108,9 +108,13 @@ export class GitCommentService implements Disposable {
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
         await GitCommentService.getCredentials();
-        let app;
+        let app, canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = runApp('bitbucket-comment-viewer-app');
+            app.on('exit', function() {
+                canceled = true;
+                GitCommentService.commentViewerActive = false;
+            });
         }
 
         const allComments = await Container.commentService
@@ -120,13 +124,12 @@ export class GitCommentService implements Disposable {
             c => c.Path === AddLineCommentCommand.currentFileName && (c.Type === CommentType.File)
         );
 
+        if (canceled) return;
+
         GitCommentService.lastFetchedComments = comments;
 
         if (!GitCommentService.commentViewerActive && app) {
             GitCommentService.commentViewerActive = true;
-            app.on('exit', function() {
-                GitCommentService.commentViewerActive = false;
-            });
             initComment(comments);
         }
         else {
@@ -171,22 +174,24 @@ export class GitCommentService implements Disposable {
         if (commit === undefined) return undefined;
 
         await GitCommentService.getCredentials();
-        let app;
+        let app, canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = await runApp('bitbucket-comment-viewer-app');
+            app.on('exit', function() {
+                canceled = true;
+                GitCommentService.commentViewerActive = false;
+            });
         }
         const allComments = await Container.commentService
         .loadComments(commit)
         .then(res => (res as Comment[])!);
         const comments = allComments.filter(c => c.Line! === position.line);
         GitCommentService.lastFetchedComments = comments;
-        console.log('JUMLAHNYA awal = ' + GitCommentService.lastFetchedComments.length);
+
+        if (canceled) return;
 
         if (!GitCommentService.commentViewerActive && app) {
             GitCommentService.commentViewerActive = true;
-            app.on('exit', function() {
-                GitCommentService.commentViewerActive = false;
-            });
             initComment(comments);
         }
         else showComment(comments);

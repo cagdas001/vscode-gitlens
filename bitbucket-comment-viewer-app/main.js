@@ -76,10 +76,12 @@ function createWindow() {
          * And quits the app
          */
         function close() {
-            ipc.server.emit(connectionSocket, 'app.message', {
-                id: ipc.config.id,
-                command: 'close'
-            });
+            if (connectionSocket) {
+                ipc.server.emit(connectionSocket, 'app.message', {
+                    id: ipc.config.id,
+                    command: 'close'
+                });
+            }
             app.quit();
         }
 
