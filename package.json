@@ -1427,7 +1427,7 @@
                 },
                 "gitlens.advanced.useApiV2": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "description": "Specifies whether to use BitBucket API version 2",
                     "scope": "window"
                 },
