@@ -2,6 +2,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as ipc from 'node-ipc';
 import * as path from 'path';
+import { workspace } from 'vscode';
 
 // holds the max allowed window number, if it's 1, you will not be allowed to run second window
 export const maxWindowAllowed = 1;
@@ -12,7 +13,7 @@ export const exceedsMaxWindowWarningMessage = `It's not allowed to run more than
  * Key: string = connectionString
  * Value: ExternalApp = instance of this class
  */
-export const runningInstances: Map<string, ExternalApp> = new Map();
+export const runningInstances: Map<string, ExternalApp> = new Map<string, ExternalApp>();
 export class ExternalApp {
     protected eventEmitter: EventEmitter;
     // arguments will be passed to hostCmd
@@ -51,6 +52,7 @@ export class ExternalApp {
         this.connectionString = `${this.connectionStringPrefix}_${timestamp}`;
         this.args.push(this.connectionString);
         this.eventEmitter = eventEmitter;
+        this.keepOpen = workspace.getConfiguration().get('gitlens.externalApp.keepOpen') as boolean;
     }
 
     /**
@@ -74,7 +76,7 @@ export class ExternalApp {
         runningInstances.set(this.connectionString, this);
         this.running = true;
 
-        this.childProcess.on('exit', this.onExit);
+        this.childProcess.on('exit', this.onExit.bind(this));
     }
 
     /**
@@ -87,6 +89,7 @@ export class ExternalApp {
         // setting up the IPC for communication
         ipc.config.id = 'vscode';
         ipc.config.retry = 1000;
+        ipc.config.stopRetrying = false;
         ipc.connectTo(connectionString, function() {
             ipc.of[connectionString].on('connect', function() {
                 ipc.log(`connected to ${connectionString}`);
@@ -103,9 +106,9 @@ export class ExternalApp {
      * onExit event for the childProcess.
      */
     public onExit() {
-        ipc.disconnect(this.connectionString);
-        runningInstances.delete(this.connectionString);
+        ipc.config.stopRetrying = true;
         this.running = false;
+        runningInstances.delete(this.connectionString);
     }
 
     public quitApp() {

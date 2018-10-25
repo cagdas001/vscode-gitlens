@@ -50,19 +50,11 @@ function createWindow() {
     ipc.config.id = connectionString;
     ipc.config.retry = 1500;
     ipc.config.maxConnections = 1;
+    let connectionSocket;
 
     ipc.serve(function() {
         ipc.server.on('app.message', function(data, socket) {
-            /**
-             * Send a close message to VSCode
-             * The VSCode will back with a 'hide' or 'exit' message according to keepOpen parameter.
-             */
-            function close() {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'close'
-                });
-            }
+            connectionSocket = socket;
 
             // Init the Markdown editor with the given payload (when editing)
             if (data.command === 'init.editor') {
@@ -72,38 +64,57 @@ function createWindow() {
                 text = text.replace(/\n\n/g, '\n');
                 mainWindow.webContents.send('init.editor', text);
             } else if (data.command === 'hide') {
-                mainWindow.minimize();
+                // hide dock icon on macOS
+                if (process.platform === 'darwin') {
+                    app.dock.hide();
+                }
+                mainWindow.hide();
             } else if (data.command === 'show') {
+                // show dock icon on macOS
+                if (process.platform === 'darwin') {
+                    app.dock.show();
+                }
                 mainWindow.show();
             } else if (data.command === 'exit') {
+                ipc.server.stop();
                 app.quit();
             }
-
-            ipcMain.on('save.comment', function(event, arg) {
-                // some conversions for BitBucket Markdown integration
-                // see the gitlab ticket for details
-                let replacedVal = arg.replace(/\n/g, '\n\n');
-                replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
-                replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
-                // send comment to the VSCode app
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'save.comment',
-                    payload: replacedVal
-                });
-                // once saved, close
-                close();
-            });
-            // it's taking a bit time for the app to be ready
-            // we have to wait for the app to be ready for some operations (like init.editor)
-            ipcMain.on('ui.ready', function(event, arg) {
-                ipc.server.emit(socket, 'app.message', {
-                    id: ipc.config.id,
-                    command: 'ui.ready'
-                });
-            });
-            ipcMain.on('close', close);
         });
+        /**
+         * Send a close message to VSCode
+         * The VSCode will back with a 'hide' or 'exit' message according to keepOpen parameter.
+         */
+        function close() {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'close'
+            });
+        }
+
+        ipcMain.on('save.comment', function(event, arg) {
+            // some conversions for BitBucket Markdown integration
+            // see the gitlab ticket for details
+            let replacedVal = arg.replace(/\n/g, '\n\n');
+            replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+            replacedVal = replacedVal.replace(/\n\n\n\n/g, '\n\n\u200C\n\n');
+            // send comment to the VSCode app
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'save.comment',
+                payload: replacedVal
+            });
+            // once saved, close
+            close();
+        });
+        // it's taking a bit time for the app to be ready
+        // we have to wait for the app to be ready for some operations (like init.editor)
+        ipcMain.once('ui.ready', function(event, arg) {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'ui.ready'
+            });
+        });
+        ipcMain.on('close', close);
     });
     ipc.server.start();
 }
