@@ -51,28 +51,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         super('CommitSearches', bootstrap);
     }
 
-    /**
-     * This function checks if the commit details section's (right side) height exceeds
-     * the default (65% * innerHeight) value of the commit list table.
-     *
-     * If so, sets the commit list's height to that value so that
-     * both tables will grow in sync. Otherwise sets the default value.
-     *
-     * @param logsContainer The Container Div Element for the entire section
-     * @param detailsContainer The Container Div element for the commit details (right side)
-     */
-    protected adjustHeight(logsContainer: HTMLDivElement, detailsContainer: HTMLDivElement) {
-        this.innerHeight = window.innerHeight;
-        const logsContainerHeight = +logsContainer.style.maxHeight!.replace('px', '');
-
-        if (detailsContainer.scrollHeight > logsContainerHeight) {
-            logsContainer.style.maxHeight = `${detailsContainer.scrollHeight}px`;
-        }
-        else {
-            logsContainer.style.maxHeight = `${(65 * this.innerHeight) / 100}px`;
-        }
-    }
-
     protected onInitialize() {
         /**
          * Here we're setting the max-height value of the commit logs table
@@ -82,12 +60,15 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         this.innerHeight = window.innerHeight;
         const commitLogList = DOM.getElementById<HTMLDivElement>('commit-logs-table-container');
         commitLogList.style.maxHeight = `${(this.innerHeight - 150)}px`;
+
+        const commitDetails = DOM.getElementById<HTMLDivElement>('commit-details-container');
+        commitDetails.style.maxHeight = `${(this.innerHeight - 150)}px`;
+
         window.addEventListener('resize', (event) => {
             this.innerHeight = window.innerHeight;
             commitLogList.style.maxHeight = `${(this.innerHeight - 150)}px`;
+            commitDetails.style.maxHeight = `${(this.innerHeight - 150)}px`;
         });
-
-        const tablesContainer = DOM.getElementById<HTMLDivElement>('logs-container');
 
         const searchText = DOM.getElementById<HTMLInputElement>('searchText');
         this.searchText = searchText;
@@ -183,13 +164,15 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     const c1 = detailsRow.insertCell();
                     c1.innerHTML = `<span>${element.detail}</span>`;
                     c1.id = `details-${rId}`;
-                    detailsRow.hidden = true;
+                    detailsRow.style.visibility = 'hidden';
 
                     // User selects a commit
                     r1.onclick = () => {
-                        detailsRow.hidden = !detailsRow.hidden;
+                        let isHidden = detailsRow.style.visibility === 'hidden';
+                        isHidden = !isHidden;
 
-                        if (detailsRow.hidden) {
+                        if (isHidden) {
+                            detailsRow.style.visibility = 'hidden';
                             const selectCommitRow = document.getElementById(`selected-` + r1.id) as HTMLElement;
                             selectCommitRow.parentElement!.removeChild(selectCommitRow);
 
@@ -211,6 +194,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             }
                         }
                         else {
+                            detailsRow.style.visibility = 'visible';
                             let branches = '';
                             if (Array.isArray(element.commit.branches) && element.commit.branches.length > 0) {
                                 branches = `<div>In ${
@@ -320,8 +304,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 }
                             });
                         }
-
-                        this.adjustHeight(commitLogList, tablesContainer);
                     };
 
                     const seperator = list.insertRow();
