@@ -76,12 +76,16 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected onInitialize() {
         /**
          * Here we're setting the max-height value of the commit logs table
-         * to 65% of the content height
+         * to 100% - 150px of the content height
          * So if the height of the table exceeds this value, user will be able to scroll down
          */
         this.innerHeight = window.innerHeight;
         const commitLogList = DOM.getElementById<HTMLDivElement>('commit-logs-table-container');
-        commitLogList.style.maxHeight = `${(65 * this.innerHeight) / 100}px`;
+        commitLogList.style.maxHeight = `${(this.innerHeight - 150)}px`;
+        window.addEventListener('resize', (event) => {
+            this.innerHeight = window.innerHeight;
+            commitLogList.style.maxHeight = `${(this.innerHeight - 150)}px`;
+        });
 
         const tablesContainer = DOM.getElementById<HTMLDivElement>('logs-container');
 
