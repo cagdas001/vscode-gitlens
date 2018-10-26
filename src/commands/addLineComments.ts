@@ -75,27 +75,24 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
      * onMessage event for node-ipc connections
      * @param message Message data from the external app
      */
-    onMessage(message: any) {
+    async onMessage(message: any) {
         const data = JSON.parse(message);
         const commentArgs = commentApp.getCommentArgs();
         // make sure we're getting the message from correct window
         if (data.id === commentApp.getConnectionString() && data.command === 'save.comment') {
             if (!commentArgs.id) {
                 // new comment
-                Container.commentService
-                    .addComment(
-                        commentArgs.commit!,
-                        data.payload as string,
-                        commentArgs.fileName as string,
-                        commentArgs.line
-                    )
-                    .then(() => {
-                        Container.commentsDecorator.fetchComments();
-                    });
+                await Container.commentService.addComment(
+                    commentArgs.commit!,
+                    data.payload as string,
+                    commentArgs.fileName as string,
+                    commentArgs.line
+                );
+                await Container.commentsDecorator.fetchComments();
             }
             else if (commentArgs.type === operationTypes.Reply) {
                 // reply
-                Container.commentService.addComment(
+                await Container.commentService.addComment(
                     commentArgs.commit!,
                     data.payload as string,
                     commentArgs.fileName as string,
@@ -105,7 +102,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             }
             else if (commentArgs.type === operationTypes.Edit) {
                 // edit
-                Container.commentService.editComment(commentArgs.commit!, data.payload!, commentArgs.id!);
+                await Container.commentService.editComment(commentArgs.commit!, data.payload!, commentArgs.id!);
             }
             // clear the args of instance
             commentApp.setCommentArgs({} as AddLineCommentsCommandArgs);
@@ -302,10 +299,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 }
 
                 if (args.type === operationTypes.Delete) {
-                    Container.commentService.deleteComment(args.commit!, args.id)
-                    .then(() => {
-                        Container.commentsDecorator.fetchComments();
-                    });
+                    await Container.commentService.deleteComment(args.commit!, args.id);
+                    await Container.commentsDecorator.fetchComments();
                 }
             }
             else {

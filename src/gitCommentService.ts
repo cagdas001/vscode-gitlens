@@ -441,68 +441,66 @@ export class GitCommentService implements Disposable {
             parent_id: parentId ? parentId : undefined
         };
 
-        await Axios.create({
-            auth: auth
-        })
-            .post(url, data)
-            .then(response => {
-                window.showInformationMessage('Comment/reply added successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    const newComment: Comment = {
-                        Id: isV2 ? response.data.id : response.data.comment_id,
-                        Commit: commit,
-                        Message: comment,
-                        Line: line,
-                        Path: fileName,
-                        Sha: commit.sha,
-                        ParentId: parentId ? parentId : undefined,
-                        Replies: [],
-                        Name: 'You'
-                    };
-                    if (line) {
-                        newComment.Type = CommentType.Line;
-                    }
-                    else {
-                        newComment.Type = CommentType.File;
-                    }
-                    if (newComment.ParentId) {
-                        function checkReply(replies: Comment[]) {
-                            return replies.map(comment => {
-                                if (comment.Id === newComment.ParentId) {
-                                    newComment.Type = comment.Type;
-                                    newComment.Line = comment.Line;
-                                    if (comment.Replies) {
-                                        comment.Replies.push(newComment);
-                                    }
-                                    else {
-                                        comment.Replies = [newComment];
-                                    }
-                                }
-                                else if (comment.Replies) {
-                                    comment.Replies = checkReply(comment.Replies);
-                                }
-                                return comment;
-                            });
-                        }
-                        GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
-                    }
-                    else {
-                        GitCommentService.lastFetchedComments.push(newComment);
-                    }
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
-                    GitCommentService.ClearCredentials();
+        try {
+            const response = await Axios.create({ auth: auth }).post(url, data);
+            window.showInformationMessage('Comment/reply added successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                const newComment: Comment = {
+                    Id: isV2 ? response.data.id : response.data.comment_id,
+                    Commit: commit,
+                    Message: comment,
+                    Line: line,
+                    Path: fileName,
+                    Sha: commit.sha,
+                    ParentId: parentId ? parentId : undefined,
+                    Replies: [],
+                    Name: 'You'
+                };
+                if (line) {
+                    newComment.Type = CommentType.Line;
                 }
                 else {
-                    console.log(e.response);
-
-                    window.showErrorMessage('Failed to add comment/reply. ');
+                    newComment.Type = CommentType.File;
                 }
-            });
+                if (newComment.ParentId) {
+                    function checkReply(replies: Comment[]) {
+                        return replies.map(comment => {
+                            if (comment.Id === newComment.ParentId) {
+                                newComment.Type = comment.Type;
+                                newComment.Line = comment.Line;
+                                if (comment.Replies) {
+                                    comment.Replies.push(newComment);
+                                }
+                                else {
+                                    comment.Replies = [newComment];
+                                }
+                            }
+                            else if (comment.Replies) {
+                                comment.Replies = checkReply(comment.Replies);
+                            }
+                            return comment;
+                        });
+                    }
+
+                    GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
+                }
+                else {
+                    GitCommentService.lastFetchedComments.push(newComment);
+                }
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                console.log(e.response);
+
+                window.showErrorMessage('Failed to add comment/reply. ');
+            }
+        }
     }
 
     /**
@@ -533,46 +531,43 @@ export class GitCommentService implements Disposable {
             content: comment,
             comment_id: commentId
         };
-        await Axios.create({
-            auth: auth
-        })
-            .put(url, data)
-            .then(v => {
-                window.showInformationMessage('Comment/reply edited successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
-                        if (item.Id === commentId) {
-                            item.Message = comment;
-                        }
-                        else {
-                            function checkReply(replies: Comment[]) {
-                                for (const reply of replies) {
-                                    if (reply.Id === commentId) {
-                                        reply.Message = comment;
-                                    }
-                                    if (reply.Replies) {
-                                        checkReply(reply.Replies);
-                                    }
+        try {
+            const v = await Axios.create({ auth: auth }).put(url, data);
+            window.showInformationMessage('Comment/reply edited successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
+                    if (item.Id === commentId) {
+                        item.Message = comment;
+                    }
+                    else {
+                        function checkReply(replies: Comment[]) {
+                            for (const reply of replies) {
+                                if (reply.Id === commentId) {
+                                    reply.Message = comment;
+                                }
+                                if (reply.Replies) {
+                                    checkReply(reply.Replies);
                                 }
                             }
-                            if (item.Replies) {
-                                checkReply(item.Replies);
-                            }
                         }
-                        return item;
-                    });
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to add comment/reply.');
-                }
-            });
+                        if (item.Replies) {
+                            checkReply(item.Replies);
+                        }
+                    }
+                    return item;
+                });
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                window.showErrorMessage('Failed to add comment/reply.');
+            }
+        }
     }
 
     /**
@@ -589,42 +584,40 @@ export class GitCommentService implements Disposable {
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
-        await Axios.create({
-            auth: auth
-        })
-            .delete(url)
-            .then(v => {
-                window.showInformationMessage('Comment/reply deleted successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
-                        function checkReply(replies: Comment[]) {
-                            return replies.filter(reply => {
-                                if (reply.Replies) {
-                                    checkReply(reply.Replies);
-                                }
-                                return reply.Id !== commentId;
-                            });
-                        }
-                        if (comment.Replies) {
-                            comment.Replies = checkReply(comment.Replies);
-                        }
+        try {
+            const v = await Axios.create({ auth: auth }).delete(url);
+            window.showInformationMessage('Comment/reply deleted successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
+                    function checkReply(replies: Comment[]) {
+                        return replies.filter(reply => {
+                            if (reply.Replies) {
+                                checkReply(reply.Replies);
+                            }
+                            return reply.Id !== commentId;
+                        });
+                    }
 
-                        return comment.Id !== commentId;
-                    });
-                    console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
+                    if (comment.Replies) {
+                        comment.Replies = checkReply(comment.Replies);
+                    }
 
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to delete comment/reply.');
-                }
-            });
+                    return comment.Id !== commentId;
+                });
+                console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
+
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                window.showErrorMessage('Failed to delete comment/reply.');
+            }
+        }
     }
 
     private updateView() {
