@@ -25,16 +25,20 @@ export class CommentsDecoratorController implements Disposable {
     constructor() {
         this._activeEditor = window.activeTextEditor;
         if (this._activeEditor) {
-            // tslint:disable-next-line:no-floating-promises
-            this.fetchComments();
+            this.fetchComments()
+                .catch(e => {
+                    console.log(e);
+                });
         }
 
         this._disposable = Disposable.from(
             window.onDidChangeActiveTextEditor(editor => {
                 this._activeEditor = editor;
                 if (editor) {
-                    // tslint:disable-next-line:no-floating-promises
-                    this.fetchComments();
+                    this.fetchComments()
+                        .catch(e => {
+                            console.log(e);
+                        });
                 }
             }, null)
         );
