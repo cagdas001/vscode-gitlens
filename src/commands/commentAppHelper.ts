@@ -1,11 +1,11 @@
-import { spawn, ChildProcess } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import * as ipc from 'node-ipc';
 import * as path from 'path';
-import { Comment, GitCommentService } from '../gitCommentService';
 import { commands } from 'vscode';
-import { Commands } from './common';
-import { operationTypes } from './addLineComments';
 import { GitCommit } from '../git/git';
+import { Comment, GitCommentService } from '../gitCommentService';
+import { operationTypes } from './addLineComments';
+import { Commands } from './common';
 
 // This holds the text that user enters in the editor
 export let dataPayload: string;
@@ -59,13 +59,13 @@ export function runApp(appName: string) {
 
     const app = spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
 
-    app.stdout.on('data', (data) => {
+    app.stdout.on('data', data => {
     });
 
-    app.stderr.on('data', (data) => {
+    app.stderr.on('data', data => {
     });
 
-    app.on('close', (code) => {
+    app.on('close', code => {
     });
 
     currentProcess = app;
@@ -115,7 +115,7 @@ export function getComment(initText: string = '') {
     });
 }
 
-let ipcForCommentViewer = new ipc.IPC;
+const ipcForCommentViewer = new ipc.IPC();
 /**
  * Initialize comment to show on the electron app
  * @param comments: Comments to show.
@@ -173,7 +173,7 @@ export function initComment(comments: Comment[]) {
                     {
                         fileName: GitCommentService.commentViewerFilename,
                         commit: GitCommentService.commentViewerCommit,
-                        line: GitCommentService.commentViewerLine != -1 ? GitCommentService.commentViewerLine : undefined
+                        line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined
                     }
                 );
             }
