@@ -108,7 +108,7 @@ export class GitCommentService implements Disposable {
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
         await GitCommentService.getCredentials();
-        let app = false;
+        let app;
         let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = runApp('bitbucket-comment-viewer-app');
@@ -175,7 +175,7 @@ export class GitCommentService implements Disposable {
         if (commit === undefined) return undefined;
 
         await GitCommentService.getCredentials();
-        let app = false;
+        let app;
         let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = await runApp('bitbucket-comment-viewer-app');
