@@ -64,7 +64,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         const commitDetails = DOM.getElementById<HTMLDivElement>('commit-details-container');
         commitDetails.style.maxHeight = `${(this.innerHeight - 150)}px`;
 
-        window.addEventListener('resize', (event) => {
+        window.addEventListener('resize', event => {
             this.innerHeight = window.innerHeight;
             commitLogList.style.maxHeight = `${(this.innerHeight - 150)}px`;
             commitDetails.style.maxHeight = `${(this.innerHeight - 150)}px`;

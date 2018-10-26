@@ -1,4 +1,6 @@
 'use strict';
+import { AddLineCommentCommand } from './commands/addLineComments';
+import { BitBucketServiceAuthCommand } from './commands/bitBucketServiceAuth';
 import { ClearFileAnnotationsCommand } from './commands/clearFileAnnotations';
 import { CloseUnchangedFilesCommand } from './commands/closeUnchangedFiles';
 import { CopyMessageToClipboardCommand } from './commands/copyMessageToClipboard';
@@ -48,9 +50,7 @@ import { ToggleFileRecentChangesCommand } from './commands/toggleFileRecentChang
 import { ToggleLineBlameCommand } from './commands/toggleLineBlame';
 import { CommandContext, setCommandContext } from './constants';
 import { Container } from './container';
-import { AddLineCommentCommand } from './commands/addLineComments';
 import { BitbucketServerService } from './git/remotes/bitbucket-server';
-import { BitBucketServiceAuthCommand } from './commands/bitBucketServiceAuth';
 
 export * from './commands/common';
 export * from './commands/clearFileAnnotations';

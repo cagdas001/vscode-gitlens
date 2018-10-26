@@ -1,11 +1,12 @@
 'use strict';
 import { Disposable, ExtensionContext, languages, workspace } from 'vscode';
+import { CommentsDecoratorController } from './annotations/commentsDecoratorController';
 import { FileAnnotationController } from './annotations/fileAnnotationController';
 import { LineAnnotationController } from './annotations/lineAnnotationController';
-import { GitCommentService } from './gitCommentService';
 import { CodeLensController } from './codelens/codeLensController';
 import { GitRevisionCodeLensProvider } from './codelens/gitRevisionCodeLensProvider';
 import { configuration, IConfig } from './configuration';
+import { GitCommentService } from './gitCommentService';
 import { GitContentProvider } from './gitContentProvider';
 import { GitService } from './gitService';
 import { LineHoverController } from './hovers/lineHoverController';
@@ -20,7 +21,6 @@ import { ResultsExplorer } from './views/resultsExplorer';
 import { SearchEditor } from './webviews/searchEditor';
 import { SettingsEditor } from './webviews/settingsEditor';
 import { WelcomeEditor } from './webviews/welcomeEditor';
-import { CommentsDecoratorController } from './annotations/commentsDecoratorController';
 
 export class Container {
     static initialize(context: ExtensionContext, config: IConfig) {

@@ -13,12 +13,12 @@ import {
     window,
     workspace
 } from 'vscode';
+import { AddLineCommentCommand } from '../commands/addLineComments';
 import { configuration, IConfig } from '../configuration';
 import { Container } from '../container';
+import { GitCommentService } from '../gitCommentService';
 import { Logger } from '../logger';
 import { Message, SettingsChangedMessage } from '../ui/ipc';
-import { AddLineCommentCommand } from '../commands/addLineComments';
-import { GitCommentService } from '../gitCommentService';
 import { SearchEditor } from './searchEditor';
 
 export abstract class WebviewEditor<TBootstrap> implements Disposable {

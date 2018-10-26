@@ -25,14 +25,20 @@ export class CommentsDecoratorController implements Disposable {
     constructor() {
         this._activeEditor = window.activeTextEditor;
         if (this._activeEditor) {
-            this.fetchComments();
+            this.fetchComments()
+                .catch(e => {
+                    console.log(e);
+                });
         }
 
         this._disposable = Disposable.from(
             window.onDidChangeActiveTextEditor(editor => {
                 this._activeEditor = editor;
                 if (editor) {
-                    this.fetchComments();
+                    this.fetchComments()
+                        .catch(e => {
+                            console.log(e);
+                        });
                 }
             }, null)
         );

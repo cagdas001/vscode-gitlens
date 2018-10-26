@@ -1,13 +1,13 @@
 'use strict';
 import * as path from 'path';
-import { commands, WebviewPanel, window, workspace, Uri } from 'vscode';
+import { commands, Uri, WebviewPanel, window, workspace } from 'vscode';
 import { configuration, IConfig } from '../configuration';
+import { CommandContext, setCommandContext } from '../constants';
 import { Container } from '../container';
 import { GitBranch } from '../git/git';
 import { Iterables } from '../system/iterable';
 import { CommitSearchBootstrap, ShowDiffMessage } from '../ui/ipc';
 import { WebviewEditor } from './webviewEditor';
-import { setCommandContext, CommandContext } from '../constants';
 
 export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
 

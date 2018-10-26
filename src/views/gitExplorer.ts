@@ -11,8 +11,8 @@ import {
     TreeItem,
     TreeView,
     Uri,
-    window,
-    ViewColumn
+    ViewColumn,
+    window
 } from 'vscode';
 import {
     configuration,
@@ -23,13 +23,13 @@ import {
 } from '../configuration';
 import { CommandContext, GlyphChars, setCommandContext, WorkspaceState } from '../constants';
 import { Container } from '../container';
+import { GitCommentService } from '../gitCommentService';
 import { GitUri } from '../gitService';
 import { Logger } from '../logger';
 import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
 import { HistoryExplorer } from './historyExplorer';
 import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode, RepositoryNode } from './nodes';
-import { GitCommentService } from '../gitCommentService';
 
 export * from './nodes';
 

@@ -1,15 +1,15 @@
 'use strict';
-import * as path from 'path';
 import Axios, { AxiosBasicCredentials } from 'axios';
-import { commands, Disposable, window, Selection } from 'vscode';
+import axiosRetry from 'axios-retry';
+import * as path from 'path';
+import { commands, Disposable, Selection, window } from 'vscode';
+import { AddLineCommentCommand } from './commands/addLineComments';
+import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
+import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
-import { AddLineCommentCommand } from './commands/addLineComments';
-import { GitUri } from './git/gitUri';
-import axiosRetry from 'axios-retry';
-import { runApp, showComment, initComment } from './commands/commentAppHelper';
 
 /**
  * Enum to for different comment types.
@@ -43,12 +43,12 @@ export class GitCommentService implements Disposable {
     /**
      * Base Url for V1 apis.
      */
-    private readonly V1_BaseURL = 'https://bitbucket.org/api/1.0/repositories';
+    private readonly V1BaseURL = 'https://bitbucket.org/api/1.0/repositories';
 
     /**
      * Base Url for V2 apis.
      */
-    private readonly V2_BaseURL = 'https://api.bitbucket.org/2.0/repositories';
+    private readonly V2BaseURL = 'https://api.bitbucket.org/2.0/repositories';
 
     private static username?: string;
     private static password?: string;
@@ -75,7 +75,7 @@ export class GitCommentService implements Disposable {
             AddLineCommentCommand.currentFileCommit.repoPath,
             gitUri.fsPath
         );
-        let fileCommit = {
+        const fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
             fileName: filename
@@ -100,7 +100,7 @@ export class GitCommentService implements Disposable {
 
         AddLineCommentCommand.currentFileName = filename;
 
-        let fileCommit = {
+        const fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
             fileName: filename
@@ -108,7 +108,8 @@ export class GitCommentService implements Disposable {
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
         await GitCommentService.getCredentials();
-        let app, canceled = false;
+        let app;
+        let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = runApp('bitbucket-comment-viewer-app');
             app.on('exit', function() {
@@ -174,7 +175,8 @@ export class GitCommentService implements Disposable {
         if (commit === undefined) return undefined;
 
         await GitCommentService.getCredentials();
-        let app, canceled = false;
+        let app;
+        let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = await runApp('bitbucket-comment-viewer-app');
             app.on('exit', function() {
@@ -263,7 +265,7 @@ export class GitCommentService implements Disposable {
      */
     async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -413,7 +415,7 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -439,68 +441,66 @@ export class GitCommentService implements Disposable {
             parent_id: parentId ? parentId : undefined
         };
 
-        await Axios.create({
-            auth: auth
-        })
-            .post(url, data)
-            .then(response => {
-                window.showInformationMessage('Comment/reply added successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    let newComment: Comment = {
-                        Id: isV2 ? response.data.id : response.data.comment_id,
-                        Commit: commit,
-                        Message: comment,
-                        Line: line,
-                        Path: fileName,
-                        Sha: commit.sha,
-                        ParentId: parentId ? parentId : undefined,
-                        Replies: [],
-                        Name: 'You'
-                    };
-                    if (line) {
-                        newComment.Type = CommentType.Line;
-                    }
-                    else {
-                        newComment.Type = CommentType.File;
-                    }
-                    if (newComment.ParentId) {
-                        function checkReply(replies: Comment[]) {
-                            return replies.map(comment => {
-                                if (comment.Id == newComment.ParentId) {
-                                    newComment.Type = comment.Type;
-                                    newComment.Line = comment.Line;
-                                    if (comment.Replies) {
-                                        comment.Replies.push(newComment);
-                                    }
-                                    else {
-                                        comment.Replies = [newComment];
-                                    }
-                                }
-                                else if (comment.Replies) {
-                                    comment.Replies = checkReply(comment.Replies);
-                                }
-                                return comment;
-                            });
-                        }
-                        GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
-                    }
-                    else {
-                        GitCommentService.lastFetchedComments.push(newComment);
-                    }
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
-                    GitCommentService.ClearCredentials();
+        try {
+            const response = await Axios.create({ auth: auth }).post(url, data);
+            window.showInformationMessage('Comment/reply added successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                const newComment: Comment = {
+                    Id: isV2 ? response.data.id : response.data.comment_id,
+                    Commit: commit,
+                    Message: comment,
+                    Line: line,
+                    Path: fileName,
+                    Sha: commit.sha,
+                    ParentId: parentId ? parentId : undefined,
+                    Replies: [],
+                    Name: 'You'
+                };
+                if (line) {
+                    newComment.Type = CommentType.Line;
                 }
                 else {
-                    console.log(e.response);
-
-                    window.showErrorMessage('Failed to add comment/reply. ');
+                    newComment.Type = CommentType.File;
                 }
-            });
+                if (newComment.ParentId) {
+                    function checkReply(replies: Comment[]) {
+                        return replies.map(comment => {
+                            if (comment.Id === newComment.ParentId) {
+                                newComment.Type = comment.Type;
+                                newComment.Line = comment.Line;
+                                if (comment.Replies) {
+                                    comment.Replies.push(newComment);
+                                }
+                                else {
+                                    comment.Replies = [newComment];
+                                }
+                            }
+                            else if (comment.Replies) {
+                                comment.Replies = checkReply(comment.Replies);
+                            }
+                            return comment;
+                        });
+                    }
+
+                    GitCommentService.lastFetchedComments = checkReply(GitCommentService.lastFetchedComments);
+                }
+                else {
+                    GitCommentService.lastFetchedComments.push(newComment);
+                }
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                console.log(e.response);
+
+                window.showErrorMessage('Failed to add comment/reply. ');
+            }
+        }
     }
 
     /**
@@ -514,7 +514,7 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -531,46 +531,43 @@ export class GitCommentService implements Disposable {
             content: comment,
             comment_id: commentId
         };
-        await Axios.create({
-            auth: auth
-        })
-            .put(url, data)
-            .then(v => {
-                window.showInformationMessage('Comment/reply edited successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
-                        if (item.Id == commentId) {
-                            item.Message = comment;
-                        }
-                        else {
-                            function checkReply(replies: Comment[]) {
-                                for (const reply of replies) {
-                                    if (reply.Id == commentId) {
-                                        reply.Message = comment;
-                                    }
-                                    if (reply.Replies) {
-                                        checkReply(reply.Replies);
-                                    }
+        try {
+            const v = await Axios.create({ auth: auth }).put(url, data);
+            window.showInformationMessage('Comment/reply edited successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.map(item => {
+                    if (item.Id === commentId) {
+                        item.Message = comment;
+                    }
+                    else {
+                        function checkReply(replies: Comment[]) {
+                            for (const reply of replies) {
+                                if (reply.Id === commentId) {
+                                    reply.Message = comment;
+                                }
+                                if (reply.Replies) {
+                                    checkReply(reply.Replies);
                                 }
                             }
-                            if (item.Replies) {
-                                checkReply(item.Replies);
-                            }
                         }
-                        return item;
-                    });
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to add comment/reply.');
-                }
-            });
+                        if (item.Replies) {
+                            checkReply(item.Replies);
+                        }
+                    }
+                    return item;
+                });
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                window.showErrorMessage('Failed to add comment/reply.');
+            }
+        }
     }
 
     /**
@@ -580,49 +577,47 @@ export class GitCommentService implements Disposable {
      */
     async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2_BaseURL : this.V1_BaseURL;
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
-        await Axios.create({
-            auth: auth
-        })
-            .delete(url)
-            .then(v => {
-                window.showInformationMessage('Comment/reply deleted successfully.');
-                if (GitCommentService.lastFetchedComments) {
-                    GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
-                        function checkReply(replies: Comment[]) {
-                            return replies.filter(reply => {
-                                if (reply.Replies) {
-                                    checkReply(reply.Replies);
-                                }
-                                return reply.Id != commentId
-                            });
-                        }
-                        if (comment.Replies) {
-                            comment.Replies = checkReply(comment.Replies);
-                        }
+        try {
+            const v = await Axios.create({ auth: auth }).delete(url);
+            window.showInformationMessage('Comment/reply deleted successfully.');
+            if (GitCommentService.lastFetchedComments) {
+                GitCommentService.lastFetchedComments = GitCommentService.lastFetchedComments.filter(comment => {
+                    function checkReply(replies: Comment[]) {
+                        return replies.filter(reply => {
+                            if (reply.Replies) {
+                                checkReply(reply.Replies);
+                            }
+                            return reply.Id !== commentId;
+                        });
+                    }
 
-                        return comment.Id != commentId
-                    });
-                    console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
+                    if (comment.Replies) {
+                        comment.Replies = checkReply(comment.Replies);
+                    }
 
-                }
-                this.refreshView();
-            })
-            .catch(e => {
-                if (e!.response!.status === 401 || e!.response!.status === 403) {
-                    window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
-                    GitCommentService.ClearCredentials();
-                }
-                else {
-                    window.showErrorMessage('Failed to delete comment/reply.');
-                }
-            });
+                    return comment.Id !== commentId;
+                });
+                console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
+
+            }
+            await this.refreshView();
+        }
+        catch (e) {
+            if (e!.response!.status === 401 || e!.response!.status === 403) {
+                window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
+                GitCommentService.ClearCredentials();
+            }
+            else {
+                window.showErrorMessage('Failed to delete comment/reply.');
+            }
+        }
     }
 
     private updateView() {
