@@ -250,10 +250,19 @@ export class GitCommentService implements Disposable {
     public async getRemoteRepoPath(localFilePath: string) {
         const repo = await Container.git.getRemotes(localFilePath);
 
-        const bitREpo = repo.filter(r => {
-            return r.provider!.domain!.includes('bitbucket');
-        });
-        return bitREpo![0]!.path;
+        if (!repo || repo.length === 0) return;
+        return repo[0].path;
+    }
+
+    /**
+     * Gets corresponding reomte provider domain for given local file path.
+     * @param localFilePath local file path
+     */
+    public async getRemoteRepoDomain(localFilePath: string) {
+        const repo = await Container.git.getRemotes(localFilePath);
+
+        if (!repo || repo.length === 0) return;
+        return repo[0].domain;
     }
 
     /**
@@ -285,7 +294,12 @@ export class GitCommentService implements Disposable {
      */
     async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        const domain = await this.getRemoteRepoDomain(commit.repoPath);
+        if (domain && domain !== 'bitbucket.org') {
+            baseUrl = baseUrl.replace('bitbucket.org', domain);
+        }
+
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -303,6 +317,7 @@ export class GitCommentService implements Disposable {
                 auth: auth
             });
             await axiosRetry(client, { retries: 3 });
+            Logger.log('GET ' + next);
             await client.get(next)
                 .then(v => {
                     const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
@@ -435,7 +450,11 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        const domain = await this.getRemoteRepoDomain(commit.repoPath);
+        if (domain && domain !== 'bitbucket.org') {
+            baseUrl = baseUrl.replace('bitbucket.org', domain);
+        }
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -462,6 +481,9 @@ export class GitCommentService implements Disposable {
         };
 
         try {
+            Logger.log('POST ' + url );
+            Logger.log('POST DATA ' + JSON.stringify(data) );
+
             const response = await Axios.create({ auth: auth }).post(url, data);
             window.showInformationMessage('Comment/reply added successfully.');
             if (GitCommentService.lastFetchedComments) {
@@ -511,6 +533,7 @@ export class GitCommentService implements Disposable {
             await this.refreshView();
         }
         catch (e) {
+            Logger.error(e);
             if (e!.response!.status === 401 || e!.response!.status === 403) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
                 GitCommentService.ClearCredentials();
@@ -534,7 +557,11 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        const domain = await this.getRemoteRepoDomain(commit.repoPath);
+        if (domain && domain !== 'bitbucket.org') {
+            baseUrl = baseUrl.replace('bitbucket.org', domain);
+        }
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -552,6 +579,8 @@ export class GitCommentService implements Disposable {
             comment_id: commentId
         };
         try {
+            Logger.log('POST ' + url );
+            Logger.log('POST DATA ' + JSON.stringify(data));
             const v = await Axios.create({ auth: auth }).put(url, data);
             window.showInformationMessage('Comment/reply edited successfully.');
             if (GitCommentService.lastFetchedComments) {
@@ -580,6 +609,7 @@ export class GitCommentService implements Disposable {
             await this.refreshView();
         }
         catch (e) {
+            Logger.error(e);
             if (e!.response!.status === 401 || e!.response!.status === 403) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
                 GitCommentService.ClearCredentials();
@@ -597,7 +627,11 @@ export class GitCommentService implements Disposable {
      */
     async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
         const isV2 = Container.config.advanced.useApiV2;
-        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+        const domain = await this.getRemoteRepoDomain(commit.repoPath);
+        if (domain && domain !== 'bitbucket.org') {
+            baseUrl = baseUrl.replace('bitbucket.org', domain);
+        }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);
@@ -605,6 +639,7 @@ export class GitCommentService implements Disposable {
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
         try {
+            Logger.log('DELETE ' + url );
             const v = await Axios.create({ auth: auth }).delete(url);
             window.showInformationMessage('Comment/reply deleted successfully.');
             if (GitCommentService.lastFetchedComments) {
@@ -624,12 +659,12 @@ export class GitCommentService implements Disposable {
 
                     return comment.Id !== commentId;
                 });
-                console.log('JUMLAHNYA proses = ' + GitCommentService.lastFetchedComments.length);
 
             }
             await this.refreshView();
         }
         catch (e) {
+            Logger.error(e);
             if (e!.response!.status === 401 || e!.response!.status === 403) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
                 GitCommentService.ClearCredentials();
