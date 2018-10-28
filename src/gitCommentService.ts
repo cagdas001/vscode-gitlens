@@ -4,12 +4,13 @@ import axiosRetry from 'axios-retry';
 import * as path from 'path';
 import { commands, Disposable, Selection, window } from 'vscode';
 import { AddLineCommentCommand } from './commands/addLineComments';
-import { initComment, runApp, showComment } from './commands/commentAppHelper';
+import { initComment, runApp, showComment, ElectronProcess } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
 import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
+import { ChildProcess } from 'child_process';
 
 /**
  * Enum to for different comment types.
@@ -108,13 +109,19 @@ export class GitCommentService implements Disposable {
         AddLineCommentCommand.currentFileGitCommit = fileCommit;
 
         await GitCommentService.getCredentials();
-        let app;
+        let app: ChildProcess | undefined;
         let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = runApp('bitbucket-comment-viewer-app');
             app.on('exit', function() {
                 canceled = true;
                 GitCommentService.commentViewerActive = false;
+                if (!app) return;
+                for (const process of ElectronProcess.currentProcess) {
+                    if (process !== app) {
+                        process.kill();
+                    }
+                }
             });
         }
 
@@ -150,6 +157,12 @@ export class GitCommentService implements Disposable {
                 GitCommentService.commentViewerActive = true;
                 app.on('exit', function() {
                     GitCommentService.commentViewerActive = false;
+                    if (!app) return;
+                    for (const process of ElectronProcess.currentProcess) {
+                        if (process !== app) {
+                            process.kill();
+                        }
+                    }
                 });
                 initComment(GitCommentService.lastFetchedComments);
             }
@@ -175,13 +188,20 @@ export class GitCommentService implements Disposable {
         if (commit === undefined) return undefined;
 
         await GitCommentService.getCredentials();
-        let app;
+        let app: ChildProcess | undefined;
         let canceled = false;
         if (!GitCommentService.commentViewerActive) {
             app = await runApp('bitbucket-comment-viewer-app');
             app.on('exit', function() {
+
                 canceled = true;
                 GitCommentService.commentViewerActive = false;
+                if (!app) return;
+                for (const process of ElectronProcess.currentProcess) {
+                    if (process !== app) {
+                        process.kill();
+                    }
+                }
             });
         }
         const allComments = await Container.commentService
