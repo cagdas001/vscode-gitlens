@@ -1,16 +1,16 @@
 'use strict';
 import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
+import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { commands, Disposable, Selection, window } from 'vscode';
 import { AddLineCommentCommand } from './commands/addLineComments';
-import { initComment, runApp, showComment, ElectronProcess } from './commands/commentAppHelper';
+import { ElectronProcess, initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
 import { Container } from './container';
 import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
-import { ChildProcess } from 'child_process';
 
 /**
  * Enum to for different comment types.
