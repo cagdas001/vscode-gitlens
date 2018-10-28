@@ -296,7 +296,7 @@ export class GitCommentService implements Disposable {
         const isV2 = Container.config.advanced.useApiV2;
         let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (domain && domain !== 'bitbucket.org') {
+        if (!isV2 && domain && domain !== 'bitbucket.org') {
             baseUrl = baseUrl.replace('bitbucket.org', domain);
         }
 
@@ -452,7 +452,7 @@ export class GitCommentService implements Disposable {
         const isV2 = Container.config.advanced.useApiV2;
         let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (domain && domain !== 'bitbucket.org') {
+        if (!isV2 && domain && domain !== 'bitbucket.org') {
             baseUrl = baseUrl.replace('bitbucket.org', domain);
         }
         const path = await this.getRemoteRepoPath(commit.repoPath);
@@ -559,7 +559,7 @@ export class GitCommentService implements Disposable {
         const isV2 = Container.config.advanced.useApiV2;
         let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (domain && domain !== 'bitbucket.org') {
+        if (!isV2 && domain && domain !== 'bitbucket.org') {
             baseUrl = baseUrl.replace('bitbucket.org', domain);
         }
         const path = await this.getRemoteRepoPath(commit.repoPath);
@@ -629,7 +629,7 @@ export class GitCommentService implements Disposable {
         const isV2 = Container.config.advanced.useApiV2;
         let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (domain && domain !== 'bitbucket.org') {
+        if (!isV2 && domain && domain !== 'bitbucket.org') {
             baseUrl = baseUrl.replace('bitbucket.org', domain);
         }
         const auth = await GitCommentService.getCredentials();
