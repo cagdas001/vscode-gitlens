@@ -16,7 +16,11 @@
       Comment</button>
     <button id="closeBtn" type="button" class="btn btn-outline-danger float-right" style="margin-right: 20px; margin-top: 10px; margin-bottom: 10px;">Close</button>
   </div>
-
+  <div id="spinner" class="spinner">
+    <div class="bounce1"></div>
+    <div class="bounce2"></div>
+    <div class="bounce3"></div>
+  </div>
   <div id="w">
     <div id="container">
       <ul id="comments">
@@ -114,7 +118,7 @@
     // send ui.ready message to main process when the window loaded
     window.addEventListener('load', function () {
       ipcRenderer.send('ui.ready');
-      commentUl.innerHTML = 'Loading...';
+      // commentUl.innerHTML = 'Loading...';
     })
 
     // init the editor with the incoming value
@@ -125,6 +129,8 @@
       }
       else render(arg, commentUl);
 
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('w').style.display = 'block';
     })
 
     var addBtn = document.getElementById('addBtn');
