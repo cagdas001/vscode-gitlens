@@ -1382,6 +1382,28 @@
                             </p>
                         </div>
                     </section>
+                    <section id="bitbucket-api-conf">
+                        <div class="section__header">
+                            <h2 class="section__title">BitBucket API
+                                <a class="link__learn-more" title="Learn more" href="#!">
+                                    <i class="icon icon__info"></i>
+                                </a>
+                            </h2>
+                            <p class="section__title-hint">Configure BitBucket API settings</p>
+                        </div>
+                        <div class="section__settings">
+                            <div class="settings-group">
+                                <div class="settings-group__setting advanced.v1APIBaseURL">
+                                    <label for="v1APIBaseURL">The base URL for the BitBucket API v1</label>
+                                    <input class="setting" id="advanced.v1APIBaseURL" name="advanced.v1APIBaseURL" placeholder="https://" type="text" />
+                                </div>
+                                <div class="settings-group__setting v2APIBaseURL">
+                                    <label for="advanced.v2APIBaseURL">The base URL for the BitBucket API v2</label>
+                                    <input class="setting" id="advanced.v2APIBaseURL" name="advanced.v2APIBaseURL" placeholder="https://" type="text" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                     <section id="external-app">
                         <div class="section__header">
                             <h2 class="section__title">External App Settings
@@ -1394,8 +1416,8 @@
                         <div class="section__settings">
                             <div class="settings-group">
                                 <div class="settings-group__setting keepOpen">
-                                    <input class="setting" id="keepOpen" name="keepOpen" type="checkbox" />
-                                    <label for="keepOpen">Keep apps open in background for quicker response.</label>
+                                    <input class="setting" id="externalApp.keepOpen" name="externalApp.keepOpen" type="checkbox" />
+                                    <label for="externalApp.keepOpen">Keep apps open in background for quicker response.</label>
                                 </div>
                             </div>
                         </div>
@@ -1441,6 +1463,9 @@
                             </li>
                             <li>
                                 <a class="jump-to" href="#status-bar" title="Jump to Status Bar Blame settings">Status Bar Blame</a>
+                            </li>
+                            <li>
+                                <a class="jump-to" href="#bitbucket-api-conf" title="Jump to BitBucket API Configuration">BitBucket API</a>
                             </li>
                             <li>
                                 <a class="jump-to" href="#external-app" title="Jump to External App settings">External App</a>
