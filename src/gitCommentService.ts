@@ -2,7 +2,7 @@
 import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as path from 'path';
-import { commands, Disposable, Selection, window } from 'vscode';
+import { commands, Disposable, Selection, window, workspace } from 'vscode';
 import { AddLineCommentCommand } from './commands/addLineComments';
 import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
@@ -41,14 +41,14 @@ export class Comment {
  */
 export class GitCommentService implements Disposable {
     /**
-     * Base Url for V1 apis.
+     * Get Base Url for V1 apis from settings.
      */
-    private readonly V1BaseURL = 'https://bitbucket.org/api/1.0/repositories';
+    private readonly V1BaseURL = workspace.getConfiguration().get('gitlens.advanced.v1APIBaseURL') as string;
 
     /**
-     * Base Url for V2 apis.
+     * Get Base Url for V2 apis from settings.
      */
-    private readonly V2BaseURL = 'https://api.bitbucket.org/2.0/repositories';
+    private readonly V2BaseURL = workspace.getConfiguration().get('gitlens.advanced.v2APIBaseURL') as string;
 
     private static username?: string;
     private static password?: string;
@@ -221,17 +221,6 @@ export class GitCommentService implements Disposable {
     }
 
     /**
-     * Gets corresponding reomte provider domain for given local file path.
-     * @param localFilePath local file path
-     */
-    public async getRemoteRepoDomain(localFilePath: string) {
-        const repo = await Container.git.getRemotes(localFilePath);
-
-        if (!repo || repo.length === 0) return;
-        return repo[0].domain;
-    }
-
-    /**
      * true if user logged in to bitbucket,
      * false otherwise
      */
@@ -260,11 +249,7 @@ export class GitCommentService implements Disposable {
      */
     async loadComments(commit: GitCommit): Promise<void | Comment[] | undefined> {
         const isV2 = Container.config.advanced.useApiV2;
-        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
-        const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (!isV2 && domain && domain !== 'bitbucket.org') {
-            baseUrl = baseUrl.replace('bitbucket.org', domain);
-        }
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
 
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
@@ -421,11 +406,7 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
-        const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (!isV2 && domain && domain !== 'bitbucket.org') {
-            baseUrl = baseUrl.replace('bitbucket.org', domain);
-        }
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -530,11 +511,7 @@ export class GitCommentService implements Disposable {
             return;
         }
         const isV2 = Container.config.advanced.useApiV2;
-        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
-        const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (!isV2 && domain && domain !== 'bitbucket.org') {
-            baseUrl = baseUrl.replace('bitbucket.org', domain);
-        }
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
         const path = await this.getRemoteRepoPath(commit.repoPath);
         if (!path) {
             return;
@@ -602,11 +579,8 @@ export class GitCommentService implements Disposable {
      */
     async deleteComment(commit: GitCommit, commentId: number): Promise<void> {
         const isV2 = Container.config.advanced.useApiV2;
-        let baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
-        const domain = await this.getRemoteRepoDomain(commit.repoPath);
-        if (!isV2 && domain && domain !== 'bitbucket.org') {
-            baseUrl = baseUrl.replace('bitbucket.org', domain);
-        }
+        const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
+
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const path = await this.getRemoteRepoPath(commit.repoPath);

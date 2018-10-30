@@ -1431,6 +1431,18 @@
                     "description": "Specifies whether to use BitBucket API version 2",
                     "scope": "window"
                 },
+                "gitlens.advanced.v1APIBaseURL": {
+                    "type": "string",
+                    "default": "https://bitbucket.org/api/1.0/repositories",
+                    "description": "The base URL for the BitBucket API v1",
+                    "scope": "window"
+                },
+                "gitlens.advanced.v2APIBaseURL": {
+                    "type": "string",
+                    "default": "https://api.bitbucket.org/2.0/repositories",
+                    "description": "The base URL for the BitBucket API v2",
+                    "scope": "window"
+                },
                 "gitlens.externalApp.keepOpen": {
                     "type": "boolean",
                     "default": true,
