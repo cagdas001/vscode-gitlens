@@ -761,6 +761,14 @@ See also [Explorer Settings](#explorer-settings "Jump to the Explorer settings")
 |`gitlens.advanced.repositorySearchDepth`|Specifies how many folders deep to search for repositories
 |`gitlens.advanced.telemetry.enabled`|Specifies whether to enable GitLens telemetry (even if enabled still abides by the overall `telemetry.enableTelemetry` setting
 |`gitlens.advanced.useApiV2`|Specifies whether to use BitBucket API version 2
+|`gitlens.advanced.v1APIBaseURL`|The base URL for the BitBucket API v1
+|`gitlens.advanced.v2APIBaseURL`|The base URL for the BitBucket API v2
+
+### External App Settings
+
+|Name | Description
+|-----|------------
+|`gitlens.externalApp.keepOpen`|Keep the comment app open in background for quicker response.
 
 #### Custom Remotes Settings
 
