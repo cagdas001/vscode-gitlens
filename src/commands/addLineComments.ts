@@ -40,7 +40,7 @@ export enum operationTypes {
 }
 
 // the app instance
-let commentApp: CommentApp;
+export let commentApp: CommentApp;
 
 /**
  * Command to add/edit/delete/reply an inline or file comment.

@@ -4,7 +4,7 @@ import * as path from 'path';
 import { commands } from 'vscode';
 import { GitCommit } from '../git/git';
 import { Comment, GitCommentService } from '../gitCommentService';
-import { operationTypes } from './addLineComments';
+import { operationTypes, commentApp } from './addLineComments';
 import { Commands } from './common';
 
 // This holds the text that user enters in the editor
@@ -190,6 +190,9 @@ export function initComment(comments: Comment[]) {
             }
             else if (data.command === 'close') {
                 ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
+                if (commentApp && commentApp.isRunning()) {
+                    commentApp.close();
+                }
             }
         });
     });

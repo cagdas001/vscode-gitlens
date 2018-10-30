@@ -72,32 +72,24 @@ export class GitCommentService implements Disposable {
     async commentToFile() {
         if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(
-            AddLineCommentCommand.currentFileCommit.repoPath,
-            gitUri.fsPath
-        );
+        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
         const fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
             fileName: filename
         } as GitCommit;
 
-        commands.executeCommand(Commands.AddLineComment,
-            {
-                fileName: fileCommit.fileName,
-                commit: fileCommit
-            }
-        );
+        commands.executeCommand(Commands.AddLineComment, {
+            fileName: fileCommit.fileName,
+            commit: fileCommit
+        });
         return;
     }
 
     async showFileComment() {
         if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(
-            AddLineCommentCommand.currentFileCommit.repoPath,
-            gitUri.fsPath
-        );
+        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
 
         AddLineCommentCommand.currentFileName = filename;
 
@@ -126,10 +118,10 @@ export class GitCommentService implements Disposable {
         }
 
         const allComments = await Container.commentService
-        .loadComments(AddLineCommentCommand.currentFileGitCommit)
-        .then(res => (res as Comment[])!);
+            .loadComments(AddLineCommentCommand.currentFileGitCommit)
+            .then(res => (res as Comment[])!);
         const comments = allComments.filter(
-            c => c.Path === AddLineCommentCommand.currentFileName && (c.Type === CommentType.File)
+            c => c.Path === AddLineCommentCommand.currentFileName && c.Type === CommentType.File
         );
 
         if (canceled) return;
@@ -151,7 +143,6 @@ export class GitCommentService implements Disposable {
 
     async refreshView() {
         if (GitCommentService.lastFetchedComments) {
-
             if (!GitCommentService.commentViewerActive) {
                 const app = await runApp('bitbucket-comment-viewer-app');
                 GitCommentService.commentViewerActive = true;
@@ -173,10 +164,7 @@ export class GitCommentService implements Disposable {
     async showLineComment() {
         if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(
-            AddLineCommentCommand.currentFileCommit.repoPath,
-            gitUri.fsPath
-        );
+        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
 
         AddLineCommentCommand.currentFileName = filename;
 
@@ -204,9 +192,7 @@ export class GitCommentService implements Disposable {
                 }
             });
         }
-        const allComments = await Container.commentService
-        .loadComments(commit)
-        .then(res => (res as Comment[])!);
+        const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
         const comments = allComments.filter(c => c.Line! === position.line);
         GitCommentService.lastFetchedComments = comments;
 
@@ -308,6 +294,12 @@ export class GitCommentService implements Disposable {
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
+        const requestParams = {
+            pagelen: 100
+        };
+        const axiosConfig = {
+            params: requestParams
+        };
         const result: Comment[] = [];
         const commentsMap = new Map<Number, Comment>();
 
@@ -317,8 +309,8 @@ export class GitCommentService implements Disposable {
                 auth: auth
             });
             await axiosRetry(client, { retries: 3 });
-            Logger.log('GET ' + next);
-            await client.get(next)
+            await client
+                .get(next, axiosConfig)
                 .then(v => {
                     const items = (isV2 ? v!.data!.values! : v!.data!) as any[];
                     items!.forEach(c => {
@@ -427,7 +419,6 @@ export class GitCommentService implements Disposable {
                     next = null;
                 });
         }
-
         return result.filter(c => c.ParentId === undefined);
     }
 
@@ -464,21 +455,23 @@ export class GitCommentService implements Disposable {
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const to = line! + 1;
-        const data = isV2 ? {
-            content: {
-                raw: comment
-            },
-            inline: {
-                path: fileName,
-                to: to || undefined
-            },
-            parent: parentId ? { id: parentId } : undefined
-        } : {
-            content: comment,
-            filename: fileName,
-            line_to: parentId ? undefined : to || undefined,
-            parent_id: parentId ? parentId : undefined
-        };
+        const data = isV2
+            ? {
+                  content: {
+                      raw: comment
+                  },
+                  inline: {
+                      path: fileName,
+                      to: to || undefined
+                  },
+                  parent: parentId ? { id: parentId } : undefined
+              }
+            : {
+                  content: comment,
+                  filename: fileName,
+                  line_to: parentId ? undefined : to || undefined,
+                  parent_id: parentId ? parentId : undefined
+              };
 
         try {
             Logger.log('POST ' + url );
@@ -570,14 +563,16 @@ export class GitCommentService implements Disposable {
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
-        const data = isV2 ? {
-            content: {
-                raw: comment
-            }
-        } : {
-            content: comment,
-            comment_id: commentId
-        };
+        const data = isV2
+            ? {
+                  content: {
+                      raw: comment
+                  }
+              }
+            : {
+                  content: comment,
+                  comment_id: commentId
+              };
         try {
             Logger.log('POST ' + url );
             Logger.log('POST DATA ' + JSON.stringify(data));
@@ -659,7 +654,6 @@ export class GitCommentService implements Disposable {
 
                     return comment.Id !== commentId;
                 });
-
             }
             await this.refreshView();
         }
