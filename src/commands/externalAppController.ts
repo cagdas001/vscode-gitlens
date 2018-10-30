@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as ipc from 'node-ipc';
 import * as path from 'path';
 import { workspace } from 'vscode';
+import { ElectronProcess } from './commentAppHelper';
 
 // holds the max allowed window number, if it's 1, you will not be allowed to run second window
 export const maxWindowAllowed = 1;
@@ -75,6 +76,7 @@ export class ExternalApp {
         this.childProcess = spawn(this.hostCmd, this.args, { stdio: ['ipc', 'pipe'], env: spawnEnvironment });
         runningInstances.set(this.connectionString, this);
         this.running = true;
+        ElectronProcess.currentProcess.push(this.childProcess);
 
         this.childProcess.on('exit', this.onExit.bind(this));
     }
@@ -109,6 +111,12 @@ export class ExternalApp {
         ipc.config.stopRetrying = true;
         this.running = false;
         runningInstances.delete(this.connectionString);
+        if (this.childProcess) {
+            const index = ElectronProcess.currentProcess.indexOf(this.childProcess);
+            if (index > -1) {
+                ElectronProcess.currentProcess.splice(index, 1);
+            }
+        }
     }
 
     public quitApp() {
