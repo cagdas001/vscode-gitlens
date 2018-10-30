@@ -118,7 +118,6 @@
     // send ui.ready message to main process when the window loaded
     window.addEventListener('load', function () {
       ipcRenderer.send('ui.ready');
-      // commentUl.innerHTML = 'Loading...';
     })
 
     // init the editor with the incoming value

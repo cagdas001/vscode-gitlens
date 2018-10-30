@@ -4,7 +4,7 @@ import * as path from 'path';
 import { commands } from 'vscode';
 import { GitCommit } from '../git/git';
 import { Comment, GitCommentService } from '../gitCommentService';
-import { operationTypes, commentApp } from './addLineComments';
+import { commentApp, operationTypes } from './addLineComments';
 import { Commands } from './common';
 
 // This holds the text that user enters in the editor
