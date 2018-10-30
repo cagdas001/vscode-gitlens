@@ -4,7 +4,7 @@ import * as path from 'path';
 import { commands } from 'vscode';
 import { GitCommit } from '../git/git';
 import { Comment, GitCommentService } from '../gitCommentService';
-import { operationTypes } from './addLineComments';
+import { commentApp, operationTypes } from './addLineComments';
 import { Commands } from './common';
 
 // This holds the text that user enters in the editor
@@ -14,7 +14,10 @@ export let maxWindowAllowed = 1;
 // holds the count of running apps
 export let runningAppCount = 0;
 export let exceedsMaxWindowWarningMessage = `It's not allowed to run more than ${maxWindowAllowed} window(s)`;
-let currentProcess: ChildProcess;
+
+export class ElectronProcess {
+    public static currentProcess: ChildProcess[] = [];
+}
 
 /**
  * Sets the runningAppCount value to the given num
@@ -43,10 +46,6 @@ export function clearPayload() {
  */
 export function runApp(appName: string) {
 
-    // if (currentProcess) {
-    //     currentProcess.kill();
-    // }
-
     const spawnEnvironment = JSON.parse(JSON.stringify(process.env));
     delete spawnEnvironment.ATOM_SHELL_INTERNAL_RUN_AS_NODE;
     delete spawnEnvironment.ELECTRON_RUN_AS_NODE;
@@ -66,9 +65,13 @@ export function runApp(appName: string) {
     });
 
     app.on('close', code => {
+        const index = ElectronProcess.currentProcess.indexOf(app);
+        if (index > -1) {
+            ElectronProcess.currentProcess.splice(index, 1);
+        }
     });
 
-    currentProcess = app;
+    ElectronProcess.currentProcess.push(app);
     return app;
 }
 
@@ -187,6 +190,9 @@ export function initComment(comments: Comment[]) {
             }
             else if (data.command === 'close') {
                 ipcForCommentViewer.disconnect('bitbucketCommentViewerApp');
+                if (commentApp && commentApp.isRunning()) {
+                    commentApp.close();
+                }
             }
         });
     });
