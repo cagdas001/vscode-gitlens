@@ -15,9 +15,7 @@ export let maxWindowAllowed = 1;
 export let runningAppCount = 0;
 export let exceedsMaxWindowWarningMessage = `It's not allowed to run more than ${maxWindowAllowed} window(s)`;
 
-export class ElectronProcess {
-    public static currentProcess: ChildProcess[] = [];
-}
+let currentProcess: ChildProcess;
 
 /**
  * Sets the runningAppCount value to the given num
@@ -65,13 +63,9 @@ export function runApp(appName: string) {
     });
 
     app.on('close', code => {
-        const index = ElectronProcess.currentProcess.indexOf(app);
-        if (index > -1) {
-            ElectronProcess.currentProcess.splice(index, 1);
-        }
     });
 
-    ElectronProcess.currentProcess.push(app);
+    currentProcess = app;
     return app;
 }
 
