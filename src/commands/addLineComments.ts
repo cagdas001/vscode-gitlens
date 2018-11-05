@@ -88,7 +88,11 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     commentArgs.fileName as string,
                     commentArgs.line
                 );
-                await Container.commentsDecorator.fetchComments();
+
+                // add decoration for new comment
+                let newComment = new Comment();
+                newComment.Line = commentArgs.line;
+                Container.commentsDecorator.updateDecorations([newComment]);
             }
             else if (commentArgs.type === operationTypes.Reply) {
                 // reply

@@ -3,7 +3,7 @@ import * as path from 'path';
 import { DecorationOptions, Disposable, OverviewRulerLane, Range, TextEditor, window } from 'vscode';
 import { Container } from '../container';
 import { GitCommit } from '../git/git';
-import { Comment, CommentType, GitCommentService } from '../gitCommentService';
+import { Comment, CommentType, GitCommentService, CommentCache } from '../gitCommentService';
 import { GitUri } from '../gitService';
 
 interface CommitDic {
@@ -14,6 +14,7 @@ export class CommentsDecoratorController implements Disposable {
     private _disposable: Disposable;
     private _activeEditor: TextEditor | undefined;
     private _activeFilename: string | undefined;
+    private commentCache?: CommentCache;
 
     private bookmarkDecorationType = window.createTextEditorDecorationType({
         gutterIconPath: Container.context.asAbsolutePath('images/bookmark.svg'),
@@ -24,6 +25,9 @@ export class CommentsDecoratorController implements Disposable {
 
     constructor() {
         this._activeEditor = window.activeTextEditor;
+        if (Container.commentService && Container.commentService.commentCache) {
+            this.commentCache = Container.commentService.commentCache;
+        }
         if (this._activeEditor) {
             this.fetchComments()
                 .catch(e => {
@@ -34,6 +38,7 @@ export class CommentsDecoratorController implements Disposable {
         this._disposable = Disposable.from(
             window.onDidChangeActiveTextEditor(editor => {
                 this._activeEditor = editor;
+                this.commentCache = Container.commentService.commentCache;
                 if (editor) {
                     this.fetchComments()
                         .catch(e => {
@@ -53,9 +58,7 @@ export class CommentsDecoratorController implements Disposable {
      * Creates a list of the existing commits (no-duplicate) in the active file.
      */
     async fetchComments() {
-        console.log('fetch');
         if (!GitCommentService.isLoggedIn()) {
-            console.log('not logged in');
             return;
         }
 
@@ -70,10 +73,10 @@ export class CommentsDecoratorController implements Disposable {
             for (let i = 0; i < count; i++) {
                 const blameLine = this._activeEditor.document.isDirty
                     ? await Container.git.getBlameForLineContents(
-                          trackedDocument.uri,
-                          i,
-                          this._activeEditor.document.getText()
-                      )
+                        trackedDocument.uri,
+                        i,
+                        this._activeEditor.document.getText()
+                    )
                     : await Container.git.getBlameForLine(trackedDocument.uri, i);
                 if (blameLine === undefined) continue;
                 const commit = blameLine.commit;
@@ -83,11 +86,29 @@ export class CommentsDecoratorController implements Disposable {
             }
 
             Object.values(commitSha).map(async commit => {
-                let comments = await Container.commentService.loadComments(commit);
-                if (comments === undefined) return;
-                comments = comments.filter(
-                    c => c.Type === CommentType.Line && c.Commit && this._activeFilename === c.Path
-                );
+                let comments: Comment[] = [];
+                const hasCache = this.commentCache!.CachedItems.has(commit.sha)!;
+                let cacheTimedout = true;
+                if (hasCache) {
+                    const cacheItem = this.commentCache!.CachedItems.get(commit.sha)!;
+                    const timeDiff = Date.now() - cacheItem.FetchedTime;
+                    const timeDiffThreshold = CommentCache.CacheTimeout * 1000 * 60;
+                    if (timeDiff < timeDiffThreshold) {
+                        cacheTimedout = false;
+                        comments = cacheItem.Comments.filter(
+                            c => c.Type === CommentType.Line && c.Commit && this._activeFilename === c.Path
+                        );
+                    }
+                }
+
+                if (!hasCache || cacheTimedout) {
+                    comments = await Container.commentService.loadComments(commit) as Comment[];
+                    if (comments === undefined) return;
+                    comments = comments.filter(
+                        c => c.Type === CommentType.Line && c.Commit && this._activeFilename === c.Path
+                    );
+                }
+
                 this.updateDecorations(comments);
             });
         }
@@ -107,6 +128,8 @@ export class CommentsDecoratorController implements Disposable {
             const decoration = { range: new Range(line, 0, line, 0) };
             this.decorations.push(decoration);
         }
+        // remove duplicate entries
+        this.decorations = [...new Set(this.decorations)];
         this._activeEditor.setDecorations(this.bookmarkDecorationType, this.decorations);
     }
 
