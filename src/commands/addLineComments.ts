@@ -4,7 +4,7 @@ import * as path from 'path';
 import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment, CommentType } from '../gitCommentService';
+import { Comment, CommentType, CommentCacheItem } from '../gitCommentService';
 import { GitCommit, GitUri } from '../gitService';
 import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
@@ -89,10 +89,27 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     commentArgs.line
                 );
 
+                // add the new comment in cache
                 // add decoration for new comment
-                let newComment = new Comment();
-                newComment.Line = commentArgs.line;
-                Container.commentsDecorator.updateDecorations([newComment]);
+                if (data.payload) {
+                    const newComment = new Comment();
+                    newComment.Line = commentArgs.line!;
+                    newComment.Path = commentArgs.fileName!;
+                    newComment.Type = CommentType.Line;
+                    newComment.Commit = commentArgs.commit;
+
+                    const cache = Container.commentService.commentCache;
+                    const hasCache = cache.CachedItems.has(commentArgs.commit!.sha);
+                    if (hasCache) {
+                        const cachedComment = cache.CachedItems.get(commentArgs.commit!.sha)!;
+                        cachedComment!.Comments.push(newComment);
+                    }
+                    else {
+                        const cacheItem = new CommentCacheItem([newComment]);
+                        cache.CachedItems.set(commentArgs.commit!.sha, cacheItem)
+                    }
+                    Container.commentsDecorator.updateDecorations([newComment]);
+                }
             }
             else if (commentArgs.type === operationTypes.Reply) {
                 // reply

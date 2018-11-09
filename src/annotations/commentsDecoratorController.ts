@@ -66,7 +66,6 @@ export class CommentsDecoratorController implements Disposable {
             this.decorations = [];
             const gitUri = await GitUri.fromUri(this._activeEditor.document.uri);
             this._activeFilename = path.relative(gitUri.repoPath ? gitUri.repoPath : '', gitUri.fsPath);
-            this._activeFilename = this.normalizePath(this._activeFilename);
             const count = this._activeEditor.document.lineCount;
             const commitSha: CommitDic = {};
             const trackedDocument = await Container.tracker.getOrAdd(this._activeEditor.document);
@@ -96,7 +95,7 @@ export class CommentsDecoratorController implements Disposable {
                     if (timeDiff < timeDiffThreshold) {
                         cacheTimedout = false;
                         comments = cacheItem.Comments.filter(
-                            c => c.Type === CommentType.Line && c.Commit && this._activeFilename === c.Path
+                            c => c.Type === CommentType.Line && c.Commit && this._activeFilename === path.normalize(c.Path!)
                         );
                     }
                 }
@@ -105,7 +104,7 @@ export class CommentsDecoratorController implements Disposable {
                     comments = await Container.commentService.loadComments(commit) as Comment[];
                     if (comments === undefined) return;
                     comments = comments.filter(
-                        c => c.Type === CommentType.Line && c.Commit && this._activeFilename === c.Path
+                        c => c.Type === CommentType.Line && c.Commit && this._activeFilename === path.normalize(c.Path!)
                     );
                 }
 
@@ -126,21 +125,10 @@ export class CommentsDecoratorController implements Disposable {
         for (const comment of comments) {
             const line = comment.Line!;
             const decoration = { range: new Range(line, 0, line, 0) };
-            this.decorations.push(decoration);
+            if (!this.decorations.includes(decoration)) {
+                this.decorations.push(decoration);
+            }
         }
-        // remove duplicate entries
-        this.decorations = [...new Set(this.decorations)];
         this._activeEditor.setDecorations(this.bookmarkDecorationType, this.decorations);
-    }
-
-    /**
-     * BitBucket API returns paths with forward slashes.
-     * like 'dir/file.ext'
-     *
-     * If our OS is treating with backslashes 'dir\file.ext', we need to convert them
-     * @param path Active file name
-     */
-    normalizePath(path: string) {
-        return path.replace('\\', '/');
     }
 }

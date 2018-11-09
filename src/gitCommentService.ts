@@ -44,7 +44,7 @@ export class Comment {
  * Since this class stores Comment objects, it's very flexible and can be used
  * in any part that needs comments.
  */
-class CommentCacheItem {
+export class CommentCacheItem {
     Comments: Comment[];
     FetchedTime: number;
     constructor(comments: Comment[]) {
@@ -411,8 +411,10 @@ export class GitCommentService implements Disposable {
                     next = null;
                 });
         }
-        let cacheItem = new CommentCacheItem(result);
-        this.commentCache.CachedItems.set(sha, cacheItem);
+        if (result) {
+            const cacheItem = new CommentCacheItem(result);
+            this.commentCache.CachedItems.set(sha, cacheItem);
+        }
         return result.filter(c => c.ParentId === undefined);
     }
 
