@@ -3,7 +3,7 @@ import * as path from 'path';
 import { DecorationOptions, Disposable, OverviewRulerLane, Range, TextEditor, window } from 'vscode';
 import { Container } from '../container';
 import { GitCommit } from '../git/git';
-import { Comment, CommentType, GitCommentService, CommentCache } from '../gitCommentService';
+import { Comment, CommentCache, CommentType, GitCommentService } from '../gitCommentService';
 import { GitUri } from '../gitService';
 
 interface CommitDic {
@@ -96,6 +96,7 @@ export class CommentsDecoratorController implements Disposable {
                         cacheTimedout = false;
                         comments = cacheItem.Comments.filter(
                             c => c.Type === CommentType.Line && c.Commit && this._activeFilename === path.normalize(c.Path!)
+                                && !c.ParentId
                         );
                     }
                 }
@@ -105,6 +106,7 @@ export class CommentsDecoratorController implements Disposable {
                     if (comments === undefined) return;
                     comments = comments.filter(
                         c => c.Type === CommentType.Line && c.Commit && this._activeFilename === path.normalize(c.Path!)
+                            && !c.ParentId
                     );
                 }
 
@@ -114,18 +116,24 @@ export class CommentsDecoratorController implements Disposable {
     }
 
     /**
-     * Takes comment list, and denotes the corresponding lines of comments
+     * Takes comment list, and denotes (or removes) the corresponding lines of comments
      * with an icon.
      * @param comments: Comment[] Comment list of the current file
+     * @param removeDecoration: bool True if decorations of comments will be removed.
+     * False if decorations of comments will be added.
      */
-    updateDecorations(comments: Comment[]) {
+    updateDecorations(comments: Comment[], removeDecoration = false) {
         if (!this._activeEditor) {
             return;
         }
         for (const comment of comments) {
             const line = comment.Line!;
             const decoration = { range: new Range(line, 0, line, 0) };
-            if (!this.decorations.includes(decoration)) {
+            if (removeDecoration) {
+                const index = this.decorations.findIndex(d => JSON.stringify(d) === JSON.stringify(decoration));
+                this.decorations.splice(index, 1);
+            }
+            else if (!this.decorations.includes(decoration)) {
                 this.decorations.push(decoration);
             }
         }

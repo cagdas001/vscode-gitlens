@@ -4,7 +4,7 @@ import * as path from 'path';
 import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment, CommentType, CommentCacheItem } from '../gitCommentService';
+import { Comment, CommentCacheItem, CommentType } from '../gitCommentService';
 import { GitCommit, GitUri } from '../gitService';
 import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
@@ -106,7 +106,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     }
                     else {
                         const cacheItem = new CommentCacheItem([newComment]);
-                        cache.CachedItems.set(commentArgs.commit!.sha, cacheItem)
+                        cache.CachedItems.set(commentArgs.commit!.sha, cacheItem);
                     }
                     Container.commentsDecorator.updateDecorations([newComment]);
                 }
@@ -321,7 +321,34 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                 if (args.type === operationTypes.Delete) {
                     await Container.commentService.deleteComment(args.commit!, args.id);
-                    await Container.commentsDecorator.fetchComments();
+
+                    const deletedComment = new Comment();
+                    deletedComment.Line = args.line!;
+                    deletedComment.Path = args.fileName!;
+                    deletedComment.Type = CommentType.Line;
+                    deletedComment.Commit = args.commit;
+                    deletedComment.Id = args.id;
+
+                    const cache = Container.commentService.commentCache;
+                    const hasCache = cache.CachedItems.has(args.commit!.sha);
+                    let removeDecoration = true;
+                    if (hasCache) {
+                        // delete comment from cache
+                        const cachedComment = cache.CachedItems.get(args.commit!.sha)!;
+                        for (let index = 0; index < cachedComment.Comments.length; ++index) {
+                            const comment = cachedComment.Comments[index];
+                            if (comment.Id === args.id) {
+                                cachedComment.Comments.splice(index, 1);
+                            }
+                            else if (comment.Line === args.line && comment.Path === args.fileName) {
+                                // there's still another comment on this line
+                                // no need to remove decoration
+                                removeDecoration = false;
+                                break;
+                            }
+                        }
+                    }
+                    Container.commentsDecorator.updateDecorations([deletedComment], removeDecoration);
                 }
             }
             else {
