@@ -37,6 +37,31 @@ export class Comment {
 }
 
 /**
+ * Stores comment list against commit hash
+ * for the CacheTimeout (5 minutes default)
+ * You may adjust CacheTimeout for your need in minutes format.
+ *
+ * Since this class stores Comment objects, it's very flexible and can be used
+ * in any part that needs comments.
+ */
+export class CommentCacheItem {
+    Comments: Comment[];
+    FetchedTime: number;
+    constructor(comments: Comment[]) {
+        this.Comments = comments;
+        this.FetchedTime = Date.now();
+    }
+}
+
+export class CommentCache {
+    static CacheTimeout = 5; // minutes
+    CachedItems: Map<string, CommentCacheItem>;
+    constructor() {
+        this.CachedItems = new Map<string, CommentCacheItem>();
+    }
+}
+
+/**
  * The service that communicates with remote repository store.
  */
 export class GitCommentService implements Disposable {
@@ -62,10 +87,13 @@ export class GitCommentService implements Disposable {
     public static commentViewerCommit: GitCommit;
     public static commentViewerFilename: string;
 
+    public commentCache: CommentCache;
+
     constructor() {
         commands.registerCommand('gitlens.commentCommitFile', this.commentToFile, this);
         commands.registerCommand('gitlens.showCommentCommitFile', this.showFileComment, this);
         commands.registerCommand('gitlens.showCommentCommitLine', this.showLineComment, this);
+        this.commentCache = new CommentCache();
     }
 
     async commentToFile() {
@@ -360,7 +388,6 @@ export class GitCommentService implements Disposable {
                             }
 
                             commentsMap.set(isV2 ? c.id : c.comment_id, comment);
-
                             result.push(comment);
                         }
                     });
@@ -383,6 +410,10 @@ export class GitCommentService implements Disposable {
                     Logger.log(e);
                     next = null;
                 });
+        }
+        if (result) {
+            const cacheItem = new CommentCacheItem(result);
+            this.commentCache.CachedItems.set(sha, cacheItem);
         }
         return result.filter(c => c.ParentId === undefined);
     }
