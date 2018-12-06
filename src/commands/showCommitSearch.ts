@@ -120,7 +120,10 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
                 showMergeCommits: args.showMergeCommits
             });
 
-            if (progressCancellation.token.isCancellationRequested) return undefined;
+            // clicking somewhere when commits are being loaded
+            // cancels the progress
+            // disabled cancellation check
+            // if (progressCancellation.token.isCancellationRequested) return undefined;
 
             const goBackCommand: CommandQuickPickItem | undefined =
                 args.goBackCommand ||
