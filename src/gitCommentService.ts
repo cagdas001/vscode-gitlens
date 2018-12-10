@@ -106,6 +106,8 @@ export class GitCommentService implements Disposable {
             fileName: filename
         } as GitCommit;
 
+        await GitCommentService.getCredentials();
+
         commands.executeCommand(Commands.AddLineComment, {
             fileName: fileCommit.fileName,
             commit: fileCommit
