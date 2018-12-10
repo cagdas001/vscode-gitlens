@@ -130,7 +130,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
         }
         else if (data.id === commentApp.getConnectionString() && data.command === 'ui.ready') {
             const initText = commentArgs.type === operationTypes.Edit ? commentArgs.message! : '';
-            commentApp.initEditor(commentArgs.message!);
+            commentApp.initEditor(initText);
         }
         else if (data.id === commentApp.getConnectionString() && data.command === 'close') {
             commentApp.close();
@@ -148,9 +148,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
      * @param args Comment arguments
      */
     showOrRunApp(args: AddLineCommentsCommandArgs) {
+        const initText = args.type === operationTypes.Edit ? args.message! : '';
         if (commentApp && commentApp.isRunning() && commentApp.getKeepOpen()) {
             commentApp.setCommentArgs(args);
-            const initText = args.type === operationTypes.Edit ? args.message! : '';
             commentApp.initEditor(initText);
             commentApp.show();
         }
@@ -162,6 +162,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             commentApp = new CommentApp(this.electronPath, this.BITBUCKET_COMMENT_APP_PATH, this.eventEmitter, args);
             commentApp.run();
             commentApp.setUpConnection();
+            commentApp.initEditor(initText)
         }
     }
 
