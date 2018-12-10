@@ -450,6 +450,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         DOM.listenAll('#showMergeCommits', 'change', function(this: HTMLButtonElement) {
             that.doSearch();
         });
+
+        DOM.listenAll('#searchText', 'keydown', function(event: KeyboardEventInit) {
+            if (event.key === 'Enter') {
+                that.doSearch();
+            }
+        });
     }
 
     protected showMoreLess(evt: MouseEvent) {
