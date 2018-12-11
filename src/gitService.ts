@@ -1187,7 +1187,7 @@ export class GitService implements Disposable {
                 case GitRepoSearchBy.Message:
                     args = ['-m', '-M', '--full-history'];
                     if (search) {
-                        args.push(`--grep=${search}`);
+                        args.push(`-i`, `--grep=${search}`);
                     }
                     break;
                 case GitRepoSearchBy.Sha:
