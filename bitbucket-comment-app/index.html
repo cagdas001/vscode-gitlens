@@ -23,11 +23,42 @@
 	<script src="simplemde.min.js"></script>
 	<script>
 		// Editor
+		var renderAutocomplete = function (el, data, cur) {
+			var div = document.createElement('div')
+			div.innerHTML = cur.displayText
+			div.style='color:red;background:yellow'
+			el.appendChild(div)
+		}
 		var simplemde = new SimpleMDE({
 			element: document.getElementById("markdown-editor"),
 			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
 			autofocus: true,
-			placeholder: "Write your comment..."
+			placeholder: "Write your comment...",
+			autoSuggest:
+					{
+							mode: 'markdown',
+							startChars: ['@', '#'],
+							listCallback: function(stringToTest)
+							{
+									return [
+											{
+													text: 'Thomas ',
+													displayText: 'Thomas',
+													render: renderAutocomplete
+											},
+											{
+													text: 'Maria ',
+													displayText: 'Maria',
+                          render: renderAutocomplete
+											},
+											{
+													text: 'Peter ',
+													displayText: 'Peter',
+                          render: renderAutocomplete
+											}
+									];
+							}
+					}
 		});
 		const { ipcRenderer } = require('electron');
 
