@@ -79,8 +79,9 @@
       }
     }
 
-    var showdown = require('showdown'),
-      converter = new showdown.Converter();
+    var showdown = require('showdown');
+    !function(){"use strict";var a=function(){return[{type:"output",regex:"<a(.*?)>",replace:function(a,b){return'<a target="_blank"'+b+">"}}]};"undefined"!=typeof window&&window.showdown&&window.showdown.extensions&&window.showdown.extension("targetblank",a),"undefined"!=typeof module&&(module.exports=a)}();
+    var converter = new showdown.Converter({extensions: ['targetblank']});
     var commentUl = document.getElementById('comments');
 
     function render(comments, ul) {
