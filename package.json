@@ -2327,7 +2327,7 @@
                 },
                 {
                     "command": "gitlens.showCommentCommitLine",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                    "when": "gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
                     "command": "gitlens.diffFileNext",
@@ -2843,7 +2843,7 @@
                 },
                 {
                     "command": "gitlens.showCommentCommitLine",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "when": "gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
                     "group": "navigation@97"
                 },
                 {

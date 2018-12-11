@@ -179,9 +179,17 @@ export class GitCommentService implements Disposable {
     }
 
     async showLineComment() {
-        if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
+        if (!window.activeTextEditor) return undefined;
+        let repoPath: string | undefined;
+        if (!AddLineCommentCommand.currentFileCommit) {
+            repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+        }
+        else {
+            repoPath = AddLineCommentCommand.currentFileCommit.repoPath;
+        }
+        if (!repoPath) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
+        const filename: string = path.relative(repoPath, gitUri.fsPath);
 
         AddLineCommentCommand.currentFileName = filename;
 
