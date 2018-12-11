@@ -26,6 +26,7 @@ export enum BuiltInCommands {
 export enum CommandContext {
     ActiveFileStatus = 'gitlens:activeFileStatus',
     AnnotationStatus = 'gitlens:annotationStatus',
+    BitbucketLoggedIn = 'gitlens:bitbucketLoggedIn',
     CanToggleCodeLens = 'gitlens:canToggleCodeLens',
     Enabled = 'gitlens:enabled',
     ExplorersCanCompare = 'gitlens:explorers:canCompare',

@@ -10,6 +10,7 @@ import { Container } from './container';
 import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
+import { setCommandContext, CommandContext } from './constants';
 
 /**
  * Enum to for different comment types.
@@ -225,6 +226,7 @@ export class GitCommentService implements Disposable {
      * @param password the username to be used for authentication
      */
     static UseCredentials(username: string, password: string) {
+        setCommandContext(CommandContext.BitbucketLoggedIn, true);
         this.username = username;
         this.password = password;
     }
@@ -232,7 +234,8 @@ export class GitCommentService implements Disposable {
     /**
      * Resets auth credentials.
      */
-    private static ClearCredentials() {
+    static ClearCredentials() {
+        setCommandContext(CommandContext.BitbucketLoggedIn, false);
         this.username = undefined;
         this.password = undefined;
     }
