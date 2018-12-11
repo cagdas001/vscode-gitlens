@@ -2331,11 +2331,19 @@
                 },
                 {
                     "command": "gitlens.diffFileNext",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffNext"
+                    "when": "textCompareEditorVisible && gitlens:showDiffNext"
                 },
                 {
                     "command": "gitlens.diffFilePrevious",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffPrevious"
+                    "when": "textCompareEditorVisible && gitlens:showDiffPrevious"
+                },
+                {
+                    "command": "gitlens.diffFileNext",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && gitlens:showDiffNext"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && gitlens:showDiffPrevious"
                 },
                 {
                     "command": "gitlens.diffLineWithPrevious",
@@ -2866,12 +2874,22 @@
                 },
                 {
                     "command": "gitlens.diffFilePrevious",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
+                    "when": "textCompareEditorVisible && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
                     "group": "navigation@101"
                 },
                 {
                     "command": "gitlens.diffFileNext",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
+                    "when": "textCompareEditorVisible && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
+                    "group": "navigation@102"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
+                    "group": "navigation@101"
+                },
+                {
+                    "command": "gitlens.diffFileNext",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
                     "group": "navigation@102"
                 },
                 {
