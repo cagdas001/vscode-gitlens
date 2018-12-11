@@ -145,6 +145,9 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             }
             list.createTBody();
             const dataMsg = event.data.msg as any[];
+            if (dataMsg[1].label === 'No results found') {
+                list.innerHTML = 'No results found';
+            }
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
