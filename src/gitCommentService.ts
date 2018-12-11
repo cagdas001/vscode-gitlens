@@ -201,7 +201,7 @@ export class GitCommentService implements Disposable {
             });
         }
         const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
-        const comments = allComments.filter(c => c.Line! === position.line);
+        const comments = allComments.filter(c => c.Line! === position.line && c.Path === filename);
         GitCommentService.lastFetchedComments = comments;
 
         if (canceled) return;
