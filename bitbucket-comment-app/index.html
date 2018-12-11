@@ -33,6 +33,9 @@
 
 		// init the editor with incoming value
 		ipcRenderer.on('init.editor', function (event, arg) {
+			if (simplemde.isPreviewActive()) {
+				simplemde.togglePreview();
+			}
 			simplemde.value(arg);
 		})
 
