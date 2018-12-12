@@ -49,8 +49,8 @@ export function runApp(appName: string) {
     delete spawnEnvironment.ELECTRON_RUN_AS_NODE;
     spawnEnvironment.ELECTRON_NO_ATTACH_CONSOLE = true;
 
-    const electronExecutable = process.platform === 'win32' ? 'electron.cmd' : 'electron';
-    const electronPath = path.join(__dirname, '/../node_modules', '.bin', electronExecutable);
+    const electronExecutable = process.platform === 'win32' ? 'electron.exe' : 'electron';
+    const electronPath = path.join(__dirname, '/../node_modules', 'electron', 'dist', electronExecutable);
 
     const appPath = path.join(__dirname, appName);
 
