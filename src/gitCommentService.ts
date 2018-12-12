@@ -654,6 +654,23 @@ export class GitCommentService implements Disposable {
         }
     }
 
+    retrieveParticipants () {
+        return [
+            {
+                text: '@Thomas ',
+                displayText: 'Thomas'
+            },
+            {
+                text: '@Maria ',
+                displayText: 'Maria'
+            },
+            {
+                text: '@Peter ',
+                displayText: 'Peter'
+            }
+        ]
+    }
+
     private updateView() {
         const editor = window.activeTextEditor;
         if (editor) {

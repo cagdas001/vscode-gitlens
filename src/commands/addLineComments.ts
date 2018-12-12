@@ -131,6 +131,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
         else if (data.id === commentApp.getConnectionString() && data.command === 'ui.ready') {
             const initText = commentArgs.type === operationTypes.Edit ? commentArgs.message! : '';
             commentApp.initEditor(commentArgs.message!);
+            commentApp.initSuggestions(JSON.stringify(Container.commentService.retrieveParticipants()));
         }
         else if (data.id === commentApp.getConnectionString() && data.command === 'close') {
             commentApp.close();

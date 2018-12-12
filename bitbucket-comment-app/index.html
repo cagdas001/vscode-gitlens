@@ -22,6 +22,7 @@
 
 	<script src="simplemde.min.js"></script>
 	<script>
+		console.log('asdasdasdasd')
 		// Editor
 		var renderAutocomplete = function (el, data, cur) {
 			var div = document.createElement('div')
@@ -29,6 +30,9 @@
 			div.style='color:red;background:yellow'
 			el.appendChild(div)
 		}
+
+		var suggestions = []
+
 		var simplemde = new SimpleMDE({
 			element: document.getElementById("markdown-editor"),
 			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
@@ -40,23 +44,7 @@
 							startChars: ['@', '#'],
 							listCallback: function(stringToTest)
 							{
-									return [
-											{
-													text: 'Thomas ',
-													displayText: 'Thomas',
-													render: renderAutocomplete
-											},
-											{
-													text: 'Maria ',
-													displayText: 'Maria',
-                          render: renderAutocomplete
-											},
-											{
-													text: 'Peter ',
-													displayText: 'Peter',
-                          render: renderAutocomplete
-											}
-									];
+									return suggestions;
 							}
 					}
 		});
@@ -65,7 +53,11 @@
 		// init the editor with incoming value
 		ipcRenderer.on('init.editor', function (event, arg) {
 			simplemde.value(arg);
-		})
+		});
+
+    ipcRenderer.on('init.suggestions', function (event, arg) {
+        suggestions = JSON.parse(arg)
+    });
 
 		var saveBtn = document.getElementById('saveBtn');
 		var cancelBtn = document.getElementById('cancelBtn');
