@@ -10,7 +10,7 @@ import {
     Uri,
     workspace
 } from 'vscode';
-import { CommandContext, extensionId, setCommandContext } from './constants';
+import { CommandContext, extensionConfigName, setCommandContext } from './constants';
 import { Container } from './container';
 import { clearGravatarCache } from './gitService';
 import { Functions } from './system';
@@ -50,7 +50,7 @@ export class Configuration {
     }
 
     private onConfigurationChanged(e: ConfigurationChangeEvent) {
-        if (!e.affectsConfiguration(extensionId, null!)) return;
+        if (!e.affectsConfiguration(extensionConfigName, null!)) return;
 
         Container.resetConfig();
 
@@ -90,15 +90,15 @@ export class Configuration {
     get<T>(section?: string, resource?: Uri | null, defaultValue?: T) {
         return defaultValue === undefined
             ? workspace
-                  .getConfiguration(section === undefined ? undefined : extensionId, resource!)
-                  .get<T>(section === undefined ? extensionId : section)!
+                  .getConfiguration(section === undefined ? undefined : extensionConfigName, resource!)
+                  .get<T>(section === undefined ? extensionConfigName : section)!
             : workspace
-                  .getConfiguration(section === undefined ? undefined : extensionId, resource!)
-                  .get<T>(section === undefined ? extensionId : section, defaultValue)!;
+                  .getConfiguration(section === undefined ? undefined : extensionConfigName, resource!)
+                  .get<T>(section === undefined ? extensionConfigName : section, defaultValue)!;
     }
 
     changed(e: ConfigurationChangeEvent, section: string, resource?: Uri | null) {
-        return e.affectsConfiguration(`${extensionId}.${section}`, resource!);
+        return e.affectsConfiguration(`${extensionConfigName}.${section}`, resource!);
     }
 
     initializing(e: ConfigurationChangeEvent) {
@@ -107,8 +107,8 @@ export class Configuration {
 
     inspect(section?: string, resource?: Uri | null) {
         return workspace
-            .getConfiguration(section === undefined ? undefined : extensionId, resource!)
-            .inspect(section === undefined ? extensionId : section);
+            .getConfiguration(section === undefined ? undefined : extensionConfigName, resource!)
+            .inspect(section === undefined ? extensionConfigName : section);
     }
 
     async migrate<TFrom, TTo>(
@@ -249,7 +249,7 @@ export class Configuration {
 
     update(section: string, value: any, target: ConfigurationTarget, resource?: Uri | null) {
         return workspace
-            .getConfiguration(extensionId, target === ConfigurationTarget.Global ? undefined : resource!)
+            .getConfiguration(extensionConfigName, target === ConfigurationTarget.Global ? undefined : resource!)
             .update(section, value, target);
     }
 
