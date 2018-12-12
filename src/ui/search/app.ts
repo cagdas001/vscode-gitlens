@@ -488,6 +488,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
 
     protected doSearch() {
         const searchText = DOM.getElementById<HTMLInputElement>('searchText')!.value;
+        const searchHash = DOM.getElementById<HTMLInputElement>('searchHash')!.value;
         const author = DOM.getElementById<HTMLInputElement>('author')!.value;
         const before = DOM.getElementById<HTMLInputElement>('before')!.value;
         const after = DOM.getElementById<HTMLInputElement>('after')!.value;
@@ -497,6 +498,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             search: searchText,
             branch: this.getBranch(),
             author: author,
+            sha: searchHash,
             since: this.getSince(),
             before: before,
             after: after,

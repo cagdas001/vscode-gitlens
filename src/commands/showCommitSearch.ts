@@ -25,6 +25,7 @@ export interface ShowCommitSearchCommandArgs {
     search?: string;
     searchBy?: GitRepoSearchBy[];
     maxCount?: number;
+    sha?: string;
     branch?: string;
     author?: string;
     since?: string;
@@ -84,12 +85,10 @@ export class ShowCommitSearchCommand extends ActiveEditorCachedCommand {
                     searchByValuesMap.set(searchBy, searchByValue);
                 }
             }
-            else if (GitService.isSha(args.search)) {
-                searchByValuesMap.set(GitRepoSearchBy.Sha, args.search);
-            }
-            else {
-                searchByValuesMap.set(GitRepoSearchBy.Message, args.search);
-            }
+            searchByValuesMap.set(GitRepoSearchBy.Message, args.search);
+        }
+        if (args.sha) {
+            searchByValuesMap.set(GitRepoSearchBy.Sha, args.sha);
         }
         if (args.author && !searchByValuesMap.get(GitRepoSearchBy.Author)) {
             searchByValuesMap.set(GitRepoSearchBy.Author, args.author);
