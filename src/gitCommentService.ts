@@ -654,21 +654,18 @@ export class GitCommentService implements Disposable {
         }
     }
 
-    retrieveParticipants () {
-        return [
-            {
-                text: '@Thomas ',
-                displayText: 'Thomas'
-            },
-            {
-                text: '@Maria ',
-                displayText: 'Maria'
-            },
-            {
-                text: '@Peter ',
-                displayText: 'Peter'
-            }
-        ]
+    async retrieveParticipants (str: string) {
+        const url = 'https://bitbucket.org/xhr/user-mention';
+        const requestParams = {
+            term: str
+        };
+        const axiosConfig = {
+            params: requestParams
+        };
+        const client = await Axios.create();
+
+        const { data } = await client.get(url, axiosConfig);
+        return data;
     }
 
     private updateView() {

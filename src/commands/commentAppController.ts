@@ -24,8 +24,8 @@ export class CommentApp extends ExternalApp {
         this.sendMessage('init.editor', text);
     }
 
-    public initSuggestions(text: string) {
-        this.sendMessage('init.suggestions', text);
+    public sendSuggestions(text: string) {
+        this.sendMessage('send.suggestions.result', text);
     }
 
     public show() {

@@ -38,15 +38,14 @@
 			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
 			autofocus: true,
 			placeholder: "Write your comment...",
-			autoSuggest:
-					{
-							mode: 'markdown',
-							startChars: ['@', '#'],
-							listCallback: function(stringToTest)
-							{
-									return suggestions;
-							}
-					}
+			autoSuggest: {
+        mode: 'markdown',
+        startChars: ['@', '#'],
+        listCallback: function(str) {
+            ipcRenderer.send('send.suggestions.keyword', str);
+            return suggestions;
+        }
+      }
 		});
 		const { ipcRenderer } = require('electron');
 
@@ -55,8 +54,12 @@
 			simplemde.value(arg);
 		});
 
-    ipcRenderer.on('init.suggestions', function (event, arg) {
-        suggestions = JSON.parse(arg)
+    ipcRenderer.on('send.suggestions.result', function (event, arg) {
+        const suggestionsTemp = JSON.parse(arg)
+        suggestions = Array.isArray(suggestionsTemp) ? suggestionsTemp.map(suggestion => ({
+            text: `@${suggestion.username} `,
+            displayText: suggestion.display_name
+        })) : [];
     });
 
 		var saveBtn = document.getElementById('saveBtn');
