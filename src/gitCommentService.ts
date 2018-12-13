@@ -10,6 +10,7 @@ import { Container } from './container';
 import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
+import { setCommandContext, CommandContext } from './constants';
 
 /**
  * Enum to for different comment types.
@@ -106,6 +107,8 @@ export class GitCommentService implements Disposable {
             fileName: filename
         } as GitCommit;
 
+        await GitCommentService.getCredentials();
+
         commands.executeCommand(Commands.AddLineComment, {
             fileName: fileCommit.fileName,
             commit: fileCommit
@@ -177,9 +180,17 @@ export class GitCommentService implements Disposable {
     }
 
     async showLineComment() {
-        if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
+        if (!window.activeTextEditor) return undefined;
+        let repoPath: string | undefined;
+        if (!AddLineCommentCommand.currentFileCommit) {
+            repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+        }
+        else {
+            repoPath = AddLineCommentCommand.currentFileCommit.repoPath;
+        }
+        if (!repoPath) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
+        const filename: string = path.relative(repoPath, gitUri.fsPath);
 
         AddLineCommentCommand.currentFileName = filename;
 
@@ -201,7 +212,7 @@ export class GitCommentService implements Disposable {
             });
         }
         const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
-        const comments = allComments.filter(c => c.Line! === position.line);
+        const comments = allComments.filter(c => c.Line! === position.line && c.Path === filename);
         GitCommentService.lastFetchedComments = comments;
 
         if (canceled) return;
@@ -225,6 +236,7 @@ export class GitCommentService implements Disposable {
      * @param password the username to be used for authentication
      */
     static UseCredentials(username: string, password: string) {
+        setCommandContext(CommandContext.BitbucketLoggedIn, true);
         this.username = username;
         this.password = password;
     }
@@ -232,7 +244,8 @@ export class GitCommentService implements Disposable {
     /**
      * Resets auth credentials.
      */
-    private static ClearCredentials() {
+    static ClearCredentials() {
+        setCommandContext(CommandContext.BitbucketLoggedIn, false);
         this.username = undefined;
         this.password = undefined;
     }

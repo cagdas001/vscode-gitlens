@@ -6,6 +6,7 @@
 	<title>Enter Your Comment</title>
 	<link rel="stylesheet" href="simplemde.min.css">
 	<link rel="stylesheet" href="bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
 	<style>
 		.CodeMirror,
 		.CodeMirror-scroll {
@@ -21,8 +22,8 @@
 	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
 	<script src="simplemde.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
 	<script>
-		console.log('asdasdasdasd')
 		// Editor
 		var renderAutocomplete = function (el, data, cur) {
 			var div = document.createElement('div')
@@ -38,19 +39,25 @@
 			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
 			autofocus: true,
 			placeholder: "Write your comment...",
-			autoSuggest: {
-        mode: 'markdown',
-        startChars: ['@', '#'],
-        listCallback: function(str) {
-            ipcRenderer.send('send.suggestions.keyword', str);
-            return suggestions;
-        }
+			renderingConfig: {
+				codeSyntaxHighlighting: true
+			},
+      autoSuggest: {
+          mode: 'markdown',
+          startChars: ['@', '#'],
+          listCallback: function(str) {
+              ipcRenderer.send('send.suggestions.keyword', str);
+              return suggestions;
+          }
       }
 		});
 		const { ipcRenderer } = require('electron');
 
 		// init the editor with incoming value
 		ipcRenderer.on('init.editor', function (event, arg) {
+			if (simplemde.isPreviewActive()) {
+				simplemde.togglePreview();
+			}
 			simplemde.value(arg);
 		});
 

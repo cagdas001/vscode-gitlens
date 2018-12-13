@@ -110,6 +110,11 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
             () => this.bitbucketLogin(),
             this
         );
+        commands.registerCommand(
+            'gitlens.bitbucket.logout',
+            () => this.bitbucketLogout(),
+            this
+        );
         commands.registerCommand('gitlens.gitExplorer.undockHistory', this.undockHistory, this);
 
         Container.context.subscriptions.push(
@@ -481,6 +486,13 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
                 resolve();
                 panel.dispose();
             });
+        });
+        return promise;
+    }
+    public bitbucketLogout(): Promise<any> {
+        const promise = new Promise((resolve, reject) => {
+            GitCommentService.ClearCredentials();
+            window.showInformationMessage('Logged out successfully.');
         });
         return promise;
     }

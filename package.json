@@ -2123,6 +2123,11 @@
                 "category": "GitLens"
             },
             {
+                "command": "gitlens.bitbucket.logout",
+                "title": "Logout to Bitbucket",
+                "category": "GitLens"
+            },
+            {
                 "command": "gitlens.gitExplorer.setRenameFollowingOn",
                 "title": "Follow Renames",
                 "category": "GitLens"
@@ -2327,15 +2332,23 @@
                 },
                 {
                     "command": "gitlens.showCommentCommitLine",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/"
+                    "when": "gitlens:activeFileStatus =~ /tracked/"
                 },
                 {
                     "command": "gitlens.diffFileNext",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffNext"
+                    "when": "textCompareEditorVisible && gitlens:showDiffNext"
                 },
                 {
                     "command": "gitlens.diffFilePrevious",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && gitlens:showDiffPrevious"
+                    "when": "textCompareEditorVisible && gitlens:showDiffPrevious"
+                },
+                {
+                    "command": "gitlens.diffFileNext",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && gitlens:showDiffNext"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && gitlens:showDiffPrevious"
                 },
                 {
                     "command": "gitlens.diffLineWithPrevious",
@@ -2671,7 +2684,11 @@
                 },
                 {
                     "command": "gitlens.bitbucket.login",
-                    "when": "false"
+                    "when": "!gitlens:bitbucketLoggedIn"
+                },
+                {
+                    "command": "gitlens.bitbucket.logout",
+                    "when": "gitlens:bitbucketLoggedIn"
                 },
                 {
                     "command": "gitlens.gitExplorer.setRenameFollowingOn",
@@ -2835,7 +2852,7 @@
                 },
                 {
                     "command": "gitlens.showCommentCommitLine",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
+                    "when": "gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare",
                     "group": "navigation@97"
                 },
                 {
@@ -2866,12 +2883,22 @@
                 },
                 {
                     "command": "gitlens.diffFilePrevious",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
+                    "when": "textCompareEditorVisible && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
                     "group": "navigation@101"
                 },
                 {
                     "command": "gitlens.diffFileNext",
-                    "when": "isInDiffEditor && gitlens:activeFileStatus =~ /tracked/ && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
+                    "when": "textCompareEditorVisible && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
+                    "group": "navigation@102"
+                },
+                {
+                    "command": "gitlens.diffFilePrevious",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && config.gitlens.menus.editorGroup.compare && gitlens:showDiffPrevious",
+                    "group": "navigation@101"
+                },
+                {
+                    "command": "gitlens.diffFileNext",
+                    "when": "!textCompareEditorVisible && !resourceLangId && !textInputFocus && config.gitlens.menus.editorGroup.compare && gitlens:showDiffNext",
                     "group": "navigation@102"
                 },
                 {
@@ -3056,7 +3083,12 @@
                 },
                 {
                     "command": "gitlens.bitbucket.login",
-                    "when": "view =~ /^gitlens.gitExplorer:/",
+                    "when": "view =~ /^gitlens.gitExplorer:/ && !gitlens:bitbucketLoggedIn",
+                    "group": "3_gitlens"
+                },
+                {
+                    "command": "gitlens.bitbucket.logout",
+                    "when": "view =~ /^gitlens.gitExplorer:/ && gitlens:bitbucketLoggedIn",
                     "group": "3_gitlens"
                 },
                 {
