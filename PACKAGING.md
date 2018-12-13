@@ -226,21 +226,21 @@ You have three options to install an extension packaged in a `.vsix` file. You c
 #### Using the Extensions view
 
 1. Go to the **Extensions** view. (`View -> Extensions`, or press `Ctrl+Shift+X`)
-
-![Open the Extensions View](docs/images/OpenExtensionsView.png "Open the Extensions View")
 2. Click on the three dots (`More Actions...`), at the right-top corner of the view.
 3. Click on `Install from VSIX...`
+4. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
+
+![Open the Extensions View](docs/images/OpenExtensionsView.png "Open the Extensions View")
 
 ![Install from VSIX...](docs/images/InstallFromVSIX.png "Install from VSIX...")
-4. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
 
 #### Using the Command Palette
 
 1. Open the Command Palette. (`View -> Command Palette...`, or press `Ctrl+Shift+P`)
 2. Search for the **Install from VSIX** keyword and select the **Extensions: Install from VSIX** command.
+3. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
 
 ![Command Palette](docs/images/CommandPalette.png "Command Palette")
-3. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
 
 ### With Command Line
 
