@@ -1,58 +1,71 @@
 # PACKAGING AND INSTALLING
 
-This document contains overall information about 
+This document contains overall information about
 
 * how to package the extension into VSIX file
 * how to install a package (VSIX)
 
-1. [Prerequisites](#Prerequisites)  
-1.1. [Installing the VSCE](#Installing-the-VSCE)
+1. [Prerequisites](#Prerequisites)
+    1. [NodeJS and npm](#NodeJS-and-npm)
+    2. [Git](#Git)
+    3. [vsce](#vsce)
 2. [Packaging the Extension](#Packaging-the-Extension)
 3. [Installing the Package](#Installing-the-Package)
+    1. [With VSCode](#With-VSCode)
+        1. [Using the Extensions view](#Using-the-Extensions-view)
+        2. [Using the Command Palette](#Using-the-Command-Palette)
+    2. [With Command Line](#With-Command-Line)
 
 ## Prerequisites
 
 ---
 
-* `NodeJS` and `npm`: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
-  * Make sure you have `NodeJS` and `npm` installed, and can be accessible through terminal/command prompt.
-  * If you're using the `GitLens` extension, you should already have done this before.
-  * You can verify your installations by running `node -v` and `npm -v` in a terminal/command prompt.
-    * You should see a similar output for `node -v`:  
+### NodeJS and npm
+
+Make sure you have `NodeJS` and `npm` installed, and can be accessible through terminal/command prompt.
+
+* You can download and install `NodeJS` and `npm` from: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
+* If you're using the `GitLens` extension, you should already have done this before.
+* You can verify your installations by running `node -v` and `npm -v` in a terminal/command prompt.
+  * You should see a similar output for `node -v`:
     ```powershell
     PS C:\Users\cagda\OneDrive\Masaüstü\vscode-gitlens> node -v
     v10.13.0
     ```
-    * You should see a similar output for `npm -v`:  
+  * You should see a similar output for `npm -v`:
     ```powershell
     PS C:\Users\cagda\OneDrive\Masaüstü\vscode-gitlens> npm -v
     6.4.1
     ```
-* `Git`: [https://git-scm.com/downloads](https://git-scm.com/downloads)
-  * Make sure you have `Git` installed, and can be accessible through terminal/command prompt.
-  * You can verify your installation by running `git --version` in a terminal/command prompt.
+---
+
+### Git
+
+Make sure you have `Git` installed, and can be accessible through terminal/command prompt.
+
+* You can download and install `Git` from: [https://git-scm.com/downloads](https://git-scm.com/downloads)
+* You can verify your installation by running `git --version` in a terminal/command prompt.
   * You should see a similar output:
     ```bash
     $ git --version
     git version 2.19.1.windows.1
     ```
-
-* `vsce`: VSCE is the command line utility we will use when packaging the extension.
-  * Go to [Installing the VSCE](#Installing-the-VSCE) section and install it.
-
-### Installing the VSCE
-
 ---
 
-Open up a terminal/command prompt window and run:
+### vsce
+
+`vsce` is the command line utility we will use when packaging the extension.
+
+* You can install it with `npm`.
+* Open up a terminal/command prompt window and run:
 
 ```bash
 npm install -g vsce
 ```
 
-## Packaging the Extension
-
 ---
+
+## Packaging the Extension
 
 1. Open up a terminal/command prompt window.
 2. Go to the root directory of your extension, with `cd`.
@@ -62,6 +75,8 @@ npm install -g vsce
 cd vscode-gitlens
 vsce package
 ```
+
+Once done, you should see the `.vsix` file in the same folder you run the `vsce package`. It's `gitlens-extended-8.5.6.vsix` for `GitLens`.
 
 The output should be similar:
 
@@ -200,37 +215,42 @@ Warning: The 'no-floating-promises' rule requires type information.
 Created: C:\Users\cagda\OneDrive\Masaüstü\vscode-gitlens\gitlens-8.5.6.vsix (3417 files, 56.01MB)
 ```
 
-Once done, you should see the `.vsix` file in the same folder you run the `vsce package`. It's `gitlens-8.5.6.vsix` for `GitLens`.
+---
 
 ## Installing the Package
 
+You have three options to install an extension packaged in a `.vsix` file. You can manually install a VS Code extension packaged in a `.vsix` file
+
+### With VSCode
+
+#### Using the Extensions view
+
+1. Go to the **Extensions** view. (`View -> Extensions`, or press `Ctrl+Shift+X`)
+
+![Open the Extensions View](docs/images/OpenExtensionsView.png "Open the Extensions View")
+2. Click on the three dots (`More Actions...`), at the right-top corner of the view.
+3. Click on `Install from VSIX...`
+
+![Install from VSIX...](docs/images/InstallFromVSIX.png "Install from VSIX...")
+4. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
+
+#### Using the Command Palette
+
+1. Open the Command Palette. (`View -> Command Palette...`, or press `Ctrl+Shift+P`)
+2. Search for the **Install from VSIX** keyword and select the **Extensions: Install from VSIX** command.
+
+![Command Palette](docs/images/CommandPalette.png "Command Palette")
+3. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
+
+### With Command Line
+
+You can also install using the VS Code `--install-extension` command line switch providing the path to the `.vsix` file.
+
+1. Open up a terminal/command prompt window.
+2. Run:
+
+```bash
+code --install-extension <path-to-the-vsix>.vsix
+```
+
 ---
-
-You have three options to install an extension packaged in a `.vsix` file. You can manually install a VS Code extension packaged in a `.vsix` file.
-
-* Using the **Install from VSIX** command in the Extensions view command drop-down.
-
-  1. Go to the **Extensions** view. (`View -> Extensions`, or press `Ctrl+Shift+X`)
-
-  ![Open the Extensions View](docs/images/OpenExtensionsView.png "Open the Extensions View")
-  2. Click on the three dots (`More Actions...`), at the right-top corner of the view.  
-  3. Click on `Install from VSIX...`
-  
-  ![Install from VSIX...](docs/images/InstallFromVSIX.png "Install from VSIX...")
-  4. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
-
-* Using the **Extensions: Install from VSIX** command in the Command Palette.
-
-  1. Open the Command Palette. (`View -> Command Palette...`, or press `Ctrl+Shift+P`)
-  2. Search for the **Install from VSIX** keyword and select the **Extensions: Install from VSIX** command.
-  3. A file selection dialog will be appeared, select the `.vsix` file you want to install and wait for the installation to complete.
-
-* You can also install using the VS Code `--install-extension` command line switch providing the path to the `.vsix` file.
-
-  1. Open up a terminal/command prompt window.
-  2. Run:
-
-  ```bash
-  code --install-extension <path-to-the-vsix>.vsix
-  ```
-  
