@@ -1599,8 +1599,8 @@
                 "title": "Put comment to this file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/chat.svg",
-                    "light": "images/chat.svg"
+                    "dark": "images/light/chat.svg",
+                    "light": "images/light/chat.svg"
                 }
             },
             {
@@ -1608,8 +1608,8 @@
                 "title": "Show comment for this file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/bookmark-red.svg",
-                    "light": "images/bookmark-red.svg"
+                    "dark": "images/light/bookmark-red.svg",
+                    "light": "images/light/bookmark-red.svg"
                 }
             },
             {
@@ -1617,8 +1617,8 @@
                 "title": "Show comment for this line",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/bookmark.svg",
-                    "light": "images/bookmark.svg"
+                    "dark": "images/light/bookmark.svg",
+                    "light": "images/light/bookmark.svg"
                 }
             },
             {
@@ -1626,8 +1626,8 @@
                 "title": "Show next file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/next.svg",
-                    "light": "images/next.svg"
+                    "dark": "images/light/next.svg",
+                    "light": "images/light/next.svg"
                 }
             },
             {
@@ -1635,8 +1635,8 @@
                 "title": "Show previous file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/previous.svg",
-                    "light": "images/previous.svg"
+                    "dark": "images/light/previous.svg",
+                    "light": "images/light/previous.svg"
                 }
             },
             {
