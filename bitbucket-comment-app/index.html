@@ -2,16 +2,16 @@
 <html>
 
 <head>
-	<meta charset="UTF-8">
-	<title>Enter Your Comment</title>
-	<link rel="stylesheet" href="simplemde.min.css">
-	<link rel="stylesheet" href="bootstrap.min.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
-	<style>
-		.CodeMirror,
-		.CodeMirror-scroll {
-			max-height: 320px;
-		}
+  <meta charset="UTF-8">
+  <title>Enter Your Comment</title>
+  <link rel="stylesheet" href="simplemde.min.css">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
+  <style>
+    .CodeMirror,
+    .CodeMirror-scroll {
+      max-height: 320px;
+    }
     .suggestion-box {
       display: flex;
       justify-items: center;
@@ -26,19 +26,19 @@
       width: 30px;
       height: 30px;
     }
-	</style>
+  </style>
 </head>
 
 <body>
-	<textarea id="markdown-editor">
-	</textarea>
-	<button id="cancelBtn" type="button" class="btn btn-outline-secondary float-right" style="margin-right: 10px">Cancel</button>
-	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
+  <textarea id="markdown-editor">
+  </textarea>
+  <button id="cancelBtn" type="button" class="btn btn-outline-secondary float-right" style="margin-right: 10px">Cancel</button>
+  <button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
-	<script src="simplemde.min.js"></script>
+  <script src="simplemde.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@0.5.2/marked.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
-	<script>
+  <script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
+  <script>
     let renderer = new marked.Renderer();
 
     function linkText(text) {
@@ -67,12 +67,12 @@
         smartypants: false
     };
 
-		// Editor
+    // Editor
     function renderAutocomplete (el, data, cur) {
       let wrapper = document.createElement('div');
       wrapper.className = 'suggestion-box';
 
-			let text = document.createElement('div');
+      let text = document.createElement('div');
       text.innerHTML = cur.displayText;
       text.className = 'suggestion-box__text';
 
@@ -83,20 +83,20 @@
       wrapper.appendChild(img);
       wrapper.appendChild(text);
 
-			el.appendChild(wrapper)
-		};
+      el.appendChild(wrapper)
+    };
 
-		let suggestions = [];
+    let suggestions = [];
 
-		let simplemde = new SimpleMDE({
-			element: document.getElementById("markdown-editor"),
+    let simplemde = new SimpleMDE({
+      element: document.getElementById("markdown-editor"),
       previewRender: text => marked(text, markedOptions),
-			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
-			autofocus: true,
-			placeholder: "Write your comment...",
-			renderingConfig: {
-				codeSyntaxHighlighting: true
-			},
+      toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
+      autofocus: true,
+      placeholder: "Write your comment...",
+      renderingConfig: {
+        codeSyntaxHighlighting: true
+      },
       autoSuggest: {
           mode: 'markdown',
           startChars: ['@', '#'],
@@ -105,16 +105,16 @@
               return suggestions;
           }
       }
-		});
-		const { ipcRenderer } = require('electron');
+    });
+    const { ipcRenderer } = require('electron');
 
-		// init the editor with incoming value
-		ipcRenderer.on('init.editor', function (event, arg) {
-			if (simplemde.isPreviewActive()) {
-				simplemde.togglePreview();
-			}
-			simplemde.value(arg);
-		});
+    // init the editor with incoming value
+    ipcRenderer.on('init.editor', function (event, arg) {
+      if (simplemde.isPreviewActive()) {
+        simplemde.togglePreview();
+      }
+      simplemde.value(arg);
+    });
 
     ipcRenderer.on('send.suggestions.result', function (event, arg) {
         const suggestionsTemp = JSON.parse(arg)
@@ -126,38 +126,38 @@
         })) : [];
     });
 
-		let saveBtn = document.getElementById('saveBtn');
-		let cancelBtn = document.getElementById('cancelBtn');
+    let saveBtn = document.getElementById('saveBtn');
+    let cancelBtn = document.getElementById('cancelBtn');
 
-		saveBtn.addEventListener('click', function () {
-			ipcRenderer.send('save.comment', simplemde.value());
-		})
+    saveBtn.addEventListener('click', function () {
+      ipcRenderer.send('save.comment', simplemde.value());
+    })
 
-		cancelBtn.addEventListener('click', function () {
-			ipcRenderer.send('close');
-		})
+    cancelBtn.addEventListener('click', function () {
+      ipcRenderer.send('close');
+    })
 
-		// send ui.ready message to main process when the window loaded
-		window.addEventListener('load', function () {
-			ipcRenderer.send('ui.ready');
-		})
+    // send ui.ready message to main process when the window loaded
+    window.addEventListener('load', function () {
+      ipcRenderer.send('ui.ready');
+    })
 
-		// binding ESC to Cancel, and Shift+Enter to Save
-		document.onkeydown = function (e) {
-			e = e || window.event;
-			switch (e.which || e.keyCode) {
-				// ESC
-				case 27:
-					cancelBtn.click();
-					break;
-				case 13:
-					if (e.shiftKey) {
-						// shift + enter
-						saveBtn.click();
-					}
-			}
-		}
-	</script>
+    // binding ESC to Cancel, and Shift+Enter to Save
+    document.onkeydown = function (e) {
+      e = e || window.event;
+      switch (e.which || e.keyCode) {
+        // ESC
+        case 27:
+          cancelBtn.click();
+          break;
+        case 13:
+          if (e.shiftKey) {
+            // shift + enter
+            saveBtn.click();
+          }
+      }
+    }
+  </script>
 </body>
 
 </html>
