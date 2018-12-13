@@ -12,6 +12,20 @@
 		.CodeMirror-scroll {
 			max-height: 320px;
 		}
+    .suggestion-box {
+      display: flex;
+      justify-items: center;
+      padding: 10px 0;
+    }
+    .suggestion-box__text {
+      padding-left: 8px;
+    }
+    .suggestion-box__avatar {
+      object-fit: cover;
+      border-radius:50%;
+      width: 30px;
+      height: 30px;
+    }
 	</style>
 </head>
 
@@ -22,17 +36,75 @@
 	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
 	<script src="simplemde.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@0.5.2/marked.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
 	<script>
+    let renderer = new marked.Renderer();
+
+    function linkText(text) {
+        // set up the URL prefixes that you want to use for the links
+        const profilePrefix = 'https://bitbucket.org/';
+
+        // regexes to detect mentions and/or hashtags…
+        // this might differ in your site, and I'm sure there's more thorough examples available on the web
+        // (or you could try find Twitter's implementation)
+        const mentionRegex = /(^|\W)@([\w.-]+)($|[^\w.-])/g;
+
+        let linkedText = text.replace(mentionRegex, `$1<a class="mention" target="_blank" href="${profilePrefix}$2">@$2</a>$3`);
+        return linkedText;
+    }
+
+    renderer.text = linkText;
+
+    let markedOptions = {
+        renderer,
+        gfm:         true,
+        tables:      true,
+        breaks:      false,
+        pedantic:    false,
+        sanitize:    false,
+        smartLists:  false,
+        smartypants: false
+    };
+
 		// Editor
-		var simplemde = new SimpleMDE({
+    function renderAutocomplete (el, data, cur) {
+      let wrapper = document.createElement('div');
+      wrapper.className = 'suggestion-box';
+
+			let text = document.createElement('div');
+      text.innerHTML = cur.displayText;
+      text.className = 'suggestion-box__text';
+
+      let img = document.createElement('img');
+      img.src = cur.avatarUrl;
+      img.className = 'suggestion-box__avatar';
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(text);
+
+			el.appendChild(wrapper)
+		};
+
+		let suggestions = [];
+
+		let simplemde = new SimpleMDE({
 			element: document.getElementById("markdown-editor"),
+      previewRender: text => marked(text, markedOptions),
 			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
 			autofocus: true,
 			placeholder: "Write your comment...",
 			renderingConfig: {
 				codeSyntaxHighlighting: true
-			}
+			},
+      autoSuggest: {
+          mode: 'markdown',
+          startChars: ['@', '#'],
+          listCallback: function(str) {
+              ipcRenderer.send('send.suggestions.keyword', str);
+              return suggestions;
+          }
+      }
 		});
 		const { ipcRenderer } = require('electron');
 
@@ -42,10 +114,20 @@
 				simplemde.togglePreview();
 			}
 			simplemde.value(arg);
-		})
+		});
 
-		var saveBtn = document.getElementById('saveBtn');
-		var cancelBtn = document.getElementById('cancelBtn');
+    ipcRenderer.on('send.suggestions.result', function (event, arg) {
+        const suggestionsTemp = JSON.parse(arg)
+        suggestions = Array.isArray(suggestionsTemp) ? suggestionsTemp.map(suggestion => ({
+            text: `@${suggestion.username} `,
+            displayText: suggestion.display_name,
+            avatarUrl: suggestion.avatar_url,
+            render: renderAutocomplete
+        })) : [];
+    });
+
+		let saveBtn = document.getElementById('saveBtn');
+		let cancelBtn = document.getElementById('cancelBtn');
 
 		saveBtn.addEventListener('click', function () {
 			ipcRenderer.send('save.comment', simplemde.value());

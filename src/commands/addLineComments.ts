@@ -132,6 +132,10 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             const initText = commentArgs.type === operationTypes.Edit ? commentArgs.message! : '';
             commentApp.initEditor(initText);
         }
+        else if (data.id === commentApp.getConnectionString() && data.command === 'send.suggestions.keyword') {
+            const participants = await Container.commentService.retrieveParticipants(data.payload!);
+            commentApp.sendSuggestions(JSON.stringify(participants));
+        }
         else if (data.id === commentApp.getConnectionString() && data.command === 'close') {
             commentApp.close();
         }
