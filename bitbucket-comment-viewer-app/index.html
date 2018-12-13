@@ -10,6 +10,21 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
   <script src="bootstrap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
+  <style>
+    .mention {
+      background-color: #1B49A0;
+      color: #FFFFFF;
+      padding: 5px;
+      border-radius: 7px;
+      text-decoration: none;
+      font-weight: normal;
+    }
+    .mention:hover {
+      font-weight: normal;
+      color: #FFFFFF;
+      text-decoration: none;
+    }
+  </style>
 </head>
 
 <body>
@@ -86,6 +101,19 @@
     var converter = new showdown.Converter({extensions: ['targetblank']});
     var commentUl = document.getElementById('comments');
 
+    function linkText(text) {
+        // set up the URL prefixes that you want to use for the links
+        const profilePrefix = 'https://bitbucket.org/';
+
+        // regexes to detect mentions and/or hashtags…
+        // this might differ in your site, and I'm sure there's more thorough examples available on the web
+        // (or you could try find Twitter's implementation)
+        const mentionRegex = /(^|\W)@([\w.-]+)($|[^\w.-])/g;
+
+        let linkedText = text.replace(mentionRegex, `$1 **<a class="mention" target="_blank" href="${profilePrefix}$2">@$2</a>** $3`);
+        return linkedText;
+    }
+
     function render(comments, ul) {
       for (var i = 0; i < comments.length; i++) {
         var comment = comments[i];
@@ -103,7 +131,7 @@
         contentDiv.className = 'cmmnt-content';
         contentDiv.innerHTML =
           `<header><a href="javascript:void(0);" class="userlink">${comment.Name}</a></header>
-        ${converter.makeHtml(comment.Message)}
+        ${converter.makeHtml(linkText(comment.Message))}
           <footer><a href="#!" commentId="${comment.Id}" onclick="reply(this);" class="userlink">Reply</a> &nbsp&nbsp <a href="#!" commentId="${comment.Id}" onclick="edit(this);" class="userlink">Edit</a>  &nbsp&nbsp <a href="#!" commentId="${comment.Id}" onclick="del(this);" class="userlink">Delete</a></footer>`;
         item.appendChild(contentDiv);
 
