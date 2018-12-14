@@ -120,10 +120,19 @@
         //# sourceMappingURL=jquery-resizable.min.js.map
     </script>
     <script>
+        let stopDrag = false;
         $(".panel-left").resizable({
             handleSelector: ".splitter",
-            resizeHeight: false
+            resizeHeight: false,
+            onDragStart: () => {
+                stopDrag = false;
+            },
+            onDrag: () => !stopDrag
         });
+
+	    $('body').on('mouseleave', () => {
+            stopDrag = true;
+        })
     </script>
 </body>
 
