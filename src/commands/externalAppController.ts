@@ -169,7 +169,7 @@ export function isAllowedToRun() {
  * Helper function to get electron path.
  */
 export function getElectronPath() {
-    const electronExecutable = process.platform === 'win32' ? 'electron.exe' : 'electron';
-    const electronPath = path.join(__dirname, '/../node_modules', 'electron', 'dist', electronExecutable);
+    const electronExecutable = process.platform === 'win32' ? 'electron.cmd' : 'electron';
+    const electronPath = path.join(__dirname, '/../node_modules', '.bin', electronExecutable);
     return electronPath;
 }
