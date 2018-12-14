@@ -67,6 +67,7 @@ function createWindow() {
         }
         ipc.server.on('app.message', function(data, socket) {
             connectionSocket = socket;
+            console.dir(data);
 
             // if ui becomes ready before the client connected
             // an error will be thrown
@@ -85,6 +86,8 @@ function createWindow() {
                 let text = data.payload.replace(/\u200C/g, '');
                 text = text.replace(/\n\n/g, '\n');
                 mainWindow.webContents.send('init.editor', text);
+            } else if (data.command === 'send.suggestions.result') {
+                mainWindow.webContents.send('send.suggestions.result', data.payload);
             } else if (data.command === 'hide') {
                 // hide dock icon on macOS
                 if (process.platform === 'darwin') {
@@ -128,6 +131,15 @@ function createWindow() {
             // once saved, close
             close();
         });
+
+        ipcMain.on('send.suggestions.keyword', function(event, arg) {
+            ipc.server.emit(connectionSocket, 'app.message', {
+                id: ipc.config.id,
+                command: 'send.suggestions.keyword',
+                payload: arg
+            });
+        });
+
         ipcMain.on('close', close);
     });
     ipc.server.start();

@@ -2,80 +2,162 @@
 <html>
 
 <head>
-	<meta charset="UTF-8">
-	<title>Enter Your Comment</title>
-	<link rel="stylesheet" href="simplemde.min.css">
-	<link rel="stylesheet" href="bootstrap.min.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
-	<style>
-		.CodeMirror,
-		.CodeMirror-scroll {
-			max-height: 320px;
-		}
-	</style>
+  <meta charset="UTF-8">
+  <title>Enter Your Comment</title>
+  <link rel="stylesheet" href="simplemde.min.css">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
+  <style>
+    .CodeMirror,
+    .CodeMirror-scroll {
+      max-height: 320px;
+    }
+    .suggestion-box {
+      display: flex;
+      justify-items: center;
+      padding: 10px 0;
+    }
+    .suggestion-box__text {
+      padding-left: 8px;
+    }
+    .suggestion-box__avatar {
+      object-fit: cover;
+      border-radius:50%;
+      width: 30px;
+      height: 30px;
+    }
+  </style>
 </head>
 
 <body>
-	<textarea id="markdown-editor">
-	</textarea>
-	<button id="cancelBtn" type="button" class="btn btn-outline-secondary float-right" style="margin-right: 10px">Cancel</button>
-	<button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
+  <textarea id="markdown-editor">
+  </textarea>
+  <button id="cancelBtn" type="button" class="btn btn-outline-secondary float-right" style="margin-right: 10px">Cancel</button>
+  <button id="saveBtn" type="button" class="btn btn-outline-primary float-right" style="margin-right: 5px">Save</button>
 
-	<script src="simplemde.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
-	<script>
-		// Editor
-		var simplemde = new SimpleMDE({
-			element: document.getElementById("markdown-editor"),
-			toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
-			autofocus: true,
-			placeholder: "Write your comment...",
-			renderingConfig: {
-				codeSyntaxHighlighting: true
-			}
-		});
-		const { ipcRenderer } = require('electron');
+  <script src="simplemde.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@0.5.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
+  <script>
+    let renderer = new marked.Renderer();
 
-		// init the editor with incoming value
-		ipcRenderer.on('init.editor', function (event, arg) {
-			if (simplemde.isPreviewActive()) {
-				simplemde.togglePreview();
-			}
-			simplemde.value(arg);
-		})
+    function linkText(text) {
+        // set up the URL prefixes that you want to use for the links
+        const profilePrefix = 'https://bitbucket.org/';
 
-		var saveBtn = document.getElementById('saveBtn');
-		var cancelBtn = document.getElementById('cancelBtn');
+        // regexes to detect mentions and/or hashtags…
+        // this might differ in your site, and I'm sure there's more thorough examples available on the web
+        // (or you could try find Twitter's implementation)
+        const mentionRegex = /(^|\W)@([\w.-]+)($|[^\w.-])/g;
 
-		saveBtn.addEventListener('click', function () {
-			ipcRenderer.send('save.comment', simplemde.value());
-		})
+        let linkedText = text.replace(mentionRegex, `$1<a class="mention" target="_blank" href="${profilePrefix}$2">@$2</a>$3`);
+        return linkedText;
+    }
 
-		cancelBtn.addEventListener('click', function () {
-			ipcRenderer.send('close');
-		})
+    renderer.text = linkText;
 
-		// send ui.ready message to main process when the window loaded
-		window.addEventListener('load', function () {
-			ipcRenderer.send('ui.ready');
-		})
+    let markedOptions = {
+        renderer,
+        gfm:         true,
+        tables:      true,
+        breaks:      false,
+        pedantic:    false,
+        sanitize:    false,
+        smartLists:  false,
+        smartypants: false
+    };
 
-		// binding ESC to Cancel, and Shift+Enter to Save
-		document.onkeydown = function (e) {
-			e = e || window.event;
-			switch (e.which || e.keyCode) {
-				// ESC
-				case 27:
-					cancelBtn.click();
-					break;
-				case 13:
-					if (e.shiftKey) {
-						// shift + enter
-						saveBtn.click();
-					}
-			}
-		}
-	</script>
+    // Editor
+    function renderAutocomplete (el, data, cur) {
+      let wrapper = document.createElement('div');
+      wrapper.className = 'suggestion-box';
+
+      let text = document.createElement('div');
+      text.innerHTML = cur.displayText;
+      text.className = 'suggestion-box__text';
+
+      let img = document.createElement('img');
+      img.src = cur.avatarUrl;
+      img.className = 'suggestion-box__avatar';
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(text);
+
+      el.appendChild(wrapper)
+    };
+
+    let suggestions = [];
+
+    let simplemde = new SimpleMDE({
+      element: document.getElementById("markdown-editor"),
+      previewRender: text => marked(text, markedOptions),
+      toolbar: ["heading", "bold", "italic", "unordered-list", "ordered-list", "link", "image", "table", "horizontal-rule", "quote", "code", "preview"],
+      autofocus: true,
+      placeholder: "Write your comment...",
+      renderingConfig: {
+        codeSyntaxHighlighting: true
+      },
+      autoSuggest: {
+          mode: 'markdown',
+          startChars: ['@', '#'],
+          listCallback: function(str) {
+              ipcRenderer.send('send.suggestions.keyword', str);
+              return suggestions;
+          }
+      }
+    });
+    const { ipcRenderer } = require('electron');
+
+    // init the editor with incoming value
+    ipcRenderer.on('init.editor', function (event, arg) {
+      if (simplemde.isPreviewActive()) {
+        simplemde.togglePreview();
+      }
+      simplemde.value(arg);
+    });
+
+    ipcRenderer.on('send.suggestions.result', function (event, arg) {
+        const suggestionsTemp = JSON.parse(arg)
+        suggestions = Array.isArray(suggestionsTemp) ? suggestionsTemp.map(suggestion => ({
+            text: `@${suggestion.username} `,
+            displayText: suggestion.display_name,
+            avatarUrl: suggestion.avatar_url,
+            render: renderAutocomplete
+        })) : [];
+    });
+
+    let saveBtn = document.getElementById('saveBtn');
+    let cancelBtn = document.getElementById('cancelBtn');
+
+    saveBtn.addEventListener('click', function () {
+      ipcRenderer.send('save.comment', simplemde.value());
+    })
+
+    cancelBtn.addEventListener('click', function () {
+      ipcRenderer.send('close');
+    })
+
+    // send ui.ready message to main process when the window loaded
+    window.addEventListener('load', function () {
+      ipcRenderer.send('ui.ready');
+    })
+
+    // binding ESC to Cancel, and Shift+Enter to Save
+    document.onkeydown = function (e) {
+      e = e || window.event;
+      switch (e.which || e.keyCode) {
+        // ESC
+        case 27:
+          cancelBtn.click();
+          break;
+        case 13:
+          if (e.shiftKey) {
+            // shift + enter
+            saveBtn.click();
+          }
+      }
+    }
+  </script>
 </body>
 
 </html>
