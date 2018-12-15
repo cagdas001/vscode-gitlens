@@ -130,7 +130,7 @@
     let cancelBtn = document.getElementById('cancelBtn');
 
     saveBtn.addEventListener('click', function () {
-      ipcRenderer.send('save.comment', simplemde.value());
+      ipcRenderer.send('save.comment', simplemde.value().trim());
     })
 
     cancelBtn.addEventListener('click', function () {
