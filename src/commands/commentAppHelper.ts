@@ -53,7 +53,7 @@ export function runApp(appName: string) {
         electronExecutable = 'electron.exe';
     }
     else if (process.platform === 'darwin') {
-        electronExecutable = 'Electron.app';
+        electronExecutable = 'Electron.app/Contents/MacOS/Electron';
     }
     else {
         electronExecutable = 'electron';
