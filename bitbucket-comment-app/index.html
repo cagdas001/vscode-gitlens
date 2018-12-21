@@ -113,9 +113,11 @@
     simplemde.codemirror.on('change', function () {
       if (simplemde.value().trim()) {
         saveBtn.disabled = false;
+        saveBtn.style.cursor = 'pointer';
       }
       else {
         saveBtn.disabled = true;
+        saveBtn.style.cursor = 'not-allowed';
       }
     });
     const { ipcRenderer } = require('electron');
