@@ -106,6 +106,18 @@
           }
       }
     });
+
+    let saveBtn = document.getElementById('saveBtn');
+    let cancelBtn = document.getElementById('cancelBtn');
+
+    simplemde.codemirror.on('change', function () {
+      if (simplemde.value().trim()) {
+        saveBtn.disabled = false;
+      }
+      else {
+        saveBtn.disabled = true;
+      }
+    });
     const { ipcRenderer } = require('electron');
 
     // init the editor with incoming value
@@ -125,9 +137,6 @@
             render: renderAutocomplete
         })) : [];
     });
-
-    let saveBtn = document.getElementById('saveBtn');
-    let cancelBtn = document.getElementById('cancelBtn');
 
     saveBtn.addEventListener('click', function () {
       ipcRenderer.send('save.comment', simplemde.value().trim());
