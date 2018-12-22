@@ -138,5 +138,11 @@ export class CommentsDecoratorController implements Disposable {
             }
         }
         this._activeEditor.setDecorations(this.bookmarkDecorationType, this.decorations);
+        for (const editor of window.visibleTextEditors) {
+            if (editor.viewColumn === undefined && this._activeEditor !== editor) {
+                editor.setDecorations(this.bookmarkDecorationType, this.decorations);
+                break;
+            }
+        }
     }
 }
