@@ -106,6 +106,20 @@
           }
       }
     });
+
+    let saveBtn = document.getElementById('saveBtn');
+    let cancelBtn = document.getElementById('cancelBtn');
+
+    simplemde.codemirror.on('change', function () {
+      if (simplemde.value().trim()) {
+        saveBtn.disabled = false;
+        saveBtn.style.cursor = 'pointer';
+      }
+      else {
+        saveBtn.disabled = true;
+        saveBtn.style.cursor = 'not-allowed';
+      }
+    });
     const { ipcRenderer } = require('electron');
 
     // init the editor with incoming value
@@ -126,11 +140,8 @@
         })) : [];
     });
 
-    let saveBtn = document.getElementById('saveBtn');
-    let cancelBtn = document.getElementById('cancelBtn');
-
     saveBtn.addEventListener('click', function () {
-      ipcRenderer.send('save.comment', simplemde.value());
+      ipcRenderer.send('save.comment', simplemde.value().trim());
     })
 
     cancelBtn.addEventListener('click', function () {
