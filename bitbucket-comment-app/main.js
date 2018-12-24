@@ -12,6 +12,12 @@ if (process.argv.length < 3) {
 }
 let connectionString = process.argv[2];
 
+// this will prevent some hardware issues
+// to draw/render window content on linux
+if (process.platform === 'linux') {
+    app.disableHardwareAcceleration();
+}
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow,
