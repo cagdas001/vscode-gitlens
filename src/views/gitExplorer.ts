@@ -12,7 +12,8 @@ import {
     TreeView,
     Uri,
     ViewColumn,
-    window
+    window,
+    workspace
 } from 'vscode';
 import {
     configuration,
@@ -30,6 +31,7 @@ import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
 import { HistoryExplorer } from './historyExplorer';
 import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode, RepositoryNode } from './nodes';
+import Axios, { AxiosBasicCredentials } from 'axios';
 
 export * from './nodes';
 
@@ -476,15 +478,23 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
         );
         panel.webview.html = this.getWebviewContent();
         const promise = new Promise((resolve, reject) => {
-            panel.webview.onDidReceiveMessage(message => {
+            panel.webview.onDidReceiveMessage(async message => {
                 console.log(message);
                 const data: any = JSON.parse(message.text);
-                GitCommentService.UseCredentials(data.username!, data.password!);
-                panel.webview.postMessage({
-                    command: 'success'
-                });
-                resolve();
-                panel.dispose();
+                const auth = await this.isAuthenticated(data.username!, data.password!);
+                if (auth) {
+                    GitCommentService.UseCredentials(data.username!, data.password!);
+                    window.showInformationMessage('Login successful');
+                    panel.webview.postMessage({
+                        command: 'success'
+                    });
+                    resolve();
+                    panel.dispose();
+                }
+                else {
+                    GitCommentService.ClearCredentials();
+                    window.showErrorMessage('Login failed. Check your credentials');
+                }
             });
         });
         return promise;
@@ -539,5 +549,28 @@ export class GitExplorer extends Disposable implements TreeDataProvider<Explorer
         </body>
         </html>
         `;
+    }
+
+    /** Tests given credentials against an API endpoint to make sure of authentication
+     * user endpoint returns the user currently logged in, so its a good way to know if we re logged in
+    */
+    async isAuthenticated(username: string, password: string): Promise<boolean> {
+        let baseUrl = workspace.getConfiguration().get('gitlens.advanced.v2APIBaseURL') as string;
+        baseUrl = baseUrl.replace('/repositories', '');
+        const endpoint = `${baseUrl}/user`;
+
+        const credentials = { username: username, password: password } as AxiosBasicCredentials;
+        const client = await Axios.create({
+            auth: credentials
+        });
+        let authenticated = false;
+        await client.get(endpoint)
+        .then(function() {
+            authenticated = true;
+        })
+        .catch(function() {
+            authenticated = false;
+        });
+        return authenticated;
     }
 }
