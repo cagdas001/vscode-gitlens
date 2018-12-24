@@ -1,7 +1,7 @@
 // ipcMain and ipcRenderer for Communication between electron main/renderer processes
 // node-ipc for communication between electron and vscode extension host (they're independent processes)
 // electron's ipc modules are not helpful to send (or receive) data to external apps
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const ipc = require('node-ipc');
 
 // connectionString is an unique identifier for each process spawned (or ExternalApp instance)
@@ -50,6 +50,11 @@ function createWindow() {
     mainWindow.on('closed', function() {
         // globalShortcut.unregister('CommandOrControl+1');
         mainWindow = null;
+    });
+
+    mainWindow.webContents.on('new-window', function(e, url) {
+        e.preventDefault();
+        shell.openExternal(url);
     });
 
     // node-ipc configurations
