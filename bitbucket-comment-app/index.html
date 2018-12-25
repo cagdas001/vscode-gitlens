@@ -55,6 +55,11 @@
     }
 
     renderer.text = linkText;
+    // syntax highlighting
+    function highlightSyntax(code) {
+      return hljs.highlightAuto(code).value;
+    }
+
 
     let markedOptions = {
         renderer,
@@ -64,7 +69,8 @@
         pedantic:    false,
         sanitize:    false,
         smartLists:  false,
-        smartypants: false
+        smartypants: false,
+        highlight: highlightSyntax
     };
 
     // Editor
