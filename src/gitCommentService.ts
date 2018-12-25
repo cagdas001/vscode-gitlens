@@ -291,7 +291,7 @@ export class GitCommentService implements Disposable {
      * @param pathToReplace
      */
     normalizeToForwardSlashes(pathToReplace: string): string {
-        return pathToReplace.replace('\\', '/');
+        return pathToReplace.replace(/\\/g, '/');
     }
 
     /**
