@@ -493,17 +493,25 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         const before = DOM.getElementById<HTMLInputElement>('before')!.value;
         const after = DOM.getElementById<HTMLInputElement>('after')!.value;
         const showMergeCommits = DOM.getElementById<HTMLInputElement>('showMergeCommits')!.checked;
-        this._api.postMessage({
-            type: 'search',
-            search: searchText,
-            branch: this.getBranch(),
-            author: author,
-            sha: searchHash,
-            since: this.getSince(),
-            before: before,
-            after: after,
-            showMergeCommits: showMergeCommits
-        });
+
+        if (searchHash) {
+            this._api.postMessage({
+                type: 'search',
+                sha: searchHash
+            });
+        }
+        else {
+            this._api.postMessage({
+                type: 'search',
+                search: searchText,
+                branch: this.getBranch(),
+                author: author,
+                since: this.getSince(),
+                before: before,
+                after: after,
+                showMergeCommits: showMergeCommits
+            });
+        }
     }
 
     protected getBranch(): string {
