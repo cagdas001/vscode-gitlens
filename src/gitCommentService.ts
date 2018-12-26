@@ -532,9 +532,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission for this repository.');
             }
             else {
                 console.log(e.response);
@@ -606,9 +609,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
             }
             else {
                 window.showErrorMessage('Failed to add comment/reply.');
@@ -657,9 +663,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
             }
             else {
                 window.showErrorMessage('Failed to delete comment/reply.');
