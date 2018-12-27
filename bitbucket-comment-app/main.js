@@ -12,6 +12,7 @@ if (process.argv.length < 3) {
 }
 let connectionString = process.argv[2];
 
+// if you have any issue regarding GPU, enable this
 // this will prevent some hardware issues
 // to draw/render window content on linux
 /*if (process.platform === 'linux') {
