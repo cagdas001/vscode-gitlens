@@ -104,7 +104,7 @@ export class GitCommentService implements Disposable {
         const fileCommit = {
             sha: AddLineCommentCommand.currentFileCommit.rsha,
             repoPath: AddLineCommentCommand.currentFileCommit.repoPath,
-            fileName: filename
+            fileName: this.normalizeToForwardSlashes(filename)
         } as GitCommit;
 
         await GitCommentService.getCredentials();
@@ -119,7 +119,8 @@ export class GitCommentService implements Disposable {
     async showFileComment() {
         if (!AddLineCommentCommand.currentFileCommit || !window.activeTextEditor) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
+        let filename: string = path.relative(AddLineCommentCommand.currentFileCommit.repoPath, gitUri.fsPath);
+        filename = this.normalizeToForwardSlashes(filename);
 
         AddLineCommentCommand.currentFileName = filename;
 
@@ -190,7 +191,8 @@ export class GitCommentService implements Disposable {
         }
         if (!repoPath) return undefined;
         const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
-        const filename: string = path.relative(repoPath, gitUri.fsPath);
+        let filename: string = path.relative(repoPath, gitUri.fsPath);
+        filename = this.normalizeToForwardSlashes(filename);
 
         AddLineCommentCommand.currentFileName = filename;
 
@@ -285,6 +287,14 @@ export class GitCommentService implements Disposable {
     }
 
     /**
+     * Replaces backward slashes (\\) with forward slashes (/)
+     * @param pathToReplace
+     */
+    normalizeToForwardSlashes(pathToReplace: string): string {
+        return pathToReplace.replace(/\\/g, '/');
+    }
+
+    /**
      * Loads all comments for the given commit (via API version 1).
      * @param commit commit
      */
@@ -292,14 +302,14 @@ export class GitCommentService implements Disposable {
         const isV2 = Container.config.advanced.useApiV2;
         const baseUrl = isV2 ? this.V2BaseURL : this.V1BaseURL;
 
-        const path = await this.getRemoteRepoPath(commit.repoPath);
-        if (!path) {
+        const repoPath = await this.getRemoteRepoPath(commit.repoPath);
+        if (!repoPath) {
             return;
         }
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
-        const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
+        const url = `${baseUrl}/${repoPath}/${commitStr}/${sha}/comments/`;
         const requestParams = {
             pagelen: 100
         };
@@ -345,7 +355,7 @@ export class GitCommentService implements Disposable {
                                 }
 
                                 if (c.inline && c.inline.path) {
-                                    comment.Path = c.inline.path;
+                                    comment.Path = this.normalizeToForwardSlashes(c.inline.path);
                                 }
                                 if (c.commit && c.commit.hash) {
                                     comment.Sha = c.commit.hash;
@@ -374,7 +384,7 @@ export class GitCommentService implements Disposable {
                                 }
 
                                 if (c.filename) {
-                                    comment.Path = c.filename;
+                                    comment.Path = this.normalizeToForwardSlashes(c.filename);
                                 }
                                 if (c.node) {
                                     comment.Sha = c.node;
@@ -455,6 +465,7 @@ export class GitCommentService implements Disposable {
         if (!path) {
             return;
         }
+        fileName = this.normalizeToForwardSlashes(fileName);
         const auth = await GitCommentService.getCredentials();
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
@@ -532,9 +543,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not add comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission for this repository.');
             }
             else {
                 console.log(e.response);
@@ -606,9 +620,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not edit comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
             }
             else {
                 window.showErrorMessage('Failed to add comment/reply.');
@@ -657,9 +674,12 @@ export class GitCommentService implements Disposable {
         }
         catch (e) {
             Logger.error(e);
-            if (e!.response!.status === 401 || e!.response!.status === 403) {
+            if (e!.response!.status === 401) {
                 window.showErrorMessage('Incorrect Bit Bucket Service Credentials. Could not delete comment/reply.');
                 GitCommentService.ClearCredentials();
+            }
+            else if (e!.response!.status === 403) {
+                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
             }
             else {
                 window.showErrorMessage('Failed to delete comment/reply.');

@@ -54,6 +54,8 @@
     // a map for comments
     // [key: CommentID, value: CommentObject]
     var commentsMap = new Map();
+    let nonReplyCount = 0;
+    let scrollToIndex;
 
     function reply(data) {
       let commentID = data.getAttribute('commentID');
@@ -121,6 +123,9 @@
 
         var item = document.createElement('li');
         item.className = 'cmmnt';
+        if (!comment.ParentId) {
+          item.id = `comment-${++nonReplyCount}`;
+        }
 
         var avatarDiv = document.createElement('div');
         avatarDiv.className = 'avatar';
@@ -160,6 +165,7 @@
     // init the editor with the incoming value
     ipcRenderer.on('init.editor', function (event, arg) {
       commentUl.innerHTML = '';
+      nonReplyCount = 0;
       if (arg.length == 0) {
         commentUl.innerText = 'No Comments Found';
       }
@@ -167,12 +173,16 @@
 
       document.getElementById('spinner').style.display = 'none';
       document.getElementById('w').style.display = 'block';
+
+      let lastComment = document.getElementById(`comment-${scrollToIndex}`);
+      lastComment.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
     })
 
     var addBtn = document.getElementById('addBtn');
     var closeBtn = document.getElementById('closeBtn');
 
     addBtn.addEventListener('click', function () {
+      scrollToIndex = nonReplyCount + 1;
       ipcRenderer.send('add.comment');
     })
     closeBtn.addEventListener('click', function () {

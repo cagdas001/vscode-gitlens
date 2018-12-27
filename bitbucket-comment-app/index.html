@@ -55,6 +55,11 @@
     }
 
     renderer.text = linkText;
+    // syntax highlighting
+    function highlightSyntax(code) {
+      return hljs.highlightAuto(code).value;
+    }
+
 
     let markedOptions = {
         renderer,
@@ -64,7 +69,8 @@
         pedantic:    false,
         sanitize:    false,
         smartLists:  false,
-        smartypants: false
+        smartypants: false,
+        highlight: highlightSyntax
     };
 
     // Editor
@@ -106,6 +112,20 @@
           }
       }
     });
+
+    let saveBtn = document.getElementById('saveBtn');
+    let cancelBtn = document.getElementById('cancelBtn');
+
+    simplemde.codemirror.on('change', function () {
+      if (simplemde.value().trim()) {
+        saveBtn.disabled = false;
+        saveBtn.style.cursor = 'pointer';
+      }
+      else {
+        saveBtn.disabled = true;
+        saveBtn.style.cursor = 'not-allowed';
+      }
+    });
     const { ipcRenderer } = require('electron');
 
     // init the editor with incoming value
@@ -126,11 +146,8 @@
         })) : [];
     });
 
-    let saveBtn = document.getElementById('saveBtn');
-    let cancelBtn = document.getElementById('cancelBtn');
-
     saveBtn.addEventListener('click', function () {
-      ipcRenderer.send('save.comment', simplemde.value());
+      ipcRenderer.send('save.comment', simplemde.value().trim());
     })
 
     cancelBtn.addEventListener('click', function () {
