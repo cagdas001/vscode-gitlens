@@ -72,7 +72,7 @@ export class ExternalApp {
             spawnEnvironment.ELECTRON_NO_ATTACH_CONSOLE = true;
         }
 
-        this.childProcess = spawn(this.hostCmd, this.args, { stdio: ['ipc', 'pipe'], env: spawnEnvironment });
+        this.childProcess = spawn(this.hostCmd, this.args, { env: spawnEnvironment });
         runningInstances.set(this.connectionString, this);
         this.running = true;
 

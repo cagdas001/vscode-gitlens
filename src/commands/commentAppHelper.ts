@@ -63,7 +63,7 @@ export function runApp(appName: string) {
 
     const appPath = path.join(__dirname, appName);
 
-    const app = spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
+    const app = spawn(electronPath, [appPath], { env: spawnEnvironment });
 
     app.stdout.on('data', data => {});
 
