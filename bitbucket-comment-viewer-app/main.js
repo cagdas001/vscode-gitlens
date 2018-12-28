@@ -4,6 +4,13 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const ipc = require('node-ipc');
 
+// if you have any issue regarding GPU, enable this
+// this will prevent some hardware issues
+// to draw/render window content on linux
+/*if (process.platform === 'linux') {
+    app.disableHardwareAcceleration();
+}*/
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow,
