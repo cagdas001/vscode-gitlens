@@ -148,6 +148,33 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             if (dataMsg[1].label === 'No results found') {
                 list.innerHTML = 'No results found';
             }
+
+            const commits: any[] = [];
+
+            dataMsg
+                .filter(element => element.hasOwnProperty('commit'))
+                .forEach((element, rId) => {
+                    const { commit, label, commitFormattedDate } = element;
+                    // const isMergeCommit = commit.parentShas.length > 1;
+                    const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
+
+                    commits.push({
+                        text : title,
+                        state : {
+                            opened : false,
+                            selected : false
+                        },
+                        children : [
+                            commit._fileName
+                        ]
+                    });
+            });
+
+            const commitsEvent = new CustomEvent('commits', {
+                bubbles: true,
+                detail: commits
+            });
+            window.dispatchEvent(commitsEvent);
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
