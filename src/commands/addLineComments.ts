@@ -109,6 +109,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     }
                     // add decoration for new comment
                     Container.commentsDecorator.addDecoration(commentArgs.line!);
+                    Container.commentsDecorator.setDecorations();
                 }
             }
             else if (commentArgs.type === operationTypes.Reply) {
@@ -349,6 +350,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                             // could not find any comment on the same line
                             // remove decoration
                             Container.commentsDecorator.removeDecoration(args.line!);
+                            Container.commentsDecorator.setDecorations();
                         }
                     }
                 }
