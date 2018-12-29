@@ -90,7 +90,6 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 );
 
                 // add the new comment in cache
-                // add decoration for new comment
                 if (data.payload) {
                     const newComment = new Comment();
                     newComment.Line = commentArgs.line!;
@@ -108,7 +107,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         const cacheItem = new CommentCacheItem([newComment]);
                         cache.CachedItems.set(commentArgs.commit!.sha, cacheItem);
                     }
-                    Container.commentsDecorator.updateDecorations([newComment]);
+                    // add decoration for new comment
+                    Container.commentsDecorator.addDecoration(commentArgs.line!);
                 }
             }
             else if (commentArgs.type === operationTypes.Reply) {
@@ -336,24 +336,21 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
 
                     const cache = Container.commentService.commentCache;
                     const hasCache = cache.CachedItems.has(args.commit!.sha);
-                    let removeDecoration = true;
                     if (hasCache) {
                         // delete comment from cache
                         const cachedComment = cache.CachedItems.get(args.commit!.sha)!;
-                        for (let index = 0; index < cachedComment.Comments.length; ++index) {
-                            const comment = cachedComment.Comments[index];
-                            if (comment.Id === args.id) {
-                                cachedComment.Comments.splice(index, 1);
-                            }
-                            else if (comment.Line === args.line && comment.Path === args.fileName) {
-                                // there's still another comment on this line
-                                // no need to remove decoration
-                                removeDecoration = false;
-                                break;
-                            }
+                        const deletedCommentIndex = cachedComment.Comments.findIndex(c => c.Id === args.id);
+                        cachedComment.Comments.splice(deletedCommentIndex, 1);
+                        // check if there is still any comment on the same line
+                        // if there is, no need to remove decoration
+                        // otherwise remove
+                        const anotherCommentIndex = cachedComment.Comments.findIndex(c => c.Line === args.line && c.Path === args.fileName);
+                        if (anotherCommentIndex === -1) {
+                            // could not find any comment on the same line
+                            // remove decoration
+                            Container.commentsDecorator.removeDecoration(args.line!);
                         }
                     }
-                    Container.commentsDecorator.updateDecorations([deletedComment], removeDecoration);
                 }
             }
             else {
