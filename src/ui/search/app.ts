@@ -164,9 +164,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             opened : false,
                             selected : false
                         },
-                        children : [
-                            commit._fileName
-                        ]
+                        children : commit._fileName ? commit._fileName.split(',') : []
                     });
             });
 
