@@ -46,6 +46,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected innerHeight: any;
     protected searchText: HTMLInputElement | null = null;
     private showDiffPosts: ShowDiffPost[] = [];
+    private selectedFileCommitMap = new Map<string, FileCommitInfo[]>();
+    private repoPath: string = '';
 
     constructor() {
         super('CommitSearches', bootstrap);
@@ -78,7 +80,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         this.searchText = searchText;
 
         const branches = DOM.getElementById<HTMLSelectElement>('branches');
-        const selectedCommits = DOM.getElementById<HTMLDivElement>('selected-commits');
+        const selectedCommitsDOM = DOM.getElementById<HTMLDivElement>('selected-commits');
         const selectedFiles = DOM.getElementById<HTMLDivElement>('selected-files');
         if (branches && this.bootstrap.branches!.length) {
             this.bootstrap.branches.forEach(branch => {
@@ -130,19 +132,19 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             }
 
             // delete selected commits
-            while (selectedCommits.firstChild) {
-                selectedCommits.removeChild(selectedCommits.firstChild);
+            while (selectedCommitsDOM.firstChild) {
+                selectedCommitsDOM.removeChild(selectedCommitsDOM.firstChild);
             }
 
             // init selected commits list
-            if (!selectedCommits.hasChildNodes()) {
+            if (!selectedCommitsDOM.hasChildNodes()) {
                 const ul = document.createElement('ul');
                 ul.id = 'selected-commits-list';
-                selectedCommits.appendChild(ul);
+                selectedCommitsDOM.appendChild(ul);
             }
             const commitedList = document.getElementById('selected-commits-list');
 
-            const selectedFileCommitMap = new Map<string, FileCommitInfo[]>();
+            this.selectedFileCommitMap = new Map<string, FileCommitInfo[]>();
             const list = DOM.getElementById<HTMLTableElement>('logs');
             while (list.rows.length !== 0) {
                 list.deleteRow(0);
@@ -156,21 +158,25 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             const commits: any[] = [];
 
             dataMsg
-                .filter(element => element.hasOwnProperty('commit'))
                 .forEach((element, rId) => {
-                    const { commit, label, commitFormattedDate } = element;
-                    // const isMergeCommit = commit.parentShas.length > 1;
-                    const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
+                    if (element.hasOwnProperty('results')) {
+                        this.repoPath = element.results.repoPath;
+                    }
+                    else if (element.hasOwnProperty('commit')) {
+                        const { commit, label, commitFormattedDate } = element;
+                        // const isMergeCommit = commit.parentShas.length > 1;
+                        const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
 
-                    commits.push({
-                        text : title,
-                        state : {
-                            opened : false,
-                            selected : false
-                        },
-                        data: element,
-                        children : commit._fileName ? commit._fileName.split(',') : []
-                    });
+                        commits.push({
+                            text: title,
+                            state: {
+                                opened: false,
+                                selected: false
+                            },
+                            data: element,
+                            children: commit._fileName ? commit._fileName.split(',') : []
+                        });
+                    }
             });
 
             const commitsEvent = new CustomEvent('commits', {
@@ -214,15 +220,15 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             const files = element.commit._fileName.split(',') as string[];
                             for (const file of files) {
                                 const trimmedFilePath = file!.trim();
-                                if (selectedFileCommitMap.has(trimmedFilePath)) {
+                                if (this.selectedFileCommitMap.has(trimmedFilePath)) {
                                     // delete a commit from the list
-                                    const items = selectedFileCommitMap.get(trimmedFilePath!);
-                                    selectedFileCommitMap.set(
+                                    const items = this.selectedFileCommitMap.get(trimmedFilePath!);
+                                    this.selectedFileCommitMap.set(
                                         trimmedFilePath,
                                         items!.filter(e => e.sha !== element.commit.sha)
                                     );
-                                    if (selectedFileCommitMap.get(trimmedFilePath)!.length === 0) {
-                                        selectedFileCommitMap.delete(trimmedFilePath);
+                                    if (this.selectedFileCommitMap.get(trimmedFilePath)!.length === 0) {
+                                        this.selectedFileCommitMap.delete(trimmedFilePath);
                                     }
                                 }
                             }
@@ -280,11 +286,11 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                     file: trimmedFilePath,
                                     status: status[0].status
                                 };
-                                if (selectedFileCommitMap.has(trimmedFilePath)) {
-                                    selectedFileCommitMap.get(trimmedFilePath)!.push(fileCommitInfo);
+                                if (this.selectedFileCommitMap.has(trimmedFilePath)) {
+                                    this.selectedFileCommitMap.get(trimmedFilePath)!.push(fileCommitInfo);
                                 }
                                 else {
-                                    selectedFileCommitMap.set(trimmedFilePath, [fileCommitInfo]);
+                                    this.selectedFileCommitMap.set(trimmedFilePath, [fileCommitInfo]);
                                 }
                             }
                         }
@@ -295,7 +301,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         }
 
                         // build tree data from file path strings
-                        const treeData = CommitSearches.createTreeData(selectedFileCommitMap);
+                        const treeData = CommitSearches.createTreeData(this.selectedFileCommitMap);
                         const treeArray = CommitSearches.toTreeData(treeData) as HtmlTreeNode[];
                         treeArray.sort(CommitSearches.sortTree);
 
@@ -323,7 +329,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // All nodes are expanded
                         const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
                         for (const treeNode of treeHtml) {
-                            treeNode.addEventListener('click', event => {
+                            treeNode.addEventListener('click', (event: Event) => {
                                 const parent = (event.target as HTMLElement)['parentElement'] as HTMLElement;
                                 const classList = parent.classList;
                                 if (classList.contains('open')) {
@@ -350,7 +356,135 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         window.addEventListener('treeChange', (e: Event) => {
             if (!this.isCustomEvent(e)) throw new Error('not a custom event');
 
-            console.log(JSON.stringify(e.detail));
+            const commitedList = document.getElementById('selected-commits-list');
+            // init selected commits list
+            if (commitedList) {
+                commitedList.innerHTML = '';
+            }
+
+            // reset file commits
+            this.selectedFileCommitMap = new Map<string, FileCommitInfo[]>();
+
+            const selectedCommits = e.detail.selectedNodes;
+
+            for(let selectedCommit of selectedCommits) {
+                if (!selectedCommit.data) continue;
+
+                const { commit, label, detail } = selectedCommit.data;
+
+                let branches = '';
+                if (Array.isArray(commit.branches) && commit.branches.length > 0) {
+                    branches = `<div>In ${
+                        commit.branches.length
+                        } branches: ${commit.branches.join(', ')}</div>`;
+                }
+
+                let showMoreLink: HTMLAnchorElement | undefined;
+                // Git service returns only first line of message for label
+                // If label and full message lengths are not same, there are more lines
+                let replacedLabel = label;
+                if (label.length < commit.message.length) {
+                    // replace the last three dots with link
+                    replacedLabel = label
+                        .replace(/\u2026/g, '')
+                        .replace(/\u00a0/g, '');
+                    showMoreLink = document.createElement('a');
+                    showMoreLink.href = '#';
+                    showMoreLink.innerHTML = '... >';
+                    showMoreLink.id = `show-more-${commit.sha}`;
+                    showMoreLink.title = 'Show More';
+                    showMoreLink.setAttribute('action', 'more');
+                    showMoreLink.setAttribute('fullmsg', commit.message);
+                    showMoreLink.setAttribute('summary', replacedLabel);
+                    showMoreLink.addEventListener('click', this.showMoreLess);
+                }
+                // add a commit to the list of selected commits
+                const selectedCommitRow = document.createElement('li');
+                selectedCommitRow.id = `selected-commit-${commit.sha}`;
+                selectedCommitRow.innerHTML = `<div class='commit-label'>${replacedLabel}</div><div>${commit._shortSha}${detail}</div>${branches}`;
+                // add show more link
+                if (showMoreLink) {
+                    const commitLabel = selectedCommitRow.getElementsByClassName('commit-label').item(0);
+                    commitLabel.appendChild(showMoreLink);
+                }
+                commitedList!.appendChild(selectedCommitRow);
+
+                // get the list of commited files
+                const files = commit._fileName.split(',') as string[];
+                for (const file of files) {
+                    const trimmedFilePath = file.trim();
+                    const status = commit.fileStatuses.filter(
+                        (x: any) => (x.fileName as string) === trimmedFilePath
+                    );
+                    const fileCommitInfo = {
+                        sha: commit.sha,
+                        prevSha: commit._previousSha,
+                        nextSha: commit.nextSha,
+                        date: new Date(commit.date),
+                        file: trimmedFilePath,
+                        status: status[0].status
+                    };
+                    if (this.selectedFileCommitMap.has(trimmedFilePath)) {
+                        this.selectedFileCommitMap.get(trimmedFilePath)!.push(fileCommitInfo);
+                    }
+                    else {
+                        this.selectedFileCommitMap.set(trimmedFilePath, [fileCommitInfo]);
+                    }
+                }
+            }
+            console.log(JSON.stringify(selectedCommits));
+            console.log('##################');
+            console.log(JSON.stringify(this.selectedFileCommitMap));
+
+            // delete a previous html tree
+            while (selectedFiles.firstChild) {
+                selectedFiles.removeChild(selectedFiles.firstChild);
+            }
+
+            // build tree data from file path strings
+            const treeData = CommitSearches.createTreeData(this.selectedFileCommitMap);
+            const treeArray = CommitSearches.toTreeData(treeData) as HtmlTreeNode[];
+            treeArray.sort(CommitSearches.sortTree);
+
+            // display tree
+            const treeUl = document.createElement('ul');
+            treeUl.id = 'selected-files-list';
+            treeUl.className = 'tree';
+            selectedFiles.appendChild(treeUl);
+            const rootLi = document.createElement('li');
+            rootLi.className = 'open';
+            const a = document.createElement('a');
+            a.setAttribute('href', '#');
+            a.innerText = `${this.repoPath}`;
+            rootLi.appendChild(a);
+            const ul = document.createElement('ul');
+            rootLi.appendChild(ul);
+            treeUl.appendChild(rootLi);
+            this.showDiffPosts = [];
+            this.displayTreeData(this.repoPath, treeArray, ul);
+            this._api.postMessage({
+                type: 'saveDiffs',
+                diffs: this.showDiffPosts
+            });
+
+            // All nodes are expanded
+            const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
+            for (const treeNode of treeHtml) {
+                treeNode.addEventListener('click', (event: Event) => {
+                    const parent = (event.target as HTMLElement)['parentElement'] as HTMLElement;
+                    const classList = parent.classList;
+                    if (classList.contains('open')) {
+                        classList.remove('open');
+                        const opensubs = parent!.querySelectorAll(':scope .open');
+                        for (const opensub of opensubs) {
+                            opensub.classList.remove('open');
+                        }
+                    }
+                    else {
+                        classList.add('open');
+                    }
+                });
+            }
         });
 
         this._api.postMessage({
