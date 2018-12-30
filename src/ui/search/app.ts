@@ -142,23 +142,19 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 ul.id = 'selected-commits-list';
                 selectedCommitsDOM.appendChild(ul);
             }
-            const commitedList = document.getElementById('selected-commits-list');
 
             this.selectedFileCommitMap = new Map<string, FileCommitInfo[]>();
-            const list = DOM.getElementById<HTMLTableElement>('logs');
-            while (list.rows.length !== 0) {
-                list.deleteRow(0);
-            }
-            list.createTBody();
+            const list = DOM.getElementById<HTMLTableElement>('jstree');
             const dataMsg = event.data.msg as any[];
             if (dataMsg[1].label === 'No results found') {
                 list.innerHTML = 'No results found';
+                return;
             }
 
             const commits: any[] = [];
 
             dataMsg
-                .forEach((element, rId) => {
+                .forEach((element) => {
                     if (element.hasOwnProperty('results')) {
                         this.repoPath = element.results.repoPath;
                     }
@@ -184,173 +180,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 detail: commits
             });
             window.dispatchEvent(commitsEvent);
-
-            dataMsg.forEach((element, rId) => {
-                const r1 = list.insertRow();
-                const c1 = r1.insertCell();
-
-                const isMergeCommits = element.hasOwnProperty('commit') && element.commit.parentShas.length > 1;
-                c1.innerHTML = `<div class='commit-label commit-label--list'>${isMergeCommits ? `<span class="icon-merge">Ⓜ</span>` : ''}${
-                    element.label
-                }</div><div>${element.description}</div>`;
-
-                if (!element.commit) {
-                    r1.hidden = true;
-                }
-                else {
-                    const detailsRow = list.insertRow();
-                    detailsRow.className = 'details-row';
-                    r1.id = `commit-${element.commit.sha}`;
-                    const c1 = detailsRow.insertCell();
-                    c1.innerHTML = `<span>${element.detail}</span>`;
-                    c1.id = `details-${rId}`;
-                    detailsRow.style.visibility = 'hidden';
-
-                    // User selects a commit
-                    r1.onclick = () => {
-                        let isHidden = detailsRow.style.visibility === 'hidden';
-                        isHidden = !isHidden;
-
-                        if (isHidden) {
-                            detailsRow.style.visibility = 'hidden';
-                            const selectCommitRow = document.getElementById(`selected-` + r1.id) as HTMLElement;
-                            selectCommitRow.parentElement!.removeChild(selectCommitRow);
-
-                            // update the list fo selected files
-                            const files = element.commit._fileName.split(',') as string[];
-                            for (const file of files) {
-                                const trimmedFilePath = file!.trim();
-                                if (this.selectedFileCommitMap.has(trimmedFilePath)) {
-                                    // delete a commit from the list
-                                    const items = this.selectedFileCommitMap.get(trimmedFilePath!);
-                                    this.selectedFileCommitMap.set(
-                                        trimmedFilePath,
-                                        items!.filter(e => e.sha !== element.commit.sha)
-                                    );
-                                    if (this.selectedFileCommitMap.get(trimmedFilePath)!.length === 0) {
-                                        this.selectedFileCommitMap.delete(trimmedFilePath);
-                                    }
-                                }
-                            }
-                        }
-                        else {
-                            detailsRow.style.visibility = 'visible';
-                            let branches = '';
-                            if (Array.isArray(element.commit.branches) && element.commit.branches.length > 0) {
-                                branches = `<div>In ${
-                                    element.commit.branches.length
-                                } branches: ${element.commit.branches.join(', ')}</div>`;
-                            }
-
-                            let showMoreLink: HTMLAnchorElement | undefined;
-                            // Git service returns only first line of message for label
-                            // If label and full message lengths are not same, there are more lines
-                            if (element.label.length < element.commit.message.length) {
-                                // replace the last three dots with link
-                                element.label = element.label
-                                    .replace(/\u2026/g, '')
-                                    .replace(/\u00a0/g, '');
-                                showMoreLink = document.createElement('a');
-                                showMoreLink.href = '#';
-                                showMoreLink.innerHTML = '... >';
-                                showMoreLink.id = `show-more-${element.commit.sha}`;
-                                showMoreLink.title = 'Show More';
-                                showMoreLink.setAttribute('action', 'more');
-                                showMoreLink.setAttribute('fullmsg', element.commit.message);
-                                showMoreLink.setAttribute('summary', element.label);
-                                showMoreLink.addEventListener('click', this.showMoreLess);
-                            }
-                            // add a commit to the list of selected commits
-                            const selectedCommitRow = document.createElement('li');
-                            selectedCommitRow.id = `selected-` + r1.id;
-                            selectedCommitRow.innerHTML = `<div class='commit-label'>${element.label}</div><div>${element.commit._shortSha}${element.detail}</div>${branches}`;
-                            // add show more link
-                            if (showMoreLink) {
-                                const commitLabel = selectedCommitRow.getElementsByClassName('commit-label').item(0);
-                                commitLabel.appendChild(showMoreLink);
-                            }
-                            commitedList!.appendChild(selectedCommitRow);
-
-                            // get the list of commited files
-                            const files = element.commit._fileName.split(',') as string[];
-                            for (const file of files) {
-                                const trimmedFilePath = file.trim();
-                                const status = element.commit.fileStatuses.filter(
-                                    (x: any) => (x.fileName as string) === trimmedFilePath
-                                );
-                                const fileCommitInfo = {
-                                    sha: element.commit.sha,
-                                    prevSha: element.commit._previousSha,
-                                    nextSha: element.commit.nextSha,
-                                    date: new Date(element.commit.date),
-                                    file: trimmedFilePath,
-                                    status: status[0].status
-                                };
-                                if (this.selectedFileCommitMap.has(trimmedFilePath)) {
-                                    this.selectedFileCommitMap.get(trimmedFilePath)!.push(fileCommitInfo);
-                                }
-                                else {
-                                    this.selectedFileCommitMap.set(trimmedFilePath, [fileCommitInfo]);
-                                }
-                            }
-                        }
-
-                        // delete a previous html tree
-                        while (selectedFiles.firstChild) {
-                            selectedFiles.removeChild(selectedFiles.firstChild);
-                        }
-
-                        // build tree data from file path strings
-                        const treeData = CommitSearches.createTreeData(this.selectedFileCommitMap);
-                        const treeArray = CommitSearches.toTreeData(treeData) as HtmlTreeNode[];
-                        treeArray.sort(CommitSearches.sortTree);
-
-                        // display tree
-                        const treeUl = document.createElement('ul');
-                        treeUl.id = 'selected-files-list';
-                        treeUl.className = 'tree';
-                        selectedFiles.appendChild(treeUl);
-                        const rootLi = document.createElement('li');
-                        rootLi.className = 'open';
-                        const a = document.createElement('a');
-                        a.setAttribute('href', '#');
-                        a.innerText = `${element.commit.repoPath}`;
-                        rootLi.appendChild(a);
-                        const ul = document.createElement('ul');
-                        rootLi.appendChild(ul);
-                        treeUl.appendChild(rootLi);
-                        this.showDiffPosts = [];
-                        this.displayTreeData(element.commit.repoPath, treeArray, ul);
-                        this._api.postMessage({
-                            type: 'saveDiffs',
-                            diffs: this.showDiffPosts
-                        });
-
-                        // All nodes are expanded
-                        const treeHtml = document.querySelectorAll('ul.tree a:not(:last-child)');
-                        for (const treeNode of treeHtml) {
-                            treeNode.addEventListener('click', (event: Event) => {
-                                const parent = (event.target as HTMLElement)['parentElement'] as HTMLElement;
-                                const classList = parent.classList;
-                                if (classList.contains('open')) {
-                                    classList.remove('open');
-                                    const opensubs = parent!.querySelectorAll(':scope .open');
-                                    for (const opensub of opensubs) {
-                                        opensub.classList.remove('open');
-                                    }
-                                }
-                                else {
-                                    classList.add('open');
-                                }
-                            });
-                        }
-                    };
-
-                    const seperator = list.insertRow();
-                    const spCell = seperator.insertCell();
-                    spCell.innerHTML = '<div class="seperator"></div>';
-                }
-            });
         });
 
         window.addEventListener('treeChange', (e: Event) => {
@@ -432,9 +261,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     }
                 }
             }
-            console.log(JSON.stringify(selectedCommits));
-            console.log('##################');
-            console.log(JSON.stringify(this.selectedFileCommitMap));
 
             // delete a previous html tree
             while (selectedFiles.firstChild) {
