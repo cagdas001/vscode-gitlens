@@ -193,11 +193,22 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     }
             });
 
-            const commitsEvent = new CustomEvent('commits', {
+            let branchIcon = `${this.bootstrap.rootPath}/images/dark/icon-branch.svg`;
+
+            const tree = [{
+                text: `History (${this.bootstrap.branch})`,
+                icon: branchIcon,
+                state: {
+                    opened: true
+                },
+                children: commits
+            }];
+
+            const treeInitEvent = new CustomEvent('treeInit', {
                 bubbles: true,
-                detail: commits
+                detail: tree
             });
-            window.dispatchEvent(commitsEvent);
+            window.dispatchEvent(treeInitEvent);
         });
 
         window.addEventListener('treeNodeClick', (e: Event) => {
