@@ -169,8 +169,21 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 opened: false,
                                 selected: false
                             },
+                            selectable: true,
                             data: element,
-                            children: commit._fileName ? commit._fileName.split(',') : []
+                            children: commit.fileStatuses.map((fileStatus: any) => ({
+                                text: fileStatus.fileName,
+                                isFile: true,
+                                data: {
+                                    fullPath: fileStatus.fileName,
+                                    details: [
+                                        {
+                                            prevSha: commit._previousSha,
+                                            sha: commit.sha
+                                        }
+                                    ]
+                                }
+                            }))
                         });
                     }
             });
@@ -180,6 +193,16 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 detail: commits
             });
             window.dispatchEvent(commitsEvent);
+        });
+
+        window.addEventListener('treeNodeClick', (e: Event) => {
+            if (!this.isCustomEvent(e)) throw new Error('not a custom event');
+
+            const clickedNode = e.detail.node;
+            if (!clickedNode.original.isFile) return;
+
+            this.showDiff(clickedNode.data);
+
         });
 
         window.addEventListener('treeChange', (e: Event) => {
@@ -387,6 +410,40 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         if (a.date < b.date) return -1;
         if (a.date > b.date) return 1;
         return 0;
+    }
+
+    private showDiff(item: any) {
+        let params: ShowDiffPost | undefined;
+        const showDiffPosts = [];
+        try {
+            const fileURI = item.fullPath;
+            params = {
+                type: 'showDiff',
+                file: fileURI,
+                repoPath: this.repoPath,
+                lsha: undefined,
+                rsha: undefined,
+                showIndex: showDiffPosts.length
+            };
+            // The logic of comparison is based on Intelij Idea
+            if (item.details.length === 1) {
+                params.lsha = item.details[0].prevSha;
+                params.rsha = item.details[0].sha;
+            }
+            else {
+                item.details!.sort(this.sortCommit);
+                params.lsha = item.details![0].prevSha;
+                params.rsha = item.details![item.details!.length - 1].sha;
+            }
+            showDiffPosts.push(params);
+        }
+        catch (error) {
+            // params = undefined;
+        }
+
+        if (item.details && item.details.length >= 1 && params) {
+            this._api.postMessage(params);
+        }
     }
 
     private displayTreeData(repoPath: string, tree: HtmlTreeNode[], selectedFiles: HTMLUListElement) {
