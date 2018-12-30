@@ -15,6 +15,7 @@ export interface WelcomeBootstrap extends Bootstrap {}
 export interface CommitSearchBootstrap extends Bootstrap {
     branches: string[];
     branch: string;
+    stashes: any;
     rootPath: string;
 }
 
@@ -57,4 +58,8 @@ export interface SaveDiffMessages {
     diffs: ShowDiffMessage[];
 }
 
-export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage| ShowDiffMessage | SaveDiffMessages;
+export interface ShowQuickStashList {
+    type: 'listStashes';
+}
+
+export type Message = SaveSettingsMessage | SettingsChangedMessage | SearchRepoMessage| ShowDiffMessage | SaveDiffMessages | ShowQuickStashList;

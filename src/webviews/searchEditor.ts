@@ -4,7 +4,7 @@ import { commands, Uri, WebviewPanel, window, workspace } from 'vscode';
 import { configuration, IConfig } from '../configuration';
 import { CommandContext, setCommandContext } from '../constants';
 import { Container } from '../container';
-import { GitBranch } from '../git/git';
+import { GitBranch, GitStashCommit } from '../git/git';
 import { Iterables } from '../system/iterable';
 import { CommitSearchBootstrap, ShowDiffMessage } from '../ui/ipc';
 import { WebviewEditor } from './webviewEditor';
@@ -67,13 +67,15 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
     async getBootstrap() {
         const branches = await this.getAllBranches();
         const branch = await this.getBranch();
+        const stashes = await this.getStashList();
         return {
             config: configuration.get<IConfig>(),
             rootPath: Uri.file(Container.context.asAbsolutePath('.'))
                 .with({ scheme: 'vscode-resource' })
                 .toString(),
-            branches: branches,
-            branch: branch
+            branches,
+            branch,
+            stashes
         } as CommitSearchBootstrap;
     }
 
@@ -116,5 +118,12 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
         const branch = await Container.git.getBranch(repoPath);
         return branch!.getName();
+    }
+
+    private async getStashList(): Promise<IterableIterator<GitStashCommit> | undefined> {
+        const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+        const stashList = await Container.git.getStashList(repoPath);
+        console.dir(JSON.stringify(stashList));
+        return stashList ? stashList.commits.values() : undefined;
     }
 }
