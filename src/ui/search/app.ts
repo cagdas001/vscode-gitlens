@@ -164,12 +164,15 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // const isMergeCommit = commit.parentShas.length > 1;
                         const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
 
+                        let commitIcon = `${this.bootstrap.rootPath}/images/dark/icon-commit.svg`;
+
                         commits.push({
                             text: title,
                             state: {
                                 opened: false,
                                 selected: false
                             },
+                            icon: commitIcon,
                             selectable: true,
                             data: element,
                             children: commit.fileStatuses.map((fileStatus: any) => ({
