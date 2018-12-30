@@ -149,10 +149,23 @@
     <script>
         window.addEventListener('commits', (e) => {
             // console.dir(JSON.stringify(e.detail))
+            $('#jstree').jstree('destroy');
             $('#jstree').jstree({
                 core: {
                     data: e.detail
                 }});
+            $('#jstree').on("select_node.jstree", function (e, data) {
+                console.log('select')
+                // console.dir(CircularJSON.stringify(data));
+            });
+            $('#jstree').on("changed.jstree", function (e, data) {
+                const selectedNodes = $('#jstree').jstree().get_selected(true);
+                const treeChangeEvent = new CustomEvent('treeChange', {
+                    bubbles: true,
+                    detail: selectedNodes
+                });
+                window.dispatchEvent(treeChangeEvent);
+            });
         });
         // $(function () {
         //     // 6 create an instance when the DOM is ready

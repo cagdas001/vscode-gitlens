@@ -51,6 +51,10 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         super('CommitSearches', bootstrap);
     }
 
+    protected isCustomEvent(event: Event): event is CustomEvent {
+        return 'detail' in event;
+    }
+
     protected onInitialize() {
         /**
          * Here we're setting the max-height value of the commit logs table
@@ -164,6 +168,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             opened : false,
                             selected : false
                         },
+                        data: element,
                         children : commit._fileName ? commit._fileName.split(',') : []
                     });
             });
@@ -173,6 +178,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 detail: commits
             });
             window.dispatchEvent(commitsEvent);
+
             dataMsg.forEach((element, rId) => {
                 const r1 = list.insertRow();
                 const c1 = r1.insertCell();
@@ -339,6 +345,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     spCell.innerHTML = '<div class="seperator"></div>';
                 }
             });
+        });
+
+        window.addEventListener('treeChange', (e: Event) => {
+            if (!this.isCustomEvent(e)) throw new Error('not a custom event');
+
+            console.log(JSON.stringify(e.detail));
         });
 
         this._api.postMessage({
