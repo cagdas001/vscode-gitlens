@@ -69,6 +69,9 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         const branch = await this.getBranch();
         return {
             config: configuration.get<IConfig>(),
+            rootPath: Uri.file(Container.context.asAbsolutePath('.'))
+                .with({ scheme: 'vscode-resource' })
+                .toString(),
             branches: branches,
             branch: branch
         } as CommitSearchBootstrap;

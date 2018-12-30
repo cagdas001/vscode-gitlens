@@ -2,6 +2,7 @@
 import { CommitSearchBootstrap } from '../ipc';
 import { App } from '../shared/app-base';
 import { DOM } from './../shared/dom';
+import { StatusIcon } from '../config';
 const bootstrap: CommitSearchBootstrap = (window as any).bootstrap;
 
 interface ShowDiffPost {
@@ -174,6 +175,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             children: commit.fileStatuses.map((fileStatus: any) => ({
                                 text: fileStatus.fileName,
                                 isFile: true,
+                                icon: `${this.bootstrap.rootPath}/images/dark/${StatusIcon[fileStatus.status]}`,
                                 data: {
                                     fullPath: fileStatus.fileName,
                                     details: [

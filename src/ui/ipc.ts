@@ -15,6 +15,7 @@ export interface WelcomeBootstrap extends Bootstrap {}
 export interface CommitSearchBootstrap extends Bootstrap {
     branches: string[];
     branch: string;
+    rootPath: string;
 }
 
 export interface SaveSettingsMessage {

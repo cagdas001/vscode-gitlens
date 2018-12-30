@@ -101,6 +101,20 @@ export enum StatusBarCommand {
     ToggleFileBlame = 'gitlens.toggleFileBlame'
 }
 
+export enum StatusIcon {
+    '!' = 'icon-status-ignored.svg',
+    '?' = 'icon-status-untracked.svg',
+    A = 'icon-status-added.svg',
+    C = 'icon-status-copied.svg',
+    D = 'icon-status-deleted.svg',
+    M = 'icon-status-modified.svg',
+    R = 'icon-status-renamed.svg',
+    T = 'icon-status-modified.svg',
+    U = 'icon-status-conflict.svg',
+    X = 'icon-status-unknown.svg',
+    B = 'icon-status-unknown.svg'
+}
+
 export interface IAdvancedConfig {
     blame: {
         customArguments: string[] | null;
