@@ -8,6 +8,7 @@ import { GitBranch, GitStashCommit } from '../git/git';
 import { Iterables } from '../system/iterable';
 import { CommitSearchBootstrap, ShowDiffMessage } from '../ui/ipc';
 import { WebviewEditor } from './webviewEditor';
+import { StashFileNode } from '../views/nodes/stashFileNode';
 
 export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
 
@@ -37,7 +38,7 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         else {
             setCommandContext(CommandContext.ShowDiffPrevious, true);
         }
-        if (SearchEditor.showDiffIndex >= SearchEditor.showDiffMessages.length - 1) {
+        if (Array.isArray(SearchEditor.showDiffMessages) && SearchEditor.showDiffIndex >= SearchEditor.showDiffMessages.length - 1) {
             setCommandContext(CommandContext.ShowDiffNext, false);
         }
         else {
@@ -68,6 +69,16 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         const branches = await this.getAllBranches();
         const branch = await this.getBranch();
         const stashes = await this.getStashList();
+        const stashesWithFiles = [];
+        if (Array.isArray(stashes) && stashes.length > 0) {
+            for(let stash of stashes) {
+                stashesWithFiles.push({
+                    ...stash,
+                    files: await this.getUntrackedFilesFromStash(stash)
+                });
+            }
+        }
+
         return {
             config: configuration.get<IConfig>(),
             rootPath: Uri.file(Container.context.asAbsolutePath('.'))
@@ -75,7 +86,7 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
                 .toString(),
             branches,
             branch,
-            stashes
+            stashes: stashesWithFiles
         } as CommitSearchBootstrap;
     }
 
@@ -120,10 +131,37 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         return branch!.getName();
     }
 
-    private async getStashList(): Promise<IterableIterator<GitStashCommit> | undefined> {
+    private async getStashList(): Promise<GitStashCommit[]> {
         const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
         const stashList = await Container.git.getStashList(repoPath);
-        console.dir(JSON.stringify(stashList));
-        return stashList ? stashList.commits.values() : undefined;
+        return stashList ? Array.from(stashList.commits.values()) : [];
+    }
+
+    private async getUntrackedFilesFromStash(stashCommit: GitStashCommit): Promise<any[]> {
+        const statuses = stashCommit.fileStatuses;
+        const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+
+        if (repoPath === undefined) return [];
+
+        // Check for any untracked files -- since git doesn't return them via `git stash list` :(
+        const log = await Container.git.getLog(repoPath, {
+            maxCount: 1,
+            ref: `${stashCommit.stashName}^3`
+        });
+        if (log !== undefined) {
+            const commit = Iterables.first(log.commits.values());
+            if (commit !== undefined && commit.fileStatuses.length !== 0) {
+                // Since these files are untracked -- make them look that way
+                commit.fileStatuses.forEach(s => (s.status = '?'));
+                statuses.splice(statuses.length, 0, ...commit.fileStatuses);
+            }
+        }
+
+        const children = statuses.map(s => ({
+            status: s,
+            commit: stashCommit.toFileCommit(s)
+        }));
+        children.sort((a, b) => a.status.fileName!.localeCompare(b.status.fileName!));
+        return children;
     }
 }

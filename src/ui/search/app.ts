@@ -194,15 +194,50 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             });
 
             let branchIcon = `${this.bootstrap.rootPath}/images/dark/icon-branch.svg`;
+            let stashIcon = `${this.bootstrap.rootPath}/images/dark/icon-stash.svg`;
 
-            const tree = [{
+            const commitsTree = {
                 text: `History (${this.bootstrap.branch})`,
                 icon: branchIcon,
                 state: {
                     opened: true
                 },
                 children: commits
-            }];
+            };
+
+            const stashesTree = {
+                text: 'Stashes',
+                icon: stashIcon,
+                state: {
+                    opened: true
+                },
+                children: this.bootstrap.stashes.map(stash => {
+
+                    return {
+                        text: stash.message,
+                        icon: false,
+                        children: stash.files.map((file: any) => {
+
+                            return {
+                                text: file.status.fileName,
+                                icon: `${this.bootstrap.rootPath}/images/dark/${StatusIcon[file.status.status]}`,
+                                isFile: true,
+                                data: {
+                                    fullPath: file.status.fileName,
+                                    details: [
+                                        {
+                                            prevSha: file.commit._previousSha,
+                                            sha: file.commit.sha
+                                        }
+                                    ]
+                                }
+                            };
+                        })
+                    };
+                })
+            };
+
+            const tree = [commitsTree, stashesTree];
 
             const treeInitEvent = new CustomEvent('treeInit', {
                 bubbles: true,
@@ -218,7 +253,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             if (!clickedNode.original.isFile) return;
 
             this.showDiff(clickedNode.data);
-
         });
 
         window.addEventListener('treeChange', (e: Event) => {
@@ -431,6 +465,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     private showDiff(item: any) {
         let params: ShowDiffPost | undefined;
         const showDiffPosts = [];
+        if (!Array.isArray(item.details)) return;
+
         try {
             const fileURI = item.fullPath;
             params = {
@@ -457,7 +493,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             // params = undefined;
         }
 
-        if (item.details && item.details.length >= 1 && params) {
+        if (item.details.length >= 1 && params) {
             this._api.postMessage(params);
         }
     }
@@ -517,7 +553,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected onBind() {
         const that = this;
         DOM.listenAll('.postme', 'click', function(this: HTMLButtonElement) {
-            that.doSearch();
+            that.listStashes();
         });
 
         DOM.listenAll('#showMergeCommits', 'change', function(this: HTMLButtonElement) {
@@ -573,6 +609,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             before: before,
             after: after,
             showMergeCommits: showMergeCommits
+        });
+    }
+
+    protected listStashes() {
+        this._api.postMessage({
+            type: 'listStashes'
         });
     }
 

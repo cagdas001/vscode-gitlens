@@ -15,7 +15,7 @@ export interface WelcomeBootstrap extends Bootstrap {}
 export interface CommitSearchBootstrap extends Bootstrap {
     branches: string[];
     branch: string;
-    stashes: any;
+    stashes: any[];
     rootPath: string;
 }
 
