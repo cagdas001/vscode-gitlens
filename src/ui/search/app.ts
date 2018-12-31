@@ -202,23 +202,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     return {
                         text: stash.message,
                         icon: false,
-                        children: stash.files.map((file: any) => {
-
-                            return {
-                                text: file.status.fileName,
-                                icon: `${this.bootstrap.rootPath}/images/dark/${StatusIcon[file.status.status]}`,
-                                isFile: true,
-                                data: {
-                                    fullPath: file.status.fileName,
-                                    details: [
-                                        {
-                                            prevSha: file.commit._previousSha,
-                                            sha: file.commit.sha
-                                        }
-                                    ]
-                                }
-                            };
-                        })
+                        children: this.simplifyTreeFiles(this.generateTreeFiles(stash.files.map((file: any) => file.commit)))
                     };
                 })
             };
@@ -610,6 +594,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
 
     protected generateTreeFiles(commit: any): any {
         let tree = {};
+        let commit_: any = null
 
         let addnode = (obj: any) => {
             let splitpath: any = obj.fileName.replace(/^\/|\/$/g, "").split('/');
@@ -629,8 +614,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             fullPath: obj.fileName,
                             details: [
                                 {
-                                    prevSha: commit._previousSha,
-                                    sha: commit.sha
+                                    prevSha: commit_._previousSha,
+                                    sha: commit_.sha
                                 }
                             ]
                         }
@@ -643,7 +628,16 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             }
         };
 
-        commit.fileStatuses.map(addnode);
+        if (Array.isArray(commit)) {
+            commit.forEach(singleCommit => {
+                commit_ = singleCommit;
+                singleCommit.fileStatuses.map(addnode);
+            });
+        }
+        else {
+            commit_ = commit;
+            commit.fileStatuses.map(addnode);
+        }
 
         return tree;
     }
