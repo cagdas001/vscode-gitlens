@@ -165,14 +165,13 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
 
                         let commitIcon = `${this.bootstrap.rootPath}/images/dark/icon-commit.svg`;
-
                         commits.push({
                             text: title,
                             state: {
                                 opened: false,
                                 selected: false
                             },
-                            icon: commitIcon,
+                            icon: this.bootstrap.config.explorers.avatars ? commit._avatar : commitIcon,
                             selectable: true,
                             data: element,
                             children: commit.fileStatuses.map((fileStatus: any) => ({
@@ -553,7 +552,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected onBind() {
         const that = this;
         DOM.listenAll('.postme', 'click', function(this: HTMLButtonElement) {
-            that.listStashes();
+            that.doSearch();
         });
 
         DOM.listenAll('#showMergeCommits', 'change', function(this: HTMLButtonElement) {
@@ -609,12 +608,6 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             before: before,
             after: after,
             showMergeCommits: showMergeCommits
-        });
-    }
-
-    protected listStashes() {
-        this._api.postMessage({
-            type: 'listStashes'
         });
     }
 

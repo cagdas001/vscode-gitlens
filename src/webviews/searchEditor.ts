@@ -4,11 +4,10 @@ import { commands, Uri, WebviewPanel, window, workspace } from 'vscode';
 import { configuration, IConfig } from '../configuration';
 import { CommandContext, setCommandContext } from '../constants';
 import { Container } from '../container';
-import { GitBranch, GitStashCommit } from '../git/git';
+import { GitStashCommit } from '../git/git';
 import { Iterables } from '../system/iterable';
 import { CommitSearchBootstrap, ShowDiffMessage } from '../ui/ipc';
 import { WebviewEditor } from './webviewEditor';
-import { StashFileNode } from '../views/nodes/stashFileNode';
 
 export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
 
@@ -157,10 +156,13 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
             }
         }
 
-        const children = statuses.map(s => ({
-            status: s,
-            commit: stashCommit.toFileCommit(s)
-        }));
+        const children = statuses.map(s => {
+            const commit = stashCommit.toFileCommit(s);
+            return {
+                status: s,
+                commit
+            };
+        });
         children.sort((a, b) => a.status.fileName!.localeCompare(b.status.fileName!));
         return children;
     }
