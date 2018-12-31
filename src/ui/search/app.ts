@@ -164,7 +164,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                         // const isMergeCommit = commit.parentShas.length > 1;
                         const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
 
-                        let commitIcon = `${this.bootstrap.rootPath}/images/dark/icon-commit.svg`;
+                        const commitIcon = `${this.bootstrap.rootPath}/images/dark/icon-commit.svg`;
                         commits.push({
                             text: title,
                             state: {
@@ -174,26 +174,13 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             icon: this.bootstrap.config.explorers.avatars ? commit._avatar : commitIcon,
                             selectable: true,
                             data: element,
-                            children: commit.fileStatuses.map((fileStatus: any) => ({
-                                text: fileStatus.fileName,
-                                isFile: true,
-                                icon: `${this.bootstrap.rootPath}/images/dark/${StatusIcon[fileStatus.status]}`,
-                                data: {
-                                    fullPath: fileStatus.fileName,
-                                    details: [
-                                        {
-                                            prevSha: commit._previousSha,
-                                            sha: commit.sha
-                                        }
-                                    ]
-                                }
-                            }))
+                            children: this.simplifyTreeFiles(this.generateTreeFiles(commit))
                         });
                     }
             });
 
-            let branchIcon = `${this.bootstrap.rootPath}/images/dark/icon-branch.svg`;
-            let stashIcon = `${this.bootstrap.rootPath}/images/dark/icon-stash.svg`;
+            const branchIcon = `${this.bootstrap.rootPath}/images/dark/icon-branch.svg`;
+            const stashIcon = `${this.bootstrap.rootPath}/images/dark/icon-stash.svg`;
 
             const commitsTree = {
                 text: `History (${this.bootstrap.branch})`,
@@ -619,5 +606,76 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     protected getSince(): string {
         const since = DOM.getElementById<HTMLSelectElement>('since');
         return since!.options![since!.selectedIndex].value;
+    }
+
+    protected generateTreeFiles(commit: any): any {
+        let tree = {};
+
+        let addnode = (obj: any) => {
+            let splitpath: any = obj.fileName.replace(/^\/|\/$/g, "").split('/');
+            let ptr: any = tree;
+            for (let i = 0; i < splitpath.length; i++)
+            {
+                let node = {
+                    subPath: splitpath[i],
+                    text: splitpath[i],
+                    isFile: i === splitpath.length - 1
+                };
+
+                if (node.isFile) {
+                    node = Object.assign(node, {
+                        icon: `${this.bootstrap.rootPath}/images/dark/${StatusIcon[obj.status]}`,
+                        data: {
+                            fullPath: obj.fileName,
+                            details: [
+                                {
+                                    prevSha: commit._previousSha,
+                                    sha: commit.sha
+                                }
+                            ]
+                        }
+                    });
+                }
+
+                ptr[splitpath[i]] = ptr[splitpath[i]] || node;
+                ptr[splitpath[i]].children = ptr[splitpath[i]].children || {};
+                ptr = ptr[splitpath[i]].children;
+            }
+        };
+
+        commit.fileStatuses.map(addnode);
+
+        return tree;
+    }
+
+    protected simplifyTreeFiles(tree: any): any {
+        const newTree: any = [];
+        Object.keys(tree).forEach(treeKey => {
+            const children = tree[treeKey].children;
+            const countChildren = Array.isArray(children) ? children.length : Object.keys(children).length;
+            let allChildrenFiles = false;
+            let newChildren: any = [];
+            if (countChildren > 0) {
+                newChildren = this.simplifyTreeFiles(children);
+                allChildrenFiles = Object.keys(children).every((childKey: any) => children[childKey].isFile);
+            }
+            if (countChildren === 1 || allChildrenFiles) {
+                const child = newChildren[0];
+                const newTreeKey = `${treeKey}/${child.subPath}`;
+                const filePath = newTreeKey.split('/');
+                const fileName = filePath.pop();
+                newTree.push(Object.assign(child, {
+                    subPath: newTreeKey,
+                    text: `${fileName} • ${filePath.join('/')}`
+                }));
+            }
+            else {
+                newTree.push(Object.assign(tree[treeKey], {
+                    children: newChildren
+                }));
+            }
+        });
+
+        return newTree;
     }
 }
