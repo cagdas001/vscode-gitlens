@@ -1,8 +1,8 @@
 'use strict';
+import { StatusIcon } from '../config';
 import { CommitSearchBootstrap } from '../ipc';
 import { App } from '../shared/app-base';
 import { DOM } from './../shared/dom';
-import { StatusIcon } from '../config';
 const bootstrap: CommitSearchBootstrap = (window as any).bootstrap;
 
 interface ShowDiffPost {
@@ -155,7 +155,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
             const commits: any[] = [];
 
             dataMsg
-                .forEach((element) => {
+                .forEach(element => {
                     if (element.hasOwnProperty('results')) {
                         this.repoPath = element.results.repoPath;
                     }
@@ -239,7 +239,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
 
             const selectedCommits = e.detail.selectedNodes;
 
-            for(let selectedCommit of selectedCommits) {
+            for (const selectedCommit of selectedCommits) {
                 if (!selectedCommit.data) continue;
 
                 const { commit, label, detail } = selectedCommit.data;
@@ -593,14 +593,13 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
     }
 
     protected generateTreeFiles(commit: any): any {
-        let tree = {};
-        let commit_: any = null
+        const tree = {};
+        let tempCommit: any = null;
 
-        let addnode = (obj: any) => {
-            let splitpath: any = obj.fileName.replace(/^\/|\/$/g, "").split('/');
+        const addnode = (obj: any) => {
+            const splitpath: any = obj.fileName.replace(/^\/|\/$/g, '').split('/');
             let ptr: any = tree;
-            for (let i = 0; i < splitpath.length; i++)
-            {
+            for (let i = 0; i < splitpath.length; i++) {
                 let node = {
                     subPath: splitpath[i],
                     text: splitpath[i],
@@ -614,8 +613,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                             fullPath: obj.fileName,
                             details: [
                                 {
-                                    prevSha: commit_._previousSha,
-                                    sha: commit_.sha
+                                    prevSha: tempCommit._previousSha,
+                                    sha: tempCommit.sha
                                 }
                             ]
                         }
@@ -630,12 +629,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
 
         if (Array.isArray(commit)) {
             commit.forEach(singleCommit => {
-                commit_ = singleCommit;
+                tempCommit = singleCommit;
                 singleCommit.fileStatuses.map(addnode);
             });
         }
         else {
-            commit_ = commit;
+            tempCommit = commit;
             commit.fileStatuses.map(addnode);
         }
 
