@@ -161,8 +161,8 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                     }
                     else if (element.hasOwnProperty('commit')) {
                         const { commit, label, commitFormattedDate } = element;
-                        // const isMergeCommit = commit.parentShas.length > 1;
-                        const title = `${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
+                        const isMergeCommit = commit.parentShas.length > 1;
+                        const title = `${isMergeCommit ? 'Ⓜ ' : ''}${label} • ${commit.author}, ${commitFormattedDate} (${commit._shortSha})`;
 
                         const commitIcon = `${this.bootstrap.rootPath}/images/dark/icon-commit.svg`;
                         commits.push({
