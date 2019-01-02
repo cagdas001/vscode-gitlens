@@ -69,6 +69,16 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        #jstree .jstree-clicked {
+            background: #beebff;
+            border-radius: 2px;
+            box-shadow: inset 0 0 1px #999999;
+            color: #0077CC;
+        }
+        #jstree .jstree-anchor:hover {
+            text-decoration: none;
+            color: #0077CC;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
 </head>
@@ -157,6 +167,9 @@
             $('#jstree').jstree({
                 core: {
                     data: e.detail
+                },
+                themes: {
+                    theme: "default-dark"
                 },
                 plugins : ['conditionalselect'],
                 conditionalselect : function (node) {
