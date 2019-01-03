@@ -123,7 +123,7 @@ export class CommentsDecoratorController implements Disposable {
      * False if decorations of comments will be added.
      */
     updateDecorations(comments: Comment[], removeDecoration = false) {
-        if (!this._activeEditor) {
+        /*if (!this._activeEditor) {
             return;
         }
         for (const comment of comments) {
@@ -143,6 +143,6 @@ export class CommentsDecoratorController implements Disposable {
                 editor.setDecorations(this.bookmarkDecorationType, this.decorations);
                 break;
             }
-        }
+        }*/
     }
 }
