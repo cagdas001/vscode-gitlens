@@ -25,7 +25,7 @@ export class CommentsDecoratorController implements Disposable {
 
     constructor() {
         this._activeEditor = window.activeTextEditor;
-        if (Container.commentService && Container.commentService.commentCache) {
+        /*if (Container.commentService && Container.commentService.commentCache) {
             this.commentCache = Container.commentService.commentCache;
         }
         if (this._activeEditor) {
@@ -33,18 +33,18 @@ export class CommentsDecoratorController implements Disposable {
                 .catch(e => {
                     console.log(e);
                 });
-        }
+        }*/
 
         this._disposable = Disposable.from(
             window.onDidChangeActiveTextEditor(editor => {
                 this._activeEditor = editor;
-                this.commentCache = Container.commentService.commentCache;
+                /*this.commentCache = Container.commentService.commentCache;
                 if (editor) {
                     this.fetchComments()
                         .catch(e => {
                             console.log(e);
                         });
-                }
+                }*/
             }, null)
         );
     }
