@@ -722,6 +722,27 @@ export class GitService implements Disposable {
         }
     }
 
+    async getBlameForFileRevision(
+        uri: GitUri,
+        sha: string
+    ): Promise<GitBlame | undefined> {
+        if (!(await this.isTracked(uri))) {
+            Logger.log(`Skipping blame; '${uri.fsPath}' is not tracked`);
+            return GitService.emptyPromise as Promise<GitBlame>;
+        }
+
+        const [file, root] = Git.splitPath(uri.fsPath, uri.repoPath, false);
+
+        try {
+            const data = await Git.blame_revision(root, file, sha);
+            const blame = GitBlameParser.parse(data, root, file, await this.getCurrentUser(root));
+            return blame;
+        }
+        catch (ex) {
+            return undefined;
+        }
+    }
+
     async getBlameForLine(
         uri: GitUri,
         line: number,

@@ -59,6 +59,9 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
     static currentFileName: string;
     static showFileCommitComment: boolean = false;
 
+    static rightDocumentUri: Uri;
+    static leftDocumentUri: Uri;
+
     // required parameters for bitBucketCommentApp
     private eventEmitter: EventEmitter;
     private BITBUCKET_COMMENT_APP_NAME = 'bitbucket-comment-app';
@@ -166,7 +169,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
             commentApp = new CommentApp(this.electronPath, this.BITBUCKET_COMMENT_APP_PATH, this.eventEmitter, args);
             commentApp.run();
             commentApp.setUpConnection();
-            commentApp.initEditor(initText)
+            commentApp.initEditor(initText);
         }
     }
 
