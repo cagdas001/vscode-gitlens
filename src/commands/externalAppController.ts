@@ -72,7 +72,7 @@ export class ExternalApp {
             spawnEnvironment.ELECTRON_NO_ATTACH_CONSOLE = true;
         }
 
-        this.childProcess = spawn(this.hostCmd, this.args, { stdio: ['ipc', 'pipe'], env: spawnEnvironment });
+        this.childProcess = spawn(this.hostCmd, this.args, { env: spawnEnvironment });
         runningInstances.set(this.connectionString, this);
         this.running = true;
 
@@ -169,7 +169,17 @@ export function isAllowedToRun() {
  * Helper function to get electron path.
  */
 export function getElectronPath() {
-    const electronExecutable = process.platform === 'win32' ? 'electron.cmd' : 'electron';
-    const electronPath = path.join(__dirname, '/../node_modules', '.bin', electronExecutable);
+    let electronExecutable;
+    if (process.platform === 'win32') {
+        electronExecutable = 'electron.exe';
+    }
+    else if (process.platform === 'darwin') {
+        electronExecutable = 'Electron.app/Contents/MacOS/Electron';
+    }
+    else {
+        electronExecutable = 'electron';
+    }
+
+    const electronPath = path.join(__dirname, '/../node_modules', 'electron', 'dist', electronExecutable);
     return electronPath;
 }

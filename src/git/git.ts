@@ -324,6 +324,16 @@ export class Git {
         return gitCommand({ cwd: root, stdin: stdin }, ...params, '--', file);
     }
 
+    static async blame_revision(
+        repoPath: string | undefined,
+        fileName: string,
+        sha: string
+    ) {
+        const [file, root] = Git.splitPath(fileName, repoPath);
+        const blameParams = [...defaultBlameParams, '-n', sha];
+        return gitCommand({ cwd: root }, ...blameParams, file);
+    }
+
     static async blame_contents(
         repoPath: string | undefined,
         fileName: string,

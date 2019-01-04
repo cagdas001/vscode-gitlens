@@ -28,7 +28,7 @@ export class CommentsDecoratorController implements Disposable {
     private timeout: any;
 
     private bookmarkDecorationType = window.createTextEditorDecorationType({
-        gutterIconPath: Container.context.asAbsolutePath('images/bookmark.svg'),
+        gutterIconPath: Container.context.asAbsolutePath('images/light/bookmark.svg'),
         overviewRulerLane: OverviewRulerLane.Full,
         overviewRulerColor: 'rgba(21, 126, 251, 0.7)'
     });

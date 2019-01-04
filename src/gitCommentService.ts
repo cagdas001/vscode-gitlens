@@ -3,14 +3,14 @@ import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as path from 'path';
 import { commands, Disposable, Selection, window, workspace } from 'vscode';
-import { AddLineCommentCommand } from './commands/addLineComments';
+import { AddLineCommentCommand, lineCommentTypes } from './commands/addLineComments';
 import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
+import { CommandContext, setCommandContext } from './constants';
 import { Container } from './container';
 import { GitUri } from './git/gitUri';
 import { GitCommit } from './git/models/commit';
 import { Logger } from './logger';
-import { setCommandContext, CommandContext } from './constants';
 
 /**
  * Enum to for different comment types.
@@ -19,6 +19,18 @@ export enum CommentType {
     File = 'file',
     Line = 'line',
     Commit = 'commit'
+}
+
+/**
+ * To: zero-based line number of the comment (in the new revision)
+ * From: zero-based line number of the comment (in the previous revision)
+ * From is reqired to show/add (or other actions) on deleted lines in the new revision)
+ * Details:
+ * https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Busername%7D/%7Brepo_slug%7D/commit/%7Bnode%7D/comments#get
+ */
+export class CommentLine {
+    To?: number;
+    From?: number;
 }
 
 /**
@@ -31,6 +43,7 @@ export class Comment {
     Id?: number;
     ParentId?: number;
     Line?: number;
+    LineItem?: CommentLine;
     Path?: string;
     Sha?: string;
     Replies: Comment[] = [];
@@ -87,6 +100,7 @@ export class GitCommentService implements Disposable {
     public static commentViewerLine: number = -1;
     public static commentViewerCommit: GitCommit;
     public static commentViewerFilename: string;
+    public static lineCommentType: lineCommentTypes;
 
     public commentCache: CommentCache;
 
@@ -199,9 +213,63 @@ export class GitCommentService implements Disposable {
         const editor = window.activeTextEditor;
         const position = editor.selection.active;
 
+        // the commit we're reviewing in the diff view,
+        // or recent commit of file, if it's not diff view
+        let fileCommit: GitCommit | undefined;
+        // previous or new revision of file in diff view
+        // left side: previous, right side: new
+        let revisionCommitSha: string;
+
+        const isLeftSideActive =
+            editor.document.uri.fsPath ===
+                (AddLineCommentCommand.leftDocumentUri && AddLineCommentCommand.leftDocumentUri.fsPath);
+        const isRightSideActive = editor.document.uri.fsPath ===
+                (AddLineCommentCommand.rightDocumentUri && AddLineCommentCommand.rightDocumentUri.fsPath);
+
+        const isDiffView = isLeftSideActive || isRightSideActive;
+
+        if (isDiffView && AddLineCommentCommand.currentFileCommit) {
+            if (isLeftSideActive) {
+                // previous revision
+                revisionCommitSha = AddLineCommentCommand.currentFileCommit.lsha;
+            }
+            else {
+                // new revision
+                revisionCommitSha = AddLineCommentCommand.currentFileCommit.rsha;
+            }
+
+            fileCommit = {
+                sha: AddLineCommentCommand.currentFileCommit.rsha,
+                repoPath: repoPath,
+                fileName: AddLineCommentCommand.currentFileName
+            } as GitCommit;
+        }
+        else {
+            // user is not in the diff view
+            const recentCommitSha = await Container.git.getRecentShaForFile(repoPath, filename);
+            revisionCommitSha = recentCommitSha!;
+            fileCommit = {
+                sha: recentCommitSha,
+                repoPath: repoPath,
+                fileName: filename
+            } as GitCommit;
+        }
+
         const lineState = Container.lineTracker.getState(position.line);
         const commit = lineState !== undefined ? lineState.commit : undefined;
-        if (commit === undefined) return undefined;
+        if (commit === undefined) {
+            window.showWarningMessage('You need to wait a few seconds for blame to annotate the file.');
+            return undefined;
+        }
+
+        const blameSrcLine = commit.lines.find(b => b.line === position.line)!.originalLine;
+        const blameCommitSha = commit.sha;
+
+        const blameForRevision = await Container.git.getBlameForFileRevision(gitUri, revisionCommitSha);
+        const targetLine = blameForRevision!.lines.find(
+            l => l.sha === blameCommitSha && l.originalLine === blameSrcLine
+        );
+        const targetLineNum = targetLine!.line;
 
         await GitCommentService.getCredentials();
         let app;
@@ -213,8 +281,18 @@ export class GitCommentService implements Disposable {
                 GitCommentService.commentViewerActive = false;
             });
         }
-        const allComments = await Container.commentService.loadComments(commit).then(res => (res as Comment[])!);
-        const comments = allComments.filter(c => c.Line! === position.line && c.Path === filename);
+        const allComments = await Container.commentService.loadComments(fileCommit).then(res => (res as Comment[])!);
+        let comments: Comment[];
+        if (commit.sha === revisionCommitSha && !isLeftSideActive) {
+            // added/changed in this revision
+            comments = allComments.filter(c => c.LineItem!.To === targetLineNum && c.Path === filename);
+            GitCommentService.lineCommentType = lineCommentTypes.To;
+        }
+        else {
+            comments = allComments.filter(c => c.LineItem!.From === targetLineNum && c.Path === filename);
+            GitCommentService.lineCommentType = lineCommentTypes.From;
+        }
+
         GitCommentService.lastFetchedComments = comments;
 
         if (canceled) return;
@@ -225,9 +303,9 @@ export class GitCommentService implements Disposable {
         }
         else showComment(comments);
 
-        GitCommentService.commentViewerCommit = commit;
+        GitCommentService.commentViewerCommit = fileCommit;
         GitCommentService.commentViewerFilename = filename;
-        GitCommentService.commentViewerLine = position.line;
+        GitCommentService.commentViewerLine = targetLineNum;
 
         return;
     }
@@ -346,8 +424,13 @@ export class GitCommentService implements Disposable {
                                 // If comment is a file comment, there is no inline field.
                                 // Therefore it enters the catch block with above usage.
                                 // this prevents the rest of comments from being loaded
-                                if (c.inline && c.inline.to && c.inline.to > 0) {
-                                    comment.Line = c.inline.to - 1;
+                                if (c.inline) {
+                                    comment.Line = c.inline.to > 0 ? c.inline.to - 1 : undefined;
+                                    // Line.To = comment is the new revision of file
+                                    // Line.From = comment is at the previous revision of file
+                                    comment.LineItem = new CommentLine();
+                                    comment.LineItem.To = c.inline.to > 0 ? c.inline.to - 1 : undefined;
+                                    comment.LineItem.From = c.inline.from > 0 ? c.inline.from - 1 : undefined;
                                     comment.Type = CommentType.Line;
                                 }
                                 else {
@@ -454,6 +537,7 @@ export class GitCommentService implements Disposable {
         comment: string,
         fileName: string,
         line?: number,
+        commentTo?: lineCommentTypes,
         parentId?: number
     ): Promise<void> {
         if (!comment) {
@@ -470,28 +554,32 @@ export class GitCommentService implements Disposable {
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
-        const to = line! + 1;
+        const targetLine = line! + 1;
+        const inlineFieldData = commentTo === lineCommentTypes.To ? {
+            path: fileName,
+            to: targetLine || undefined
+        } : {
+            path: fileName,
+            from: targetLine || undefined
+        };
         const data = isV2
             ? {
                   content: {
                       raw: comment
                   },
-                  inline: {
-                      path: fileName,
-                      to: to || undefined
-                  },
+                  inline: inlineFieldData,
                   parent: parentId ? { id: parentId } : undefined
               }
             : {
                   content: comment,
                   filename: fileName,
-                  line_to: parentId ? undefined : to || undefined,
+                  line_to: parentId ? undefined : targetLine || undefined,
                   parent_id: parentId ? parentId : undefined
               };
 
         try {
-            Logger.log('POST ' + url );
-            Logger.log('POST DATA ' + JSON.stringify(data) );
+            Logger.log('POST ' + url);
+            Logger.log('POST DATA ' + JSON.stringify(data));
 
             const response = await Axios.create({ auth: auth }).post(url, data);
             window.showInformationMessage('Comment/reply added successfully.');
@@ -548,7 +636,9 @@ export class GitCommentService implements Disposable {
                 GitCommentService.ClearCredentials();
             }
             else if (e!.response!.status === 403) {
-                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission for this repository.');
+                window.showErrorMessage(
+                    'You are not allowed to do this action. Make sure you have permission for this repository.'
+                );
             }
             else {
                 console.log(e.response);
@@ -589,7 +679,7 @@ export class GitCommentService implements Disposable {
                   comment_id: commentId
               };
         try {
-            Logger.log('POST ' + url );
+            Logger.log('POST ' + url);
             Logger.log('POST DATA ' + JSON.stringify(data));
             const v = await Axios.create({ auth: auth }).put(url, data);
             window.showInformationMessage('Comment/reply edited successfully.');
@@ -625,7 +715,9 @@ export class GitCommentService implements Disposable {
                 GitCommentService.ClearCredentials();
             }
             else if (e!.response!.status === 403) {
-                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
+                window.showErrorMessage(
+                    'You are not allowed to do this action. Make sure you have permission to do this.'
+                );
             }
             else {
                 window.showErrorMessage('Failed to add comment/reply.');
@@ -649,7 +741,7 @@ export class GitCommentService implements Disposable {
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/${commentId}`;
 
         try {
-            Logger.log('DELETE ' + url );
+            Logger.log('DELETE ' + url);
             const v = await Axios.create({ auth: auth }).delete(url);
             window.showInformationMessage('Comment/reply deleted successfully.');
             if (GitCommentService.lastFetchedComments) {
@@ -679,7 +771,9 @@ export class GitCommentService implements Disposable {
                 GitCommentService.ClearCredentials();
             }
             else if (e!.response!.status === 403) {
-                window.showErrorMessage('You are not allowed to do this action. Make sure you have permission to do this.');
+                window.showErrorMessage(
+                    'You are not allowed to do this action. Make sure you have permission to do this.'
+                );
             }
             else {
                 window.showErrorMessage('Failed to delete comment/reply.');
@@ -687,7 +781,7 @@ export class GitCommentService implements Disposable {
         }
     }
 
-    async retrieveParticipants (str: string) {
+    async retrieveParticipants(str: string) {
         const url = 'https://bitbucket.org/xhr/user-mention';
         const requestParams = {
             term: str

@@ -5,6 +5,7 @@ import { BuiltInCommands, GlyphChars } from '../constants';
 import { Container } from '../container';
 import { GitCommit, GitService, GitUri } from '../gitService';
 import { Logger } from '../logger';
+import { AddLineCommentCommand } from './addLineComments';
 import { ActiveEditorCommand, Commands } from './common';
 
 export interface DiffWithCommandArgsRevision {
@@ -160,17 +161,19 @@ export class DiffWithCommand extends ActiveEditorCommand {
                 args.showOptions.selection = new Range(args.line, 0, args.line, 0);
             }
 
-            return await commands.executeCommand(
-                BuiltInCommands.Diff,
+            const leftUri: Uri =
                 lhs === undefined
                     ? GitUri.toRevisionUri(GitService.deletedSha, args.lhs.uri.fsPath, args.repoPath)
-                    : lhs,
+                    : lhs;
+            const rightUri: Uri =
                 rhs === undefined
                     ? GitUri.toRevisionUri(GitService.deletedSha, args.rhs.uri.fsPath, args.repoPath)
-                    : rhs,
-                title,
-                args.showOptions
-            );
+                    : rhs;
+
+            AddLineCommentCommand.leftDocumentUri = leftUri;
+            AddLineCommentCommand.rightDocumentUri = rightUri;
+
+            return await commands.executeCommand(BuiltInCommands.Diff, leftUri, rightUri, title, args.showOptions);
         }
         catch (ex) {
             Logger.error(ex, 'DiffWithCommand', 'getVersionedFile');

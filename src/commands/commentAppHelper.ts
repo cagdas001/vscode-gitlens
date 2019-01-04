@@ -3,7 +3,7 @@ import * as ipc from 'node-ipc';
 import * as path from 'path';
 import { commands } from 'vscode';
 import { GitCommit } from '../git/git';
-import { Comment, GitCommentService } from '../gitCommentService';
+import { Comment, CommentLine, GitCommentService } from '../gitCommentService';
 import { commentApp, operationTypes } from './addLineComments';
 import { Commands } from './common';
 
@@ -43,27 +43,33 @@ export function clearPayload() {
  * @returns Spawned process
  */
 export function runApp(appName: string) {
-
     const spawnEnvironment = JSON.parse(JSON.stringify(process.env));
     delete spawnEnvironment.ATOM_SHELL_INTERNAL_RUN_AS_NODE;
     delete spawnEnvironment.ELECTRON_RUN_AS_NODE;
     spawnEnvironment.ELECTRON_NO_ATTACH_CONSOLE = true;
 
-    const electronExecutable = process.platform === 'win32' ? 'electron.cmd' : 'electron';
-    const electronPath = path.join(__dirname, '/../node_modules', '.bin', electronExecutable);
+    let electronExecutable;
+    if (process.platform === 'win32') {
+        electronExecutable = 'electron.exe';
+    }
+    else if (process.platform === 'darwin') {
+        electronExecutable = 'Electron.app/Contents/MacOS/Electron';
+    }
+    else {
+        electronExecutable = 'electron';
+    }
+
+    const electronPath = path.join(__dirname, '/../node_modules', 'electron', 'dist', electronExecutable);
 
     const appPath = path.join(__dirname, appName);
 
-    const app = spawn(electronPath, [appPath], { stdio: ['ipc', 'pipe', 'pipe'], env: spawnEnvironment });
+    const app = spawn(electronPath, [appPath], { env: spawnEnvironment });
 
-    app.stdout.on('data', data => {
-    });
+    app.stdout.on('data', data => {});
 
-    app.stderr.on('data', data => {
-    });
+    app.stderr.on('data', data => {});
 
-    app.on('close', code => {
-    });
+    app.on('close', code => {});
 
     currentProcess = app;
     return app;
@@ -166,13 +172,12 @@ export function initComment(comments: Comment[]) {
                 });
             }
             else if (data.command === 'add.comment') {
-                commands.executeCommand(Commands.AddLineComment,
-                    {
-                        fileName: GitCommentService.commentViewerFilename,
-                        commit: GitCommentService.commentViewerCommit,
-                        line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined
-                    }
-                );
+                commands.executeCommand(Commands.AddLineComment, {
+                    fileName: GitCommentService.commentViewerFilename,
+                    commit: GitCommentService.commentViewerCommit,
+                    line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined,
+                    lineCommentType: GitCommentService.lineCommentType
+                });
             }
             else if (data.command === 'ui.ready' && comments) {
                 // ui is ready, init the markdown editor with initText
