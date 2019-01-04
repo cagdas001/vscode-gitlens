@@ -275,6 +275,10 @@ export class GitCommentService implements Disposable {
         return;
     }
 
+    /**
+     * @param editor TextEditor
+     * @returns repoPath for given TextEditor
+     */
     async getRepoPath(editor: TextEditor) {
         if (!AddLineCommentCommand.currentFileCommit) {
             return await Container.git.getActiveRepoPath(editor);
@@ -284,6 +288,10 @@ export class GitCommentService implements Disposable {
         }
     }
 
+    /**
+     * @param documentFsPath editor.document.uri.fsPath
+     * @returns { isDiffView: (isDiffView: boolean), isLeftActive: (isLeftSideActive: boolean), isRightActive: (isRightSideActive: boolean) }
+     */
     getActiveView(documentFsPath: string) {
         const isLeftSideActive =
             documentFsPath === (AddLineCommentCommand.leftDocumentUri && AddLineCommentCommand.leftDocumentUri.fsPath);
@@ -295,6 +303,13 @@ export class GitCommentService implements Disposable {
         return { isDiffView: isDiffView, isLeftActive: isLeftSideActive, isRightActive: isRightSideActive };
     }
 
+    /**
+     *
+     * @param activeView see return value of getActiveView function
+     * @param repoPath see return value of getRepoPath function
+     * @param filename
+     * @returns { Commit: (fileCommit: GitCommit), Revision: (revisionCommitSha: string) }
+     */
     async getRevisionAndCommit(activeView: any, repoPath: string, filename: string) {
         let revisionCommitSha: string;
         let fileCommit: GitCommit;
