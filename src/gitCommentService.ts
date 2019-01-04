@@ -2,7 +2,7 @@
 import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as path from 'path';
-import { commands, Disposable, Selection, window, workspace } from 'vscode';
+import { commands, Disposable, Selection, TextDocument, TextEdit, TextEditor, window, workspace } from 'vscode';
 import { AddLineCommentCommand, lineCommentTypes } from './commands/addLineComments';
 import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
@@ -196,64 +196,29 @@ export class GitCommentService implements Disposable {
 
     async showLineComment() {
         if (!window.activeTextEditor) return undefined;
-        let repoPath: string | undefined;
-        if (!AddLineCommentCommand.currentFileCommit) {
-            repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
-        }
-        else {
-            repoPath = AddLineCommentCommand.currentFileCommit.repoPath;
-        }
+
+        const editor = window.activeTextEditor;
+        const position = editor.selection.active;
+
+        const repoPath = await this.getRepoPath(editor);
         if (!repoPath) return undefined;
-        const gitUri = await GitUri.fromUri(window.activeTextEditor.document.uri);
+        const gitUri = await GitUri.fromUri(editor.document.uri);
         let filename: string = path.relative(repoPath, gitUri.fsPath);
         filename = this.normalizeToForwardSlashes(filename);
 
         AddLineCommentCommand.currentFileName = filename;
 
-        const editor = window.activeTextEditor;
-        const position = editor.selection.active;
+        const activeView = this.getActiveView(editor.document.uri.fsPath);
 
-        // the commit we're reviewing in the diff view,
+        // Commit represents the commit we're reviewing in the diff view,
         // or recent commit of file, if it's not diff view
-        let fileCommit: GitCommit | undefined;
-        // previous or new revision of file in diff view
+        // Revision represents the previous or new revision of file in diff view
         // left side: previous, right side: new
-        let revisionCommitSha: string;
-
-        const isLeftSideActive =
-            editor.document.uri.fsPath ===
-                (AddLineCommentCommand.leftDocumentUri && AddLineCommentCommand.leftDocumentUri.fsPath);
-        const isRightSideActive = editor.document.uri.fsPath ===
-                (AddLineCommentCommand.rightDocumentUri && AddLineCommentCommand.rightDocumentUri.fsPath);
-
-        const isDiffView = isLeftSideActive || isRightSideActive;
-
-        if (isDiffView && AddLineCommentCommand.currentFileCommit) {
-            if (isLeftSideActive) {
-                // previous revision
-                revisionCommitSha = AddLineCommentCommand.currentFileCommit.lsha;
-            }
-            else {
-                // new revision
-                revisionCommitSha = AddLineCommentCommand.currentFileCommit.rsha;
-            }
-
-            fileCommit = {
-                sha: AddLineCommentCommand.currentFileCommit.rsha,
-                repoPath: repoPath,
-                fileName: AddLineCommentCommand.currentFileName
-            } as GitCommit;
-        }
-        else {
-            // user is not in the diff view
-            const recentCommitSha = await Container.git.getRecentShaForFile(repoPath, filename);
-            revisionCommitSha = recentCommitSha!;
-            fileCommit = {
-                sha: recentCommitSha,
-                repoPath: repoPath,
-                fileName: filename
-            } as GitCommit;
-        }
+        const { Commit: fileCommit, Revision: revisionCommitSha } = await this.getRevisionAndCommit(
+            activeView,
+            repoPath,
+            filename
+        );
 
         const lineState = Container.lineTracker.getState(position.line);
         const commit = lineState !== undefined ? lineState.commit : undefined;
@@ -281,9 +246,9 @@ export class GitCommentService implements Disposable {
                 GitCommentService.commentViewerActive = false;
             });
         }
-        const allComments = await Container.commentService.loadComments(fileCommit).then(res => (res as Comment[])!);
+        const allComments = (await Container.commentService.loadComments(fileCommit)) as Comment[];
         let comments: Comment[];
-        if (commit.sha === revisionCommitSha && !isLeftSideActive) {
+        if (commit.sha === revisionCommitSha && !activeView.isLeftActive) {
             // added/changed in this revision
             comments = allComments.filter(c => c.LineItem!.To === targetLineNum && c.Path === filename);
             GitCommentService.lineCommentType = lineCommentTypes.To;
@@ -308,6 +273,60 @@ export class GitCommentService implements Disposable {
         GitCommentService.commentViewerLine = targetLineNum;
 
         return;
+    }
+
+    async getRepoPath(editor: TextEditor) {
+        if (!AddLineCommentCommand.currentFileCommit) {
+            return await Container.git.getActiveRepoPath(editor);
+        }
+        else {
+            return AddLineCommentCommand.currentFileCommit.repoPath;
+        }
+    }
+
+    getActiveView(documentFsPath: string) {
+        const isLeftSideActive =
+            documentFsPath === (AddLineCommentCommand.leftDocumentUri && AddLineCommentCommand.leftDocumentUri.fsPath);
+        const isRightSideActive =
+            documentFsPath ===
+            (AddLineCommentCommand.rightDocumentUri && AddLineCommentCommand.rightDocumentUri.fsPath);
+
+        const isDiffView = isLeftSideActive || isRightSideActive;
+        return { isDiffView: isDiffView, isLeftActive: isLeftSideActive, isRightActive: isRightSideActive };
+    }
+
+    async getRevisionAndCommit(activeView: any, repoPath: string, filename: string) {
+        let revisionCommitSha: string;
+        let fileCommit: GitCommit;
+
+        const { isDiffView: isDiffView, isLeftActive: isLeftSideActive } = activeView;
+
+        if (isDiffView && AddLineCommentCommand.currentFileCommit) {
+            if (isLeftSideActive) {
+                // previous revision
+                revisionCommitSha = AddLineCommentCommand.currentFileCommit.lsha;
+            }
+            else {
+                // new revision
+                revisionCommitSha = AddLineCommentCommand.currentFileCommit.rsha;
+            }
+
+            fileCommit = {
+                sha: AddLineCommentCommand.currentFileCommit.rsha,
+                repoPath: repoPath,
+                fileName: filename
+            } as GitCommit;
+        }
+        else {
+            // user is not in the diff view
+            revisionCommitSha = (await Container.git.getRecentShaForFile(repoPath, filename)) as string;
+            fileCommit = {
+                sha: revisionCommitSha,
+                repoPath: repoPath,
+                fileName: filename
+            } as GitCommit;
+        }
+        return { Commit: fileCommit, Revision: revisionCommitSha };
     }
 
     /**
@@ -555,13 +574,16 @@ export class GitCommentService implements Disposable {
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
         const targetLine = line! + 1;
-        const inlineFieldData = commentTo === lineCommentTypes.To ? {
-            path: fileName,
-            to: targetLine || undefined
-        } : {
-            path: fileName,
-            from: targetLine || undefined
-        };
+        const inlineFieldData =
+            commentTo === lineCommentTypes.To
+                ? {
+                      path: fileName,
+                      to: targetLine || undefined
+                  }
+                : {
+                      path: fileName,
+                      from: targetLine || undefined
+                  };
         const data = isV2
             ? {
                   content: {
