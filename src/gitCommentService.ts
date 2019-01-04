@@ -3,7 +3,7 @@ import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as path from 'path';
 import { commands, Disposable, Selection, window, workspace } from 'vscode';
-import { AddLineCommentCommand } from './commands/addLineComments';
+import { AddLineCommentCommand, lineCommentTypes } from './commands/addLineComments';
 import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
 import { CommandContext, setCommandContext } from './constants';
@@ -100,6 +100,7 @@ export class GitCommentService implements Disposable {
     public static commentViewerLine: number = -1;
     public static commentViewerCommit: GitCommit;
     public static commentViewerFilename: string;
+    public static lineCommentType: lineCommentTypes;
 
     public commentCache: CommentCache;
 
@@ -285,9 +286,11 @@ export class GitCommentService implements Disposable {
         if (commit.sha === revisionCommitSha && !isLeftSideActive) {
             // added/changed in this revision
             comments = allComments.filter(c => c.LineItem!.To === targetLineNum && c.Path === filename);
+            GitCommentService.lineCommentType = lineCommentTypes.To;
         }
         else {
             comments = allComments.filter(c => c.LineItem!.From === targetLineNum && c.Path === filename);
+            GitCommentService.lineCommentType = lineCommentTypes.From;
         }
 
         GitCommentService.lastFetchedComments = comments;
@@ -534,6 +537,7 @@ export class GitCommentService implements Disposable {
         comment: string,
         fileName: string,
         line?: number,
+        commentTo?: lineCommentTypes,
         parentId?: number
     ): Promise<void> {
         if (!comment) {
@@ -550,22 +554,26 @@ export class GitCommentService implements Disposable {
         const sha = commit.sha;
         const commitStr = isV2 ? 'commit' : 'changesets';
         const url = `${baseUrl}/${path}/${commitStr}/${sha}/comments/`;
-        const to = line! + 1;
+        const targetLine = line! + 1;
+        const inlineFieldData = commentTo === lineCommentTypes.To ? {
+            path: fileName,
+            to: targetLine || undefined
+        } : {
+            path: fileName,
+            from: targetLine || undefined
+        };
         const data = isV2
             ? {
                   content: {
                       raw: comment
                   },
-                  inline: {
-                      path: fileName,
-                      to: to || undefined
-                  },
+                  inline: inlineFieldData,
                   parent: parentId ? { id: parentId } : undefined
               }
             : {
                   content: comment,
                   filename: fileName,
-                  line_to: parentId ? undefined : to || undefined,
+                  line_to: parentId ? undefined : targetLine || undefined,
                   parent_id: parentId ? parentId : undefined
               };
 

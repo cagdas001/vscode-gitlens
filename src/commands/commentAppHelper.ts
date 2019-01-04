@@ -3,7 +3,7 @@ import * as ipc from 'node-ipc';
 import * as path from 'path';
 import { commands } from 'vscode';
 import { GitCommit } from '../git/git';
-import { Comment, GitCommentService } from '../gitCommentService';
+import { Comment, CommentLine, GitCommentService } from '../gitCommentService';
 import { commentApp, operationTypes } from './addLineComments';
 import { Commands } from './common';
 
@@ -175,7 +175,8 @@ export function initComment(comments: Comment[]) {
                 commands.executeCommand(Commands.AddLineComment, {
                     fileName: GitCommentService.commentViewerFilename,
                     commit: GitCommentService.commentViewerCommit,
-                    line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined
+                    line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined,
+                    lineCommentType: GitCommentService.lineCommentType
                 });
             }
             else if (data.command === 'ui.ready' && comments) {

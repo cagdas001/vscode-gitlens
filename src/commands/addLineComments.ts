@@ -15,6 +15,16 @@ import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActive
 import * as externalAppController from './externalAppController';
 
 /**
+ * Line number will be sent in To or From field.
+ * See for details:
+ * https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Busername%7D/%7Brepo_slug%7D/commit/%7Bnode%7D/comments#get
+ */
+export enum lineCommentTypes {
+    To,
+    From
+}
+
+/**
  *Encapsulates infomation to perform comments management command.
  */
 export interface AddLineCommentsCommandArgs {
@@ -27,6 +37,7 @@ export interface AddLineCommentsCommandArgs {
     replyCommand?: CommandQuickPickItem;
     type?: operationTypes;
     isFileComment?: boolean;
+    lineCommentType?: lineCommentTypes;
 }
 
 /**
@@ -89,7 +100,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     commentArgs.commit!,
                     data.payload as string,
                     commentArgs.fileName as string,
-                    commentArgs.line
+                    commentArgs.line,
+                    commentArgs.lineCommentType
                 );
 
                 // add the new comment in cache
@@ -121,6 +133,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                     data.payload as string,
                     commentArgs.fileName as string,
                     commentArgs.line,
+                    commentArgs.lineCommentType,
                     commentArgs.id
                 );
             }
