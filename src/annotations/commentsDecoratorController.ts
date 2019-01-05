@@ -12,18 +12,32 @@ import {
     workspace
 } from 'vscode';
 import { Container } from '../container';
-import { GitBlameLine, GitCommit } from '../git/git';
-import { Comment, CommentCache, CommentCacheItem, CommentType, GitCommentService } from '../gitCommentService';
+import { GitBlame, GitBlameLine, GitCommit } from '../git/git';
+import {
+    Comment,
+    CommentCache,
+    CommentCacheItem,
+    CommentLine,
+    CommentType,
+    GitCommentService
+} from '../gitCommentService';
 import { GitUri } from '../gitService';
+import { Strings } from '../system';
 
-interface CommitDict {
-    [key: string]: GitCommit;
+class TargetLine extends CommentLine {
+    CurrentLine?: number;
 }
 
 export class CommentsDecoratorController implements Disposable {
     private _disposable: Disposable;
     private _activeEditor: TextEditor | undefined;
     private _activeFilename: string | undefined;
+    private repoPath: string | undefined;
+    private gitUri: GitUri | undefined;
+    private activeView: any;
+    private fileCommit: GitCommit | undefined;
+    private revisionCommitSha: string | undefined;
+    private revisionBlame: GitBlame | undefined;
     private commentCache?: CommentCache;
     private timeout: any;
 
@@ -42,19 +56,7 @@ export class CommentsDecoratorController implements Disposable {
         }
 
         this._disposable = Disposable.from(
-            window.onDidChangeActiveTextEditor(editor => {
-                this._activeEditor = editor;
-                this.commentCache = Container.commentService.commentCache;
-                if (editor && GitCommentService.isLoggedIn()) {
-                    const activeDocument = editor.document;
-                    this.clearDecorations();
-                    this.getBlameLines(activeDocument)
-                        .then(this.getCommits.bind(this))
-                        .then(this.fetchCommentLines.bind(this))
-                        .then(this.addDecorations.bind(this))
-                        .then(this.setDecorations.bind(this));
-                }
-            }, null),
+            window.onDidChangeActiveTextEditor(this.onActiveEditorChanged.bind(this)),
             workspace.onDidChangeTextDocument(this.onTextDocumentChanged, this)
         );
     }
@@ -62,19 +64,59 @@ export class CommentsDecoratorController implements Disposable {
     private onTextDocumentChanged(e: TextDocumentChangeEvent) {
         if (!this._activeEditor) return;
         if (e.document !== this._activeEditor.document) return;
-        if (GitCommentService.isLoggedIn()) {
+        this.clearDecorations();
+        clearTimeout(this.timeout);
+        this.timeout = setTimeout(
+            async document => {
+                if (GitCommentService.isLoggedIn()) {
+                    const targetLines = await this.getTargetLines(document);
+                    const commentLines = await this.fetchCommentLines(this.fileCommit!);
+                    const linesToBeDecorated = this.linesToBeDecorated(commentLines, targetLines);
+                    this.addDecorations(linesToBeDecorated);
+                    this.setDecorations();
+                }
+            },
+            2000,
+            e.document
+        );
+    }
+
+    private async onActiveEditorChanged(editor?: TextEditor) {
+        if (editor && GitCommentService.isLoggedIn()) {
+            this._activeEditor = editor;
+            this.commentCache = Container.commentService.commentCache;
+            const activeDocument = editor.document;
+
             this.clearDecorations();
-            this.getBlameLines(e.document)
-                .then(this.getCommits.bind(this))
-                .then(this.fetchCommentLines.bind(this))
-                .then(this.addDecorations.bind(this))
-                .then(this.setDecorations.bind(this));
+            await this.reset(editor);
+            const targetLines = await this.getTargetLines(activeDocument);
+            const commentLines = await this.fetchCommentLines(this.fileCommit!);
+            const linesToBeDecorated = this.linesToBeDecorated(commentLines, targetLines);
+            this.addDecorations(linesToBeDecorated);
+            this.setDecorations();
         }
     }
 
     dispose() {
         Container.lineTracker.stop(this);
         this._disposable && this._disposable.dispose();
+    }
+
+    async reset(editor: TextEditor) {
+        this.repoPath = await Container.git.getActiveRepoPath(editor);
+        this.gitUri = await GitUri.fromUri(editor.document.uri);
+        this._activeFilename = Strings.normalizePath(
+            path.relative(this.gitUri.repoPath ? this.gitUri.repoPath : '', this.gitUri.fsPath)
+        );
+        this.activeView = Container.commentService.getActiveView(editor.document.uri.fsPath);
+        const revisionAndCommit = await Container.commentService.getRevisionAndCommit(
+            this.activeView,
+            this.repoPath!,
+            this._activeFilename
+        );
+        this.revisionCommitSha = revisionAndCommit.Revision;
+        this.fileCommit = revisionAndCommit.Commit;
+        this.revisionBlame = await Container.git.getBlameForFileRevision(this.gitUri, this.revisionCommitSha);
     }
 
     /**
@@ -84,7 +126,7 @@ export class CommentsDecoratorController implements Disposable {
      * @param document
      * @param range (optional)
      */
-    async getBlameLines(document: TextDocument, range?: Range): Promise<GitBlameLine[]> {
+    async getTargetLines(document: TextDocument, range?: Range): Promise<TargetLine[]> {
         let startLine = 0;
         let endLine = document.lineCount;
         if (range) {
@@ -92,18 +134,19 @@ export class CommentsDecoratorController implements Disposable {
             endLine = range.end.line;
         }
 
-        const blames: GitBlameLine[] = [];
-        const gitUri = await GitUri.fromUri(document.uri);
-        this._activeFilename = path.relative(gitUri.repoPath ? gitUri.repoPath : '', gitUri.fsPath);
+        const targetLines: TargetLine[] = [];
         const trackedDocument = await Container.tracker.getOrAdd(document);
         for (let i = startLine; i < endLine; ++i) {
             const blameLine = document.isDirty
                 ? await Container.git.getBlameForLineContents(trackedDocument.uri, i, document.getText())
                 : await Container.git.getBlameForLine(trackedDocument.uri, i);
             if (blameLine === undefined) continue;
-            blames.push(blameLine);
+            const targetLine = this.getTargetLine(blameLine);
+            if (targetLine) {
+                targetLines.push(targetLine);
+            }
         }
-        return blames;
+        return targetLines;
     }
 
     /**
@@ -111,19 +154,30 @@ export class CommentsDecoratorController implements Disposable {
      * @param blames GitBlameLine[] Array of blame lines
      * @returns CommitDict (key: commitSha)
      */
-    getCommits(blames: GitBlameLine[]): CommitDict {
-        const commitDict: CommitDict = {};
-        for (const blame of blames) {
-            const commit = blame.commit;
-            if (commit === undefined) continue;
-            // uncommited change
-            if (commit.sha.startsWith('0000')) continue;
-            // duplicate commit
-            if (commitDict[commit.sha]) continue;
-            // add
-            commitDict[commit.sha] = commit;
+    getTargetLine(blame: GitBlameLine): TargetLine | undefined {
+        const commit = blame.commit;
+        if (commit === undefined) return;
+        // uncommited change
+        if (commit.sha.startsWith('0000')) return;
+        // get target line
+        const targetLine = this.revisionBlame!.lines.find(
+            l => l.sha === commit.sha && l.originalLine === blame.line.originalLine
+        );
+        if (this.revisionCommitSha === commit.sha && !this.activeView.isLeftActive) {
+            return { To: targetLine!.line, CurrentLine: blame.line.line } as TargetLine;
         }
-        return commitDict;
+        else {
+            return { From: targetLine!.line, CurrentLine: blame.line.line } as TargetLine;
+        }
+    }
+
+    isDuplicate(lineToCheck: CommentLine, lines: CommentLine[]): boolean {
+        if (lineToCheck.To) {
+            return !!lines.find(l => l.To === lineToCheck.To);
+        }
+        else {
+            return !!lines.find(l => l.From === lineToCheck.From);
+        }
     }
 
     /**
@@ -133,54 +187,65 @@ export class CommentsDecoratorController implements Disposable {
      * @param commitDict: CommitDict<commitSha, commit>
      * @returns number[]: Line numbers of comments
      */
-    async fetchCommentLines(commitDict: CommitDict): Promise<number[]> {
+    async fetchCommentLines(commit: GitCommit): Promise<CommentLine[]> {
         if (GitCommentService.isLoggedIn()) {
-            // gets line numbers (no-duplicate) of fetched comments
-            const commitCommentLines = Object.values(commitDict).map(async commit => {
-                let comments: Comment[] = [];
-                const hasCache = this.commentCache!.CachedItems.has(commit.sha)!;
-                let cacheTimedout = false;
-                let cacheItem: CommentCacheItem;
-                if (hasCache) {
-                    cacheItem = this.commentCache!.CachedItems.get(commit.sha)!;
-                    const timeDiff = Date.now() - cacheItem.FetchedTime;
-                    const timeDiffThreshold = CommentCache.CacheTimeout * 1000 * 60;
-                    if (timeDiff >= timeDiffThreshold) {
-                        cacheTimedout = true;
-                    }
+            let comments: Comment[] = [];
+            const hasCache = this.commentCache!.CachedItems.has(commit.sha)!;
+            let cacheTimedout = false;
+            let cacheItem: CommentCacheItem;
+            if (hasCache) {
+                cacheItem = this.commentCache!.CachedItems.get(commit.sha)!;
+                const timeDiff = Date.now() - cacheItem.FetchedTime;
+                const timeDiffThreshold = CommentCache.CacheTimeout * 1000 * 60;
+                if (timeDiff >= timeDiffThreshold) {
+                    cacheTimedout = true;
                 }
+            }
 
-                if (!hasCache || cacheTimedout) {
-                    comments = (await Container.commentService.loadComments(commit)) as Comment[];
-                }
-                else {
-                    comments = cacheItem!.Comments;
-                }
+            if (!hasCache || cacheTimedout) {
+                comments = (await Container.commentService.loadComments(commit)) as Comment[];
+            }
+            else {
+                comments = cacheItem!.Comments;
+            }
 
-                comments = comments.filter(
-                    c =>
-                        c.Type === CommentType.Line &&
-                        c.Commit &&
-                        this._activeFilename === path.normalize(c.Path!) &&
-                        !c.ParentId
-                );
+            // get only line comments (excl. replies) belong to this file
+            comments = comments.filter(
+                c =>
+                    c.Type === CommentType.Line &&
+                    c.Commit &&
+                    this._activeFilename === Strings.normalizePath(c.Path!) &&
+                    !c.ParentId
+            );
 
-                // get lines of comments
-                let commentLines = comments.map(c => c.Line!);
-                // remove duplicates
-                commentLines = [...new Set(commentLines)];
-                return commentLines;
-            });
-
-            return Promise.all(commitCommentLines)
-            .then(commitLines => {
-                return Array.prototype.concat.apply([], commitLines);
-            });
+            // get and return Lines (item) of comments
+            return comments.map(c => c.LineItem!);
         }
         else {
             // not logged in
-            return [] as number[];
+            return [] as CommentLine[];
         }
+    }
+
+    linesToBeDecorated(fetchedLines: CommentLine[], targetLines: TargetLine[]): number[] {
+        const lineNums: number[] = [];
+        for (const line of fetchedLines) {
+            if (!line) continue;
+            if (line.To) {
+                const foundTargetLine = targetLines.find(l => l.To === line.To);
+                if (!!foundTargetLine) {
+                    lineNums.push(foundTargetLine.CurrentLine!);
+                }
+            }
+            else {
+                const foundTargetLine = targetLines.find(l => l.From === line.From);
+                if (!!foundTargetLine) {
+                    lineNums.push(foundTargetLine.CurrentLine!);
+                }
+            }
+        }
+        // Set contains only unique line numbers
+        return [...new Set(lineNums)];
     }
 
     /**
