@@ -4,7 +4,7 @@ import * as path from 'path';
 import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { Comment, CommentCacheItem, CommentType } from '../gitCommentService';
+import { Comment, CommentCacheItem, CommentLine, CommentType, GitCommentService } from '../gitCommentService';
 import { GitCommit, GitUri } from '../gitService';
 import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
@@ -108,6 +108,8 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                 if (data.payload) {
                     const newComment = new Comment();
                     newComment.Line = commentArgs.line!;
+                    newComment.LineItem = new CommentLine();
+                    Object.assign(newComment.LineItem, GitCommentService.commentViewerLine);
                     newComment.Path = commentArgs.fileName!;
                     newComment.Type = CommentType.Line;
                     newComment.Commit = commentArgs.commit;
@@ -123,7 +125,7 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         cache.CachedItems.set(commentArgs.commit!.sha, cacheItem);
                     }
                     // add decoration for new comment
-                    Container.commentsDecorator.addDecoration(commentArgs.line!);
+                    Container.commentsDecorator.addDecoration(GitCommentService.commentViewerLine.CurrentLine!);
                     Container.commentsDecorator.setDecorations();
                 }
             }
@@ -361,11 +363,28 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         // check if there is still any comment on the same line
                         // if there is, no need to remove decoration
                         // otherwise remove
-                        const anotherCommentIndex = cachedComment.Comments.findIndex(c => c.Line === args.line && c.Path === args.fileName);
+                        let anotherCommentIndex: number;
+                        if (GitCommentService.commentViewerLine.To) {
+                            anotherCommentIndex = cachedComment.Comments.findIndex(
+                                c =>
+                                    c.LineItem!.To === GitCommentService.commentViewerLine.To &&
+                                    c.Path === args.fileName
+                            );
+                        }
+                        else {
+                            anotherCommentIndex = cachedComment.Comments.findIndex(
+                                c =>
+                                    c.LineItem!.From === GitCommentService.commentViewerLine.From &&
+                                    c.Path === args.fileName
+                            );
+                        }
+
                         if (anotherCommentIndex === -1) {
                             // could not find any comment on the same line
                             // remove decoration
-                            Container.commentsDecorator.removeDecoration(args.line!);
+                            Container.commentsDecorator.removeDecoration(
+                                GitCommentService.commentViewerLine.CurrentLine!
+                            );
                             Container.commentsDecorator.setDecorations();
                         }
                     }

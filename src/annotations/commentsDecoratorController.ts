@@ -24,7 +24,7 @@ import {
 import { GitUri } from '../gitService';
 import { Strings } from '../system';
 
-class TargetLine extends CommentLine {
+export class TargetLine extends CommentLine {
     CurrentLine?: number;
 }
 

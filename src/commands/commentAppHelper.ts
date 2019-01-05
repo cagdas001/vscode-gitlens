@@ -2,7 +2,7 @@ import { ChildProcess, spawn } from 'child_process';
 import * as ipc from 'node-ipc';
 import * as path from 'path';
 import { commands } from 'vscode';
-import { GitCommit } from '../git/git';
+import { GitCommit, Git } from '../git/git';
 import { Comment, CommentLine, GitCommentService } from '../gitCommentService';
 import { commentApp, operationTypes } from './addLineComments';
 import { Commands } from './common';
@@ -172,10 +172,17 @@ export function initComment(comments: Comment[]) {
                 });
             }
             else if (data.command === 'add.comment') {
+                let commentViewerLine: number | undefined = undefined;
+                if (GitCommentService.commentViewerLine.To! > -1) {
+                    commentViewerLine = GitCommentService.commentViewerLine.To!;
+                }
+                else if (GitCommentService.commentViewerLine.From! > -1) {
+                    commentViewerLine = GitCommentService.commentViewerLine.From!;
+                }
                 commands.executeCommand(Commands.AddLineComment, {
                     fileName: GitCommentService.commentViewerFilename,
                     commit: GitCommentService.commentViewerCommit,
-                    line: GitCommentService.commentViewerLine !== -1 ? GitCommentService.commentViewerLine : undefined,
+                    line: commentViewerLine,
                     lineCommentType: GitCommentService.lineCommentType
                 });
             }

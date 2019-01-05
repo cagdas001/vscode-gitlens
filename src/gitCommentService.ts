@@ -3,6 +3,7 @@ import Axios, { AxiosBasicCredentials } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as path from 'path';
 import { commands, Disposable, Selection, TextDocument, TextEdit, TextEditor, window, workspace } from 'vscode';
+import { TargetLine } from './annotations/commentsDecoratorController';
 import { AddLineCommentCommand, lineCommentTypes } from './commands/addLineComments';
 import { initComment, runApp, showComment } from './commands/commentAppHelper';
 import { Commands, getCommandUri } from './commands/common';
@@ -97,7 +98,7 @@ export class GitCommentService implements Disposable {
     public static showCommentsCacheFile: boolean = false;
 
     public static commentViewerActive: boolean = false;
-    public static commentViewerLine: number = -1;
+    public static commentViewerLine: TargetLine;
     public static commentViewerCommit: GitCommit;
     public static commentViewerFilename: string;
     public static lineCommentType: lineCommentTypes;
@@ -176,7 +177,7 @@ export class GitCommentService implements Disposable {
         }
         GitCommentService.commentViewerCommit = fileCommit;
         GitCommentService.commentViewerFilename = filename;
-        GitCommentService.commentViewerLine = -1;
+        GitCommentService.commentViewerLine = { To: -1, From: -1, CurrentLine: -1} as TargetLine;
         return;
     }
 
@@ -248,14 +249,17 @@ export class GitCommentService implements Disposable {
         }
         const allComments = (await Container.commentService.loadComments(fileCommit)) as Comment[];
         let comments: Comment[];
+        let selectedTargetLine: TargetLine;
         if (commit.sha === revisionCommitSha && !activeView.isLeftActive) {
             // added/changed in this revision
             comments = allComments.filter(c => c.LineItem!.To === targetLineNum && c.Path === filename);
             GitCommentService.lineCommentType = lineCommentTypes.To;
+            selectedTargetLine = { To: targetLineNum, CurrentLine: position.line } as TargetLine;
         }
         else {
             comments = allComments.filter(c => c.LineItem!.From === targetLineNum && c.Path === filename);
             GitCommentService.lineCommentType = lineCommentTypes.From;
+            selectedTargetLine = { From: targetLineNum, CurrentLine: position.line } as TargetLine;
         }
 
         GitCommentService.lastFetchedComments = comments;
@@ -270,7 +274,7 @@ export class GitCommentService implements Disposable {
 
         GitCommentService.commentViewerCommit = fileCommit;
         GitCommentService.commentViewerFilename = filename;
-        GitCommentService.commentViewerLine = targetLineNum;
+        GitCommentService.commentViewerLine = selectedTargetLine;
 
         return;
     }
