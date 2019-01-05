@@ -82,18 +82,31 @@ export class CommentsDecoratorController implements Disposable {
     }
 
     private async onActiveEditorChanged(editor?: TextEditor) {
-        if (editor && GitCommentService.isLoggedIn()) {
-            this._activeEditor = editor;
-            this.commentCache = Container.commentService.commentCache;
-            const activeDocument = editor.document;
+        if (editor) {
+            let editors = [editor];
+            const activeView = Container.commentService.getActiveView(editor.document.uri.fsPath);
+            if (activeView.isDiffView) {
+                editors = [...editors, ...window.visibleTextEditors];
+            }
+            this.syncEditors(editors);
+        }
+    }
 
-            this.clearDecorations();
-            await this.reset(editor);
-            const targetLines = await this.getTargetLines(activeDocument);
-            const commentLines = await this.fetchCommentLines(this.fileCommit!);
-            const linesToBeDecorated = this.linesToBeDecorated(commentLines, targetLines);
-            this.addDecorations(linesToBeDecorated);
-            this.setDecorations();
+    async syncEditors(editors: TextEditor[]) {
+        for (const editor of editors) {
+            if (editor && GitCommentService.isLoggedIn()) {
+                this._activeEditor = editor;
+                this.commentCache = Container.commentService.commentCache;
+                const activeDocument = editor.document;
+
+                this.clearDecorations();
+                await this.reset(editor);
+                const targetLines = await this.getTargetLines(activeDocument);
+                const commentLines = await this.fetchCommentLines(this.fileCommit!);
+                const linesToBeDecorated = this.linesToBeDecorated(commentLines, targetLines);
+                this.addDecorations(linesToBeDecorated);
+                this.setDecorations();
+            }
         }
     }
 

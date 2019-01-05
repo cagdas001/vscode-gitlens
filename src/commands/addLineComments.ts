@@ -125,8 +125,16 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         cache.CachedItems.set(commentArgs.commit!.sha, cacheItem);
                     }
                     // add decoration for new comment
-                    Container.commentsDecorator.addDecoration(GitCommentService.commentViewerLine.CurrentLine!);
-                    Container.commentsDecorator.setDecorations();
+                    const documentFsPath = window.activeTextEditor!.document.uri.fsPath;
+                    const activeView = Container.commentService.getActiveView(documentFsPath);
+                    if (activeView.isDiffView) {
+                        // there are two editors
+                        Container.commentsDecorator.syncEditors(window.visibleTextEditors);
+                    }
+                    else {
+                        Container.commentsDecorator.addDecoration(GitCommentService.commentViewerLine.CurrentLine!);
+                        Container.commentsDecorator.setDecorations();
+                    }
                 }
             }
             else if (commentArgs.type === operationTypes.Reply) {
@@ -382,10 +390,19 @@ export class AddLineCommentCommand extends ActiveEditorCachedCommand {
                         if (anotherCommentIndex === -1) {
                             // could not find any comment on the same line
                             // remove decoration
-                            Container.commentsDecorator.removeDecoration(
-                                GitCommentService.commentViewerLine.CurrentLine!
-                            );
-                            Container.commentsDecorator.setDecorations();
+                            const documentFsPath = window.activeTextEditor!.document.uri.fsPath;
+                            const activeView = Container.commentService.getActiveView(documentFsPath);
+                            if (activeView.isDiffView) {
+                                // there are two editors
+                                Container.commentsDecorator.syncEditors(window.visibleTextEditors);
+                            }
+                            else {
+                                Container.commentsDecorator.removeDecoration(
+                                    GitCommentService.commentViewerLine.CurrentLine!
+                                );
+                                Container.commentsDecorator.setDecorations();
+                            }
+
                         }
                     }
                 }
