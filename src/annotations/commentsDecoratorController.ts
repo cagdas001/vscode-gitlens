@@ -61,6 +61,10 @@ export class CommentsDecoratorController implements Disposable {
         );
     }
 
+    /**
+     * Decorations will be refreshed 2 seconds later, once the user completed editing
+     * @param e TextDocumentChangeEvent
+     */
     private onTextDocumentChanged(e: TextDocumentChangeEvent) {
         if (!this._activeEditor) return;
         if (e.document !== this._activeEditor.document) return;
@@ -92,6 +96,10 @@ export class CommentsDecoratorController implements Disposable {
         }
     }
 
+    /**
+     * Refreshes decorations for given array of TextEditors
+     * @param editors TextEditor[]
+     */
     async syncEditors(editors: TextEditor[]) {
         for (const editor of editors) {
             if (editor && GitCommentService.isLoggedIn()) {
@@ -115,6 +123,10 @@ export class CommentsDecoratorController implements Disposable {
         this._disposable && this._disposable.dispose();
     }
 
+    /**
+     * Reset required parameters to refresh decorations
+     * @param editor TextEditor
+     */
     async reset(editor: TextEditor) {
         this.repoPath = await Container.git.getActiveRepoPath(editor);
         this.gitUri = await GitUri.fromUri(editor.document.uri);
@@ -133,7 +145,7 @@ export class CommentsDecoratorController implements Disposable {
     }
 
     /**
-     * Returns an array of blame lines in given text document.
+     * Returns an array of TargetLines in given text document.
      * If range is not specified, all lines in the document will be considered
      * otherwise only the given range will be considered
      * @param document
@@ -163,9 +175,9 @@ export class CommentsDecoratorController implements Disposable {
     }
 
     /**
-     * Returns commit list/dictionary (no-duplicate) of lines in given array of blame lines.
-     * @param blames GitBlameLine[] Array of blame lines
-     * @returns CommitDict (key: commitSha)
+     * Returns the single TargetLine from given blame
+     * @param blames GitBlameLine Blame of line
+     * @returns TargetLine
      */
     getTargetLine(blame: GitBlameLine): TargetLine | undefined {
         const commit = blame.commit;
@@ -184,6 +196,12 @@ export class CommentsDecoratorController implements Disposable {
         }
     }
 
+    /**
+     * Checks if lines already include the lineToCheck
+     * @param lineToCheck CommentLine
+     * @param lines CommentLine[]
+     * @returns boolean
+     */
     isDuplicate(lineToCheck: CommentLine, lines: CommentLine[]): boolean {
         if (lineToCheck.To) {
             return !!lines.find(l => l.To === lineToCheck.To);
@@ -194,11 +212,11 @@ export class CommentsDecoratorController implements Disposable {
     }
 
     /**
-     * Fetches comments of given commits, from API (see loadComments method) or cache (if it is in cache and not timedout)
-     * Returns line numbers (no-duplicate) corresponding to fetched comments
+     * Fetches comments of given commit, from API (see loadComments method) or cache (if it is in cache and not timedout)
+     * Returns an array of CommentLine (see definiton)
      * Returns empty array if user is not logged in to BitBucket
-     * @param commitDict: CommitDict<commitSha, commit>
-     * @returns number[]: Line numbers of comments
+     * @param commit: GitCommit
+     * @returns CommentLine[]: Array of CommentLines
      */
     async fetchCommentLines(commit: GitCommit): Promise<CommentLine[]> {
         if (GitCommentService.isLoggedIn()) {
@@ -240,6 +258,11 @@ export class CommentsDecoratorController implements Disposable {
         }
     }
 
+    /**
+     * Detects the lines should be decorated from given parameters
+     * @param fetchedLines CommentLine[] Fetched comments from API or cache
+     * @param targetLines number[] Line numbers to be decorated
+     */
     linesToBeDecorated(fetchedLines: CommentLine[], targetLines: TargetLine[]): number[] {
         const lineNums: number[] = [];
         for (const line of fetchedLines) {
