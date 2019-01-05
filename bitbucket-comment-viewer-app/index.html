@@ -54,8 +54,6 @@
     // a map for comments
     // [key: CommentID, value: CommentObject]
     var commentsMap = new Map();
-    let nonReplyCount = 0;
-    let scrollToIndex;
 
     function reply(data) {
       let commentID = data.getAttribute('commentID');
@@ -116,16 +114,14 @@
         return linkedText;
     }
 
-    function render(comments, ul) {
+    function render(comments, ul, scrollToId) {
       for (var i = 0; i < comments.length; i++) {
         var comment = comments[i];
         commentsMap[comment.Id] = comment;
 
         var item = document.createElement('li');
         item.className = 'cmmnt';
-        if (!comment.ParentId) {
-          item.id = `comment-${++nonReplyCount}`;
-        }
+        item.id = `comment-${comment.Id}`;
 
         var avatarDiv = document.createElement('div');
         avatarDiv.className = 'avatar';
@@ -155,6 +151,17 @@
       for (i = 0, j = allPre.length; i < j; i++) {
         hljs.highlightBlock(allPre[i]);
       }
+
+      if (scrollToId) {
+        let scrollToComment = document.getElementById(`comment-${scrollToId}`);
+        // change background-color to clearly indicate the newly added comment
+        scrollToComment.style.backgroundColor = '#f9f581';
+        // scroll to the newly added comment
+        scrollToComment.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
+        // change back the background color slowly
+        scrollToComment.style.transition = 'background-color 2s ease-in'
+        scrollToComment.style.backgroundColor = 'white';
+      }
     }
 
     // send ui.ready message to main process when the window loaded
@@ -165,24 +172,21 @@
     // init the editor with the incoming value
     ipcRenderer.on('init.editor', function (event, arg) {
       commentUl.innerHTML = '';
-      nonReplyCount = 0;
-      if (arg.length == 0) {
+      const comments = arg.Comments;
+      const scrollToId = arg.ScrollTo;
+      if (comments.length == 0) {
         commentUl.innerText = 'No Comments Found';
       }
-      else render(arg, commentUl);
+      else render(comments, commentUl, scrollToId);
 
       document.getElementById('spinner').style.display = 'none';
       document.getElementById('w').style.display = 'block';
-
-      let lastComment = document.getElementById(`comment-${scrollToIndex}`);
-      lastComment.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
     })
 
     var addBtn = document.getElementById('addBtn');
     var closeBtn = document.getElementById('closeBtn');
 
     addBtn.addEventListener('click', function () {
-      scrollToIndex = nonReplyCount + 1;
       ipcRenderer.send('add.comment');
     })
     closeBtn.addEventListener('click', function () {
