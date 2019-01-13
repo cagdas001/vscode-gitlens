@@ -183,7 +183,7 @@ export function initComment(comments: Comment[]) {
                 ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
                     id: ipcForCommentViewer.config.id,
                     command: 'init.editor',
-                    payload: comments
+                    payload: { Comments: comments }
                 });
             }
             else if (data.command === 'close') {
@@ -199,11 +199,12 @@ export function initComment(comments: Comment[]) {
 /**
  * Show comment on running comment viewer app
  * @param comments: Comments to show.
+ * @param scrollToId: (optional) App scrolls to the comment with given ID, if specified
  */
-export function showComment(comments: Comment[]) {
+export function showComment(comments: Comment[], scrollToId?: number) {
     ipcForCommentViewer.of.bitbucketCommentViewerApp.emit('app.message', {
         id: ipcForCommentViewer.config.id,
         command: 'init.editor',
-        payload: comments
+        payload: { Comments: comments, ScrollTo: scrollToId }
     });
 }

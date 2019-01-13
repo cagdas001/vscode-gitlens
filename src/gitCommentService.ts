@@ -166,7 +166,11 @@ export class GitCommentService implements Disposable {
         return;
     }
 
-    async refreshView() {
+    /**
+     *
+     * @param scrollToId: (optional) App scrolls to the comment with given ID, if specified
+     */
+    async refreshView(scrollToId?: number) {
         if (GitCommentService.lastFetchedComments) {
             if (!GitCommentService.commentViewerActive) {
                 const app = await runApp('bitbucket-comment-viewer-app');
@@ -176,7 +180,7 @@ export class GitCommentService implements Disposable {
                 });
                 initComment(GitCommentService.lastFetchedComments);
             }
-            else showComment(GitCommentService.lastFetchedComments);
+            else showComment(GitCommentService.lastFetchedComments, scrollToId);
         }
     }
 
@@ -495,6 +499,7 @@ export class GitCommentService implements Disposable {
 
             const response = await Axios.create({ auth: auth }).post(url, data);
             window.showInformationMessage('Comment/reply added successfully.');
+            let scrollToId: number | undefined;
             if (GitCommentService.lastFetchedComments) {
                 const newComment: Comment = {
                     Id: isV2 ? response.data.id : response.data.comment_id,
@@ -538,8 +543,9 @@ export class GitCommentService implements Disposable {
                 else {
                     GitCommentService.lastFetchedComments.push(newComment);
                 }
+                scrollToId = newComment.Id;
             }
-            await this.refreshView();
+            await this.refreshView(scrollToId);
         }
         catch (e) {
             Logger.error(e);
