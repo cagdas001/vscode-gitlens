@@ -2,9 +2,9 @@
 import { Range } from 'vscode';
 import { RemoteProvider } from './provider';
 
-const issueEnricherRegEx = /(^|\s)(#([0-9]+))\b/gi;
+const issueEnricherRegex = /(^|\s)(#([0-9]+))\b/gi;
 
-export class GitLabService extends RemoteProvider {
+export class GitLabRemote extends RemoteProvider {
     constructor(domain: string, path: string, protocol?: string, name?: string, custom: boolean = false) {
         super(domain, path, protocol, name, custom);
     }
@@ -19,7 +19,7 @@ export class GitLabService extends RemoteProvider {
 
     enrichMessage(message: string): string {
         // Matches #123
-        return message.replace(issueEnricherRegEx, `$1[$2](${this.baseUrl}/issues/$3 "Open Issue $2")`);
+        return message.replace(issueEnricherRegex, `$1[$2](${this.baseUrl}/issues/$3 "Open Issue $2")`);
     }
 
     protected getUrlForBranches(): string {

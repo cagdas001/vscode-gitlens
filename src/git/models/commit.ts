@@ -1,8 +1,6 @@
 'use strict';
-import * as path from 'path';
 import { Uri } from 'vscode';
 import { configuration, DateStyle, GravatarDefaultStyle } from '../../configuration';
-import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
 import { Dates, Strings } from '../../system';
 import { CommitFormatter } from '../formatters/formatters';
@@ -10,6 +8,8 @@ import { Git } from '../git';
 import { GitUri } from '../gitUri';
 
 const gravatarCache: Map<string, Uri> = new Map();
+const missingGravatarHash = '00000000000000000000000000000000';
+
 export function clearGravatarCache() {
     gravatarCache.clear();
 }
@@ -147,17 +147,15 @@ export abstract class GitCommit {
     }
 
     get previousUri(): Uri {
-        return this.previousFileName
-            ? Uri.file(path.resolve(this.repoPath, (this.previousFileName || this.originalFileName)!))
-            : this.uri;
+        return this.previousFileName ? GitUri.resolveToUri(this.previousFileName, this.repoPath) : this.uri;
     }
 
     get uri(): Uri {
-        return Uri.file(path.resolve(this.repoPath, this.fileName));
+        return GitUri.resolveToUri(this.fileName, this.repoPath);
     }
 
     get workingUri(): Uri {
-        return this.workingFileName ? Uri.file(path.resolve(this.repoPath, this.workingFileName)) : this.uri;
+        return this.workingFileName ? GitUri.resolveToUri(this.workingFileName, this.repoPath) : this.uri;
     }
 
     private _dateFormatter?: Dates.IDateFormatter;
@@ -184,28 +182,21 @@ export abstract class GitCommit {
         return this._dateFormatter.fromNow();
     }
 
-    getFormattedPath(separator: string = Strings.pad(GlyphChars.Dot, 2, 2)): string {
-        return GitUri.getFormattedPath(this.fileName, separator);
+    getFormattedPath(options: { relativeTo?: string; separator?: string; suffix?: string } = {}): string {
+        return GitUri.getFormattedPath(this.fileName, options);
     }
 
     getGravatarUri(fallback: GravatarDefaultStyle, size: number = 16): Uri {
-        const key = this.email ? `${this.email.trim().toLowerCase()}:${size}` : '';
+        const hash =
+            this.email != null && this.email.length !== 0
+                ? Strings.md5(this.email.trim().toLowerCase(), 'hex')
+                : missingGravatarHash;
 
+        const key = `${hash}:${size}`;
         let gravatar = gravatarCache.get(key);
         if (gravatar !== undefined) return gravatar;
 
-        gravatar = Uri.parse(
-            `https://www.gravatar.com/avatar/${
-                this.email ? Strings.md5(this.email, 'hex') : '00000000000000000000000000000000'
-            }.jpg?s=${size}&d=${fallback}`
-        );
-
-        // HACK: Monkey patch Uri.toString to avoid the unwanted query string encoding
-        const originalToStringFn = gravatar.toString;
-        gravatar.toString = function(skipEncoding?: boolean | undefined) {
-            return originalToStringFn.call(gravatar, true);
-        };
-
+        gravatar = Uri.parse(`https://www.gravatar.com/avatar/${hash}.jpg?s=${size}&d=${fallback}`);
         gravatarCache.set(key, gravatar);
 
         return gravatar;

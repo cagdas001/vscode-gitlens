@@ -14,7 +14,7 @@ import {
     workspace
 } from 'vscode';
 import { AddLineCommentCommand } from '../commands/addLineComments';
-import { configuration, IConfig } from '../configuration';
+import { Config, configuration } from '../configuration';
 import { Container } from '../container';
 import { GitCommentService } from '../gitCommentService';
 import { Logger } from '../logger';
@@ -57,21 +57,14 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
     private _invalidateOnVisible: 'all' | 'config' | undefined;
 
     private onViewStateChanged(e: WebviewPanelOnDidChangeViewStateEvent) {
-        Logger.log('WebviewEditor.onViewStateChanged', e.webviewPanel.visible);
-        // HACK: Because messages aren't sent to the webview when hidden, we need make sure it is up-to-date
-        if (this._invalidateOnVisible && e.webviewPanel.visible) {
-            const invalidates = this._invalidateOnVisible;
-            this._invalidateOnVisible = undefined;
+        Logger.log(
+            'WebviewEditor.onViewStateChanged',
+            `active=${e.webviewPanel.active}, visible=${e.webviewPanel.visible}`
+        );
 
-            switch (invalidates) {
-                case 'config':
-                    this.postUpdatedConfiguration();
-                    break;
-
-                default:
-                    void this.show();
-                    break;
-            }
+        // Anytime the webview becomes active, make sure it has the most up-to-date config
+        if (e.webviewPanel.active) {
+            this.postUpdatedConfiguration();
         }
     }
 
@@ -125,22 +118,13 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
     }
 
     async show(): Promise<void> {
-        let html = (await this.getHtml()).replace(
-            /{{root}}/g,
-            Uri.file(Container.context.asAbsolutePath('.'))
-                .with({ scheme: 'vscode-resource' })
-                .toString()
-        );
-        if (html.includes("'{{bootstrap}}'")) {
-            const bootstrap = await this.getBootstrap();
-            html = html.replace("'{{bootstrap}}'", JSON.stringify(bootstrap));
-        }
+        const html = await this.getHtml();
 
         if (this._panel === undefined) {
             this._panel = window.createWebviewPanel(
                 this.id,
                 this.title,
-                ViewColumn.Active, // { viewColumn: ViewColumn.Active, preserveFocus: false }
+                { viewColumn: ViewColumn.Active, preserveFocus: false },
                 {
                     retainContextWhenHidden: true,
                     enableFindWidget: true,
@@ -149,6 +133,7 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 }
             );
 
+            this._panel.iconPath = Uri.file(Container.context.asAbsolutePath('images/gitlens-icon.png'));
             this._disposablePanel = Disposable.from(
                 this._panel,
                 this._panel.onDidDispose(this.onPanelDisposed, this),
@@ -159,14 +144,19 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
             this._panel.webview.html = html;
         }
         else {
+            // Reset the html to get the webview to reload
+            this._panel.webview.html = '';
             this._panel.webview.html = html;
-            this._panel.reveal(ViewColumn.Active); // , false);
+            this._panel.reveal(ViewColumn.Active, false);
         }
     }
 
+    private _html: string | undefined;
     private async getHtml(): Promise<string> {
+        let content;
+        // When we are debugging avoid any caching so that we can change the html and have it update without reloading
         if (Logger.isDebugging) {
-            return new Promise<string>((resolve, reject) => {
+            content = await new Promise<string>((resolve, reject) => {
                 fs.readFile(Container.context.asAbsolutePath(this.filename), 'utf8', (err, data) => {
                     if (err) {
                         reject(err);
@@ -177,29 +167,39 @@ export abstract class WebviewEditor<TBootstrap> implements Disposable {
                 });
             });
         }
+        else {
+            if (this._html !== undefined) return this._html;
 
-        const doc = await workspace.openTextDocument(Container.context.asAbsolutePath(this.filename));
-        return doc.getText();
+            const doc = await workspace.openTextDocument(Container.context.asAbsolutePath(this.filename));
+            content = doc.getText();
+        }
+
+        this._html = content.replace(
+            /{{root}}/g,
+            Uri.file(Container.context.asAbsolutePath('.'))
+                .with({ scheme: 'vscode-resource' })
+                .toString()
+        );
+
+        if (this._html.includes("'{{bootstrap}}'")) {
+            const bootstrap = await this.getBootstrap();
+            this._html = this._html.replace("'{{bootstrap}}'", JSON.stringify(bootstrap));
+        }
+
+        return this._html;
     }
 
-    public postMessage(message: Message, invalidates: 'all' | 'config' = 'all') {
+    public postMessage(message: Message) {
         if (this._panel === undefined) return false;
 
-        const result = this._panel!.webview.postMessage(message);
-        if (!result && this._invalidateOnVisible !== 'all') {
-            this._invalidateOnVisible = invalidates;
-        }
-        return result;
+        return this._panel!.webview.postMessage(message);
     }
 
     private postUpdatedConfiguration() {
         // Make sure to get the raw config, not from the container which has the modes mixed in
-        return this.postMessage(
-            {
-                type: 'settingsChanged',
-                config: configuration.get<IConfig>()
-            } as SettingsChangedMessage,
-            'config'
-        );
+        return this.postMessage({
+            type: 'settingsChanged',
+            config: configuration.get<Config>()
+        } as SettingsChangedMessage);
     }
 }

@@ -1,7 +1,8 @@
 'use strict';
+const fs = require('fs');
 const glob = require('glob');
-const nodeExternals = require('webpack-node-externals');
 const path = require('path');
+const webpack = require('webpack');
 const CleanPlugin = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ExternalsPlugin = require('webpack-externals-plugin');
@@ -9,18 +10,55 @@ const HtmlInlineSourcePlugin = require('html-webpack-inline-source-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack-plugin').default;
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const WebpackDeepScopeAnalysisPlugin = require('webpack-deep-scope-plugin').default;
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = function(env, argv) {
     env = env || {};
-    env.production = !!env.production;
-    env.optimizeImages = env.production || !!env.optimizeImages;
+    env.production = Boolean(env.production);
+    env.optimizeImages = env.production || Boolean(env.optimizeImages);
+
+    if (!env.optimizeImages && !fs.existsSync(path.resolve(__dirname, 'images/settings'))) {
+        env.optimizeImages = true;
+    }
+
+    // TODO: Total and complete HACK until the following vsls issues are resolved
+    // https://github.com/MicrosoftDocs/live-share/issues/1334 & https://github.com/MicrosoftDocs/live-share/issues/1335
+
+    const vslsPatchRegex = /const liveShareApiVersion = require\(path\.join\(__dirname, 'package\.json'\)\)\.version;/;
+
+    let vslsPath = path.resolve(__dirname, 'node_modules/vsls/package.json');
+    if (fs.existsSync(vslsPath)) {
+        const vsls = require(vslsPath);
+        if (vsls.main === undefined) {
+            vsls.main = 'vscode.js';
+            fs.writeFileSync(vslsPath, `${JSON.stringify(vsls, undefined, 4)}\n`, 'utf8');
+        }
+
+        vslsPath = path.resolve(__dirname, 'node_modules/vsls/vscode.js');
+        if (fs.existsSync(vslsPath)) {
+            console.log(vslsPath);
+
+            let code = fs.readFileSync(vslsPath, 'utf8');
+            if (vslsPatchRegex.test(code)) {
+                console.log('found');
+                code = code.replace(
+                    vslsPatchRegex,
+                    `const liveShareApiVersion = '${
+                        vsls.version
+                    }'; // require(path.join(__dirname, 'package.json')).version;`
+                );
+                console.log(code);
+                fs.writeFileSync(vslsPath, code, 'utf8');
+            }
+        }
+    }
 
     return [getExtensionConfig(env), getUIConfig(env)];
 };
 
 function getExtensionConfig(env) {
-    const plugins = [new CleanPlugin(['out'], { verbose: false })];
+    const plugins = [new CleanPlugin(['dist'], { verbose: false }), new webpack.IgnorePlugin(/^spawn-sync$/)];
+
     plugins.push(new CopyWebpackPlugin([
         {
             from: 'bitbucket-comment-app',
@@ -41,43 +79,59 @@ function getExtensionConfig(env) {
         type: 'commonjs',
         include: __dirname + '/node_modules/electron'
     }));
-    // Comment out for now, as it errors
-    // if (env.production) {
-    //     plugins.push(new WebpackDeepScopeAnalysisPlugin());
-    // }
 
     return {
         name: 'extension',
         entry: './src/extension.ts',
         mode: env.production ? 'production' : 'development',
         target: 'node',
-        devtool: !env.production ? 'eval-source-map' : undefined,
+        node: {
+            __dirname: false
+        },
+        devtool: 'source-map', //!env.production ? 'source-map' : undefined,
         output: {
             libraryTarget: 'commonjs2',
             filename: 'extension.js',
-            path: path.resolve(__dirname, 'out'),
             devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]'
         },
-        node: {
-        __dirname: false
+        optimization: {
+            minimizer: [
+                new TerserPlugin({
+                    cache: true,
+                    parallel: true,
+                    sourceMap: true, // !env.production,
+                    terserOptions: {
+                        ecma: 8,
+                        // Keep the class names otherwise @log won't provide a useful name
+                        keep_classnames: true,
+                        module: true
+                    }
+                })
+            ]
         },
-        resolve: {
-            extensions: ['.tsx', '.ts', '.js']
+        externals: {
+            vscode: 'commonjs vscode'
         },
-        externals: [nodeExternals()],
         module: {
             rules: [
                 {
                     test: /\.ts$/,
                     enforce: 'pre',
-                    use: 'tslint-loader'
+                    use: 'tslint-loader',
+                    exclude: /node_modules/
                 },
                 {
                     test: /\.tsx?$/,
                     use: 'ts-loader',
-                    exclude: /node_modules/
+                    exclude: /node_modules|\.d\.ts$/
                 }
-            ]
+            ],
+            // Removes `Critical dependency: the request of a dependency is an expression` from `./node_modules/vsls/vscode.js`
+            exprContextRegExp: /^$/,
+            exprContextCritical: false
+        },
+        resolve: {
+            extensions: ['.ts', '.tsx', '.js', '.jsx']
         },
         plugins: plugins,
         stats: {
@@ -93,7 +147,7 @@ function getExtensionConfig(env) {
 }
 
 function getUIConfig(env) {
-    const clean = ['settings.html', 'welcome.html','search.html'];
+    const clean = ['settings.html', 'welcome.html', 'search.html'];
     if (env.optimizeImages) {
         console.log('Optimizing images (src/ui/images/settings/*.png)...');
         clean.push('images/settings');
@@ -105,7 +159,6 @@ function getUIConfig(env) {
             filename: '[name].css'
         }),
         new HtmlPlugin({
-            excludeAssets: [/.*\.main\.js/],
             excludeChunks: ['welcome','settings'],
             template: 'settings/index.html',
             filename: path.resolve(__dirname, 'settings.html'),
@@ -125,13 +178,11 @@ function getUIConfig(env) {
                 : false
         }),
         new HtmlPlugin({
-            excludeAssets: [/.*\.main\.js/],
             excludeChunks: ['welcome'],
             template: 'settings/index.html',
             filename: path.resolve(__dirname, 'settings.html'),
             inject: true,
             inlineSource: env.production ? '.(js|css)$' : undefined,
-            // inlineSource: '.(js|css)$',
             minify: env.production
                 ? {
                       removeComments: true,
@@ -140,18 +191,17 @@ function getUIConfig(env) {
                       useShortDoctype: true,
                       removeEmptyAttributes: true,
                       removeStyleLinkTypeAttributes: true,
-                      keepClosingSlash: true
+                      keepClosingSlash: true,
+                      minifyCSS: true
                   }
                 : false
         }),
         new HtmlPlugin({
-            excludeAssets: [/.*\.main\.js/],
-            excludeChunks: ['welcome','settings'],
+            excludeChunks: ['welcome', 'settings'],
             template: 'search/index.html',
             filename: path.resolve(__dirname, 'search.html'),
             inject: true,
             inlineSource: env.production ? '.(js|css)$' : undefined,
-            // inlineSource: '.(js|css)$',
             minify: env.production
                 ? {
                       removeComments: true,
@@ -160,7 +210,8 @@ function getUIConfig(env) {
                       useShortDoctype: true,
                       removeEmptyAttributes: true,
                       removeStyleLinkTypeAttributes: true,
-                      keepClosingSlash: true
+                      keepClosingSlash: true,
+                      minifyCSS: true
                   }
                 : false
         }),
@@ -172,6 +223,7 @@ function getUIConfig(env) {
                 sources: glob.sync('src/ui/images/settings/*.png'),
                 destination: path.resolve(__dirname, 'images')
             },
+            cacheFolder: path.resolve(__dirname, '.cache-images'),
             gifsicle: null,
             jpegtran: null,
             optipng: null,
@@ -182,10 +234,6 @@ function getUIConfig(env) {
             svgo: null
         })
     ];
-
-    if (env.production) {
-        plugins.push(new WebpackDeepScopeAnalysisPlugin());
-    }
 
     return {
         name: 'ui',
@@ -201,24 +249,8 @@ function getUIConfig(env) {
         devtool: !env.production ? 'eval-source-map' : undefined,
         output: {
             filename: '[name].js',
-            path: path.resolve(__dirname, 'out/ui'),
-            publicPath: '{{root}}/out/ui/'
-        },
-        optimization: {
-            splitChunks: {
-                cacheGroups: {
-                    styles: {
-                        name: 'styles',
-                        test: /\.css$/,
-                        chunks: 'all',
-                        enforce: true
-                    }
-                }
-            }
-        },
-        resolve: {
-            extensions: ['.tsx', '.ts', '.js'],
-            modules: [path.resolve(__dirname, 'src/ui'), 'node_modules']
+            path: path.resolve(__dirname, 'dist/ui'),
+            publicPath: '{{root}}/dist/ui/'
         },
         module: {
             rules: [
@@ -232,7 +264,8 @@ function getUIConfig(env) {
                                 tsConfigFile: 'ui.tsconfig.json'
                             }
                         }
-                    ]
+                    ],
+                    exclude: /node_modules/
                 },
                 {
                     test: /\.tsx?$/,
@@ -242,7 +275,7 @@ function getUIConfig(env) {
                             configFile: 'ui.tsconfig.json'
                         }
                     },
-                    exclude: /node_modules/
+                    exclude: /node_modules|\.d\.ts$/
                 },
                 {
                     test: /\.scss$/,
@@ -253,7 +286,6 @@ function getUIConfig(env) {
                         {
                             loader: 'css-loader',
                             options: {
-                                minimize: env.production,
                                 sourceMap: !env.production,
                                 url: false
                             }
@@ -268,6 +300,10 @@ function getUIConfig(env) {
                     exclude: /node_modules/
                 }
             ]
+        },
+        resolve: {
+            extensions: ['.ts', '.tsx', '.js', '.jsx'],
+            modules: [path.resolve(__dirname, 'src/ui'), 'node_modules']
         },
         plugins: plugins,
         stats: {

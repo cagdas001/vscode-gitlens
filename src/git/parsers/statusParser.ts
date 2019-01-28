@@ -1,6 +1,6 @@
 'use strict';
 import { Strings } from '../../system';
-import { GitStatus, GitStatusFile, GitStatusFileStatus } from './../git';
+import { GitFileStatus, GitStatus, GitStatusFile } from './../git';
 
 const aheadStatusV1Regex = /(?:ahead ([0-9]+))/;
 const behindStatusV1Regex = /(?:behind ([0-9]+))/;
@@ -9,7 +9,7 @@ export class GitStatusParser {
     static parse(data: string, repoPath: string, porcelainVersion: number): GitStatus | undefined {
         if (!data) return undefined;
 
-        const lines = data.split('\n').filter(l => !!l);
+        const lines = data.split('\n').filter(Boolean);
         if (lines.length === 0) return undefined;
 
         if (porcelainVersion < 2) return this.parseV1(lines, repoPath);
@@ -124,22 +124,22 @@ export class GitStatusParser {
         originalFileName?: string
     ): GitStatusFile {
         let indexStatus = rawStatus[0] !== '.' ? rawStatus[0].trim() : undefined;
-        if (indexStatus === '' || indexStatus === null) {
+        if (indexStatus == null || indexStatus.length === 0) {
             indexStatus = undefined;
         }
 
         let workTreeStatus = undefined;
         if (rawStatus.length > 1) {
             workTreeStatus = rawStatus[1] !== '.' ? rawStatus[1].trim() : undefined;
-            if (workTreeStatus === '' || workTreeStatus === null) {
+            if (workTreeStatus == null || workTreeStatus.length === 0) {
                 workTreeStatus = undefined;
             }
         }
 
         return new GitStatusFile(
             repoPath,
-            indexStatus as GitStatusFileStatus,
-            workTreeStatus as GitStatusFileStatus,
+            indexStatus as GitFileStatus | undefined,
+            workTreeStatus as GitFileStatus | undefined,
             fileName,
             originalFileName
         );

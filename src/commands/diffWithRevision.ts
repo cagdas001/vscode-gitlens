@@ -2,12 +2,12 @@
 import { commands, TextDocumentShowOptions, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitBranch, GitTag, GitUri } from '../gitService';
+import { GitBranch, GitTag, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
 import { ChooseFromBranchesAndTagsQuickPickItem, CommandQuickPickItem, FileHistoryQuickPick } from '../quickpicks';
 import { Iterables, Strings } from '../system';
-import { ActiveEditorCommand, Commands, getCommandUri } from './common';
+import { ActiveEditorCommand, command, Commands, getCommandUri } from './common';
 import { DiffWithCommandArgs } from './diffWith';
 
 export interface DiffWithRevisionCommandArgs {
@@ -19,6 +19,7 @@ export interface DiffWithRevisionCommandArgs {
     nextPageCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class DiffWithRevisionCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.DiffWithRevision);
@@ -35,9 +36,9 @@ export class DiffWithRevisionCommand extends ActiveEditorCommand {
 
         const gitUri = await GitUri.fromUri(uri);
 
-        const placeHolder = `Compare ${gitUri.getFormattedPath(
-            args.branchOrTag ? ` (${args.branchOrTag.name})${Strings.pad(GlyphChars.Dot, 2, 2)}` : undefined
-        )}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''} with revision${
+        const placeHolder = `Compare ${gitUri.getFormattedPath({
+            suffix: args.branchOrTag ? ` (${args.branchOrTag.name})` : undefined
+        })}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''} with revision${
             GlyphChars.Ellipsis
         }`;
 
@@ -106,17 +107,16 @@ export class DiffWithRevisionCommand extends ActiveEditorCommand {
                 currentCommand: currentCommand,
                 nextPageCommand: args.nextPageCommand,
                 previousPageCommand: previousPageCommand,
-                showAllCommand:
-                    log !== undefined && log.truncated
-                        ? new CommandQuickPickItem(
-                              {
-                                  label: `$(sync) Show All Commits`,
-                                  description: `${Strings.pad(GlyphChars.Dash, 2, 3)} this may take a while`
-                              },
-                              Commands.DiffWithRevision,
-                              [uri, { ...args, maxCount: 0 } as DiffWithRevisionCommandArgs]
-                          )
-                        : undefined
+                showAllCommand: log.truncated
+                    ? new CommandQuickPickItem(
+                          {
+                              label: `$(sync) Show All Commits`,
+                              description: `${Strings.pad(GlyphChars.Dash, 2, 3)} this may take a while`
+                          },
+                          Commands.DiffWithRevision,
+                          [uri, { ...args, maxCount: 0 } as DiffWithRevisionCommandArgs]
+                      )
+                    : undefined
             });
             if (pick === undefined) return undefined;
 
@@ -129,7 +129,7 @@ export class DiffWithRevisionCommand extends ActiveEditorCommand {
 
                 return commands.executeCommand(Commands.DiffWithRevision, gitUri, {
                     ...args,
-                    branchOrTag: branchOrTag.branchOrTag,
+                    branchOrTag: branchOrTag.item,
                     goBackCommand: currentCommand
                 } as DiffWithRevisionCommandArgs);
             }
@@ -156,7 +156,7 @@ export class DiffWithRevisionCommand extends ActiveEditorCommand {
         }
         catch (ex) {
             Logger.error(ex, 'DiffWithRevisionCommand');
-            return window.showErrorMessage(`Unable to open compare. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to open compare');
         }
         finally {
             progressCancellation.cancel();

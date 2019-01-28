@@ -1,4 +1,6 @@
-out
+.cache-images
+.cache-loader
+dist
 node_modules
 settings.html
 search.html

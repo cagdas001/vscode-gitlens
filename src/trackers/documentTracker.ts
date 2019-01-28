@@ -17,7 +17,7 @@ import {
 } from 'vscode';
 import { configuration } from '../configuration';
 import { CommandContext, DocumentSchemes, isActiveDocument, isTextEditor, setCommandContext } from '../constants';
-import { GitUri } from '../gitService';
+import { GitUri } from '../git/gitService';
 import { Functions, IDeferrable } from '../system';
 import { DocumentBlameStateChangeEvent, TrackedDocument } from './trackedDocument';
 
@@ -78,11 +78,9 @@ export class DocumentTracker<T> implements Disposable {
     }
 
     private onConfigurationChanged(e: ConfigurationChangeEvent) {
-        const initializing = configuration.initializing(e);
-
         // Only rest the cached state if we aren't initializing
         if (
-            !initializing &&
+            !configuration.initializing(e) &&
             (configuration.changed(e, configuration.name('blame')('ignoreWhitespace').value, null) ||
                 configuration.changed(e, configuration.name('advanced')('caching')('enabled').value))
         ) {
@@ -92,7 +90,7 @@ export class DocumentTracker<T> implements Disposable {
         }
 
         const section = configuration.name('advanced')('blame')('delayAfterEdit').value;
-        if (initializing || configuration.changed(e, section)) {
+        if (configuration.changed(e, section)) {
             this._dirtyIdleTriggerDelay = configuration.get<number>(section);
             this._dirtyIdleTriggeredDebounced = undefined;
         }
@@ -129,7 +127,8 @@ export class DocumentTracker<T> implements Disposable {
     }
 
     private onTextDocumentChanged(e: TextDocumentChangeEvent) {
-        if (e.document.uri.scheme !== DocumentSchemes.File) return;
+        const { scheme } = e.document.uri;
+        if (scheme !== DocumentSchemes.File && scheme !== DocumentSchemes.Vsls) return;
 
         let doc = this._documentMap.get(e.document);
         if (doc === undefined) {
@@ -172,7 +171,7 @@ export class DocumentTracker<T> implements Disposable {
     }
 
     private onTextDocumentSaved(document: TextDocument) {
-        let doc = this._documentMap.get(document);
+        const doc = this._documentMap.get(document);
         if (doc !== undefined) {
             void doc.update({ forceBlameChange: true });
 
@@ -181,7 +180,7 @@ export class DocumentTracker<T> implements Disposable {
 
         // If we are saving the active document make sure we are tracking it
         if (isActiveDocument(document)) {
-            doc = this.addCore(document);
+            void this.addCore(document);
         }
     }
 
@@ -238,7 +237,7 @@ export class DocumentTracker<T> implements Disposable {
     private async _add(documentOrId: TextDocument | Uri): Promise<TrackedDocument<T>> {
         if (documentOrId instanceof GitUri) {
             try {
-                documentOrId = await workspace.openTextDocument(documentOrId.fileUri({ useVersionedPath: true }));
+                documentOrId = await workspace.openTextDocument(documentOrId.documentUri({ useVersionedPath: true }));
             }
             catch (ex) {
                 const msg = ex.toString();
@@ -271,7 +270,7 @@ export class DocumentTracker<T> implements Disposable {
 
     private async _get(documentOrId: string | TextDocument | Uri) {
         if (documentOrId instanceof GitUri) {
-            documentOrId = GitUri.toKey(documentOrId.fileUri({ useVersionedPath: true }));
+            documentOrId = GitUri.toKey(documentOrId.documentUri({ useVersionedPath: true }));
         }
         else if (typeof documentOrId === 'string' || documentOrId instanceof Uri) {
             documentOrId = GitUri.toKey(documentOrId);
@@ -366,7 +365,7 @@ class EmptyTextDocument implements TextDocument {
     constructor(
         public readonly gitUri: GitUri
     ) {
-        this.uri = gitUri.fileUri({ useVersionedPath: true });
+        this.uri = gitUri.documentUri({ useVersionedPath: true });
 
         this.eol = EndOfLine.LF;
         this.fileName = this.uri.fsPath;

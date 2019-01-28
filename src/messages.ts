@@ -1,8 +1,9 @@
 'use strict';
-import { ConfigurationTarget, MessageItem, window } from 'vscode';
-import { configuration, KeyMap } from './configuration';
-import { Container } from './container';
-import { GitCommit } from './gitService';
+import { commands, ConfigurationTarget, MessageItem, Uri, window } from 'vscode';
+import { Commands } from './commands';
+import { configuration } from './configuration';
+import { BuiltInCommands, CommandContext, setCommandContext } from './constants';
+import { GitCommit } from './git/gitService';
 import { Logger } from './logger';
 
 export enum SuppressedMessages {
@@ -13,7 +14,7 @@ export enum SuppressedMessages {
     GitVersionWarning = 'suppressGitVersionWarning',
     LineUncommittedWarning = 'suppressLineUncommittedWarning',
     NoRepositoryWarning = 'suppressNoRepositoryWarning',
-    ShowKeyBindingsNotice = 'suppressShowKeyBindingsNotice'
+    SupportGitLensNotification = 'suppressSupportGitLensNotification'
 }
 
 export class Messages {
@@ -40,6 +41,22 @@ export class Messages {
         );
     }
 
+    static async showGenericErrorMessage(message: string): Promise<MessageItem | undefined> {
+        const actions: MessageItem[] = [{ title: 'Open Output Channel' }];
+        const result = await Messages.showMessage(
+            'error',
+            `${message}. See output channel for more details`,
+            undefined,
+            null,
+            ...actions
+        );
+
+        if (result !== undefined) {
+            Logger.showOutputChannel();
+        }
+        return result;
+    }
+
     static showFileNotUnderSourceControlWarningMessage(message: string): Promise<MessageItem | undefined> {
         return Messages.showMessage(
             'warn',
@@ -64,44 +81,6 @@ export class Messages {
         );
     }
 
-    static async showKeyBindingsInfoMessage(): Promise<MessageItem | undefined> {
-        if (
-            Container.config.keymap !== KeyMap.Alternate ||
-            Container.config.advanced.messages.suppressShowKeyBindingsNotice
-        ) {
-            return undefined;
-        }
-
-        const actions: MessageItem[] = [
-            { title: 'Keep Shortcuts', isCloseAffordance: true },
-            { title: 'Switch Shortcuts' },
-            { title: 'No Shortcuts' }
-        ];
-        const result = await Messages.showMessage(
-            'info',
-            `GitLens is using keyboard shortcuts which can conflict with menu mnemonics and different keyboard layouts. To avoid such conflicts, it is recommended to switch to the new default keyboard shortcuts.`,
-            SuppressedMessages.ShowKeyBindingsNotice,
-            null,
-            ...actions
-        );
-
-        switch (result) {
-            case actions[1]:
-                await configuration.update(
-                    configuration.name('keymap').value,
-                    KeyMap.Chorded,
-                    ConfigurationTarget.Global
-                );
-                break;
-
-            case actions[2]:
-                await configuration.update(configuration.name('keymap').value, KeyMap.None, ConfigurationTarget.Global);
-                break;
-        }
-
-        return result;
-    }
-
     static showLineUncommittedWarningMessage(message: string): Promise<MessageItem | undefined> {
         return Messages.showMessage(
             'warn',
@@ -118,21 +97,89 @@ export class Messages {
         );
     }
 
+    static async showSupportGitLensMessage() {
+        const actions: MessageItem[] = [
+            { title: 'Become a Sponsor' },
+            { title: 'Donate via PayPal' },
+            { title: 'Donate via Cash App' }
+        ];
+
+        const result = await Messages.showMessage(
+            'info',
+            `While GitLens is offered to everyone for free, if you find it useful, please consider [supporting](https://gitlens.amod.io/#support-gitlens) it. Thank you! ❤`,
+            undefined,
+            null,
+            ...actions
+        );
+
+        if (result != null) {
+            let uri;
+            if (result === actions[0]) {
+                uri = Uri.parse('https://www.patreon.com/eamodio');
+            }
+            else if (result === actions[1]) {
+                uri = Uri.parse('https://www.paypal.me/eamodio');
+            }
+            else if (result === actions[2]) {
+                uri = Uri.parse('https://cash.me/$eamodio');
+            }
+
+            if (uri !== undefined) {
+                await setCommandContext(CommandContext.ViewsHideSupportGitLens, true);
+                await this.suppressedMessage(SuppressedMessages.SupportGitLensNotification!);
+                await commands.executeCommand(BuiltInCommands.Open, uri);
+            }
+        }
+    }
+
+    static async showWhatsNewMessage(version: string) {
+        const actions: MessageItem[] = [{ title: "What's New" }, { title: 'Release Notes' }, { title: '❤' }];
+
+        const result = await Messages.showMessage(
+            'info',
+            `GitLens has been updated to v${version} — check out what's new!`,
+            undefined,
+            null,
+            ...actions
+        );
+
+        if (result != null) {
+            if (result === actions[0]) {
+                await commands.executeCommand(Commands.ShowWelcomePage);
+            }
+            else if (result === actions[1]) {
+                await commands.executeCommand(
+                    BuiltInCommands.Open,
+                    Uri.parse('https://github.com/eamodio/vscode-gitlens/blob/master/CHANGELOG.md')
+                );
+            }
+            else if (result === actions[2]) {
+                await commands.executeCommand(
+                    BuiltInCommands.Open,
+                    Uri.parse('https://gitlens.amod.io/#support-gitlens')
+                );
+            }
+        }
+    }
+
     private static async showMessage<T extends MessageItem>(
         type: 'info' | 'warn' | 'error',
         message: string,
-        suppressionKey: SuppressedMessages,
+        suppressionKey?: SuppressedMessages,
         dontShowAgain: T | null = { title: "Don't Show Again" } as T,
         ...actions: T[]
     ): Promise<T | undefined> {
         Logger.log(`ShowMessage(${type}, '${message}', ${suppressionKey}, ${dontShowAgain})`);
 
-        if (configuration.get<boolean>(configuration.name('advanced')('messages')(suppressionKey).value)) {
+        if (
+            suppressionKey !== undefined &&
+            configuration.get<boolean>(configuration.name('advanced')('messages')(suppressionKey).value)
+        ) {
             Logger.log(`ShowMessage(${type}, '${message}', ${suppressionKey}, ${dontShowAgain}) skipped`);
             return undefined;
         }
 
-        if (dontShowAgain !== null) {
+        if (suppressionKey !== undefined && dontShowAgain !== null) {
             actions.push(dontShowAgain);
         }
 
@@ -151,11 +198,11 @@ export class Messages {
                 break;
         }
 
-        if (dontShowAgain === null || result === dontShowAgain) {
+        if ((suppressionKey !== undefined && dontShowAgain === null) || result === dontShowAgain) {
             Logger.log(
                 `ShowMessage(${type}, '${message}', ${suppressionKey}, ${dontShowAgain}) don't show again requested`
             );
-            await this.suppressedMessage(suppressionKey);
+            await this.suppressedMessage(suppressionKey!);
 
             if (result === dontShowAgain) return undefined;
         }

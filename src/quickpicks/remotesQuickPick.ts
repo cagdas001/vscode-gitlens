@@ -1,5 +1,5 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { QuickPickOptions, window } from 'vscode';
 import { Commands, OpenInRemoteCommandArgs } from '../commands';
 import { GlyphChars } from '../constants';
@@ -10,7 +10,7 @@ import {
     GitService,
     RemoteResource,
     RemoteResourceType
-} from '../gitService';
+} from '../git/gitService';
 import { Strings } from '../system';
 import { CommandQuickPickItem, getQuickPickIgnoreFocusOut } from './commonQuickPicks';
 
@@ -29,7 +29,7 @@ export class OpenRemoteCommandQuickPickItem extends CommandQuickPickItem {
                     ? `$(link-external) Copy ${getNameFromRemoteResource(resource)} Url to Clipboard from ${
                           remote.provider!.name
                       }`
-                    : `$(link-external) Open ${getNameFromRemoteResource(resource)} in ${remote.provider!.name}`,
+                    : `$(link-external) Open ${getNameFromRemoteResource(resource)} on ${remote.provider!.name}`,
                 description: `${Strings.pad(GlyphChars.Dash, 2, 3)} $(repo) ${remote.provider!.path}`
             },
             undefined,
@@ -67,7 +67,7 @@ export class OpenRemotesCommandQuickPickItem extends CommandQuickPickItem {
                 break;
 
             case RemoteResourceType.File:
-                description = `$(file-text) ${path.basename(resource.fileName)}`;
+                description = `$(file-text) ${paths.basename(resource.fileName)}`;
                 break;
 
             case RemoteResourceType.Repo:
@@ -78,7 +78,7 @@ export class OpenRemotesCommandQuickPickItem extends CommandQuickPickItem {
                 if (resource.commit !== undefined && resource.commit instanceof GitLogCommit) {
                     if (resource.commit.status === 'D') {
                         resource.sha = resource.commit.previousSha;
-                        description = `$(file-text) ${path.basename(resource.fileName)} in ${
+                        description = `$(file-text) ${paths.basename(resource.fileName)} in ${
                             GlyphChars.Space
                         }$(git-commit) ${resource.commit.previousShortSha} (deleted in ${
                             GlyphChars.Space
@@ -86,25 +86,32 @@ export class OpenRemotesCommandQuickPickItem extends CommandQuickPickItem {
                     }
                     else {
                         resource.sha = resource.commit.sha;
-                        description = `$(file-text) ${path.basename(resource.fileName)} in ${
+                        description = `$(file-text) ${paths.basename(resource.fileName)} in ${
                             GlyphChars.Space
                         }$(git-commit) ${resource.commit.shortSha}`;
                     }
                 }
                 else {
                     const shortFileSha = resource.sha === undefined ? '' : GitService.shortenSha(resource.sha);
-                    description = `$(file-text) ${path.basename(resource.fileName)}${
+                    description = `$(file-text) ${paths.basename(resource.fileName)}${
                         shortFileSha ? ` in ${GlyphChars.Space}$(git-commit) ${shortFileSha}` : ''
                     }`;
                 }
                 break;
         }
 
-        const remote = remotes[0];
-        if (remotes.length === 1) {
+        let remote: GitRemote | undefined;
+        if (remotes.length > 1) {
+            remote = remotes.find(r => r.default);
+        }
+        else if (remotes.length === 1) {
+            remote = remotes[0];
+        }
+
+        if (remote != null) {
             super(
                 {
-                    label: `$(link-external) Open ${name} in ${remote.provider!.name}`,
+                    label: `$(link-external) Open ${name} on ${remote.provider!.name}`,
                     description: `${Strings.pad(GlyphChars.Dash, 2, 3)} $(repo) ${remote.provider!.path} ${Strings.pad(
                         GlyphChars.Dot,
                         1,
@@ -125,13 +132,15 @@ export class OpenRemotesCommandQuickPickItem extends CommandQuickPickItem {
             return;
         }
 
-        const provider = remotes.every(r => r.provider !== undefined && r.provider.name === remote.provider!.name)
+        remote = remotes[0];
+        // Use the real provider name if there is only 1 provider
+        const provider = remotes.every(r => r.provider !== undefined && r.provider.name === remote!.provider!.name)
             ? remote.provider!.name
             : 'Remote';
 
         super(
             {
-                label: `$(link-external) Open ${name} in ${provider}${GlyphChars.Ellipsis}`,
+                label: `$(link-external) Open ${name} on ${provider}${GlyphChars.Ellipsis}`,
                 description: `${Strings.pad(GlyphChars.Dash, 2, 3)} ${description}`
             },
             Commands.OpenInRemote,

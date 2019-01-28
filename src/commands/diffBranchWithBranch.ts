@@ -1,16 +1,25 @@
 'use strict';
-import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
+import { TextEditor, Uri } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
 import { Logger } from '../logger';
+import { Messages } from '../messages';
 import { BranchesAndTagsQuickPick, CommandQuickPickItem } from '../quickpicks';
-import { ActiveEditorCommand, CommandContext, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
+import {
+    ActiveEditorCommand,
+    command,
+    CommandContext,
+    Commands,
+    getCommandUri,
+    getRepoPathOrActiveOrPrompt
+} from './common';
 
 export interface DiffBranchWithBranchCommandArgs {
     ref1?: string;
     ref2?: string;
 }
 
+@command()
 export class DiffBranchWithBranchCommand extends ActiveEditorCommand {
     constructor() {
         super([Commands.DiffHeadWithBranch, Commands.DiffWorkingWithBranch]);
@@ -35,8 +44,6 @@ export class DiffBranchWithBranchCommand extends ActiveEditorCommand {
 
         uri = getCommandUri(uri, editor);
 
-        let progressCancellation: CancellationTokenSource | undefined;
-
         try {
             const repoPath = await getRepoPathOrActiveOrPrompt(
                 uri,
@@ -49,46 +56,34 @@ export class DiffBranchWithBranchCommand extends ActiveEditorCommand {
                 let placeHolder;
                 switch (args.ref2) {
                     case '':
-                        placeHolder = `Compare Working Tree to${GlyphChars.Ellipsis}`;
+                        placeHolder = `Compare Working Tree with${GlyphChars.Ellipsis}`;
                         break;
                     case 'HEAD':
-                        placeHolder = `Compare HEAD to${GlyphChars.Ellipsis}`;
+                        placeHolder = `Compare HEAD with${GlyphChars.Ellipsis}`;
                         break;
                     default:
-                        placeHolder = `Compare ${args.ref2} to${GlyphChars.Ellipsis}`;
+                        placeHolder = `Compare ${args.ref2} with${GlyphChars.Ellipsis}`;
                         break;
                 }
 
-                progressCancellation = BranchesAndTagsQuickPick.showProgress(placeHolder);
-
-                const [branches, tags] = await Promise.all([
-                    Container.git.getBranches(repoPath),
-                    Container.git.getTags(repoPath)
-                ]);
-
-                if (progressCancellation.token.isCancellationRequested) return undefined;
-
-                const pick = await BranchesAndTagsQuickPick.show(branches, tags, placeHolder, {
-                    progressCancellation: progressCancellation
+                const pick = await new BranchesAndTagsQuickPick(repoPath).show(placeHolder, {
+                    allowCommitId: true
                 });
                 if (pick === undefined) return undefined;
 
                 if (pick instanceof CommandQuickPickItem) return pick.execute();
 
-                args.ref1 = pick.name;
+                args.ref1 = pick.ref;
                 if (args.ref1 === undefined) return undefined;
             }
 
-            Container.resultsExplorer.showComparisonInResults(repoPath, args.ref1, args.ref2);
+            await Container.compareView.compare(repoPath, args.ref1, args.ref2);
 
             return undefined;
         }
         catch (ex) {
             Logger.error(ex, 'DiffBranchWithBranchCommand');
-            return window.showErrorMessage(`Unable to open branch compare. See output channel for more details`);
-        }
-        finally {
-            progressCancellation && progressCancellation.cancel();
+            return Messages.showGenericErrorMessage('Unable to open branch compare');
         }
     }
 }

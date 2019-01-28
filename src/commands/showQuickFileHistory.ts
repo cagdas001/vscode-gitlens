@@ -1,19 +1,19 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { commands, Range, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitBranch, GitLog, GitTag, GitUri } from '../gitService';
+import { GitBranch, GitLog, GitTag, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
 import {
     ChooseFromBranchesAndTagsQuickPickItem,
     CommandQuickPickItem,
     FileHistoryQuickPick,
-    ShowCommitsInResultsQuickPickItem
+    ShowFileHistoryInViewQuickPickItem
 } from '../quickpicks';
 import { Iterables, Strings } from '../system';
-import { ActiveEditorCachedCommand, Commands, getCommandUri } from './common';
+import { ActiveEditorCachedCommand, command, CommandContext, Commands, getCommandUri } from './common';
 import { ShowQuickCommitFileDetailsCommandArgs } from './showQuickCommitFileDetails';
 
 export interface ShowQuickFileHistoryCommandArgs {
@@ -21,14 +21,25 @@ export interface ShowQuickFileHistoryCommandArgs {
     log?: GitLog;
     maxCount?: number;
     range?: Range;
+    showInView?: boolean;
 
     goBackCommand?: CommandQuickPickItem;
     nextPageCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
     constructor() {
-        super(Commands.ShowQuickFileHistory);
+        super([Commands.ShowFileHistoryInView, Commands.ShowQuickFileHistory]);
+    }
+
+    protected async preExecute(context: CommandContext, args: ShowQuickFileHistoryCommandArgs = {}): Promise<any> {
+        if (context.command === Commands.ShowFileHistoryInView) {
+            args = { ...args };
+            args.showInView = true;
+        }
+
+        return this.execute(context.editor, context.uri, args);
     }
 
     async execute(editor?: TextEditor, uri?: Uri, args: ShowQuickFileHistoryCommandArgs = {}) {
@@ -37,13 +48,20 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
 
         const gitUri = await GitUri.fromUri(uri);
 
+        if (args.showInView) {
+            await Container.fileHistoryView.showHistoryForUri(gitUri);
+
+            return undefined;
+        }
+
         args = { ...args };
 
-        const placeHolder = `${gitUri.getFormattedPath(
-            args.branchOrTag ? ` (${args.branchOrTag.name})${Strings.pad(GlyphChars.Dot, 2, 2)}` : undefined
-        )}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''}`;
+        const placeHolder = `${gitUri.getFormattedPath({
+            suffix: args.branchOrTag ? ` (${args.branchOrTag.name})` : undefined
+        })}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''}`;
 
         const progressCancellation = FileHistoryQuickPick.showProgress(placeHolder);
+
         try {
             if (args.log === undefined) {
                 args.log = await Container.git.getLogForFile(gitUri.repoPath, gitUri.fsPath, {
@@ -59,7 +77,9 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
                 }
             }
 
-            if (progressCancellation.token.isCancellationRequested) return undefined;
+            if (progressCancellation !== undefined && progressCancellation.token.isCancellationRequested) {
+                return undefined;
+            }
 
             let previousPageCommand: CommandQuickPickItem | undefined = undefined;
 
@@ -97,14 +117,14 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
                     label: `go back ${GlyphChars.ArrowBack}`,
                     description: `${Strings.pad(GlyphChars.Dash, 2, 3)} to history of ${
                         GlyphChars.Space
-                    }$(file-text) ${path.basename(gitUri.fsPath)}${
+                    }$(file-text) ${paths.basename(gitUri.fsPath)}${
                         args.branchOrTag
                             ? ` from ${GlyphChars.Space}${
                                   args.branchOrTag instanceof GitTag ? '$(tag)' : '$(git-branch)'
                               } ${args.branchOrTag.name}`
                             : gitUri.sha
-                                ? ` from ${GlyphChars.Space}$(git-commit) ${gitUri.shortSha}`
-                                : ''
+                            ? ` from ${GlyphChars.Space}$(git-commit) ${gitUri.shortSha}`
+                            : ''
                     }`
                 },
                 Commands.ShowQuickFileHistory,
@@ -128,12 +148,12 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
                               [uri, { ...args, log: undefined, maxCount: 0 }]
                           )
                         : undefined,
-                showInResultsExplorerCommand:
+                showInViewCommand:
                     args.log !== undefined
-                        ? new ShowCommitsInResultsQuickPickItem(args.log, {
-                              label: placeHolder,
-                              resultsType: { singular: 'commit', plural: 'commits' }
-                          })
+                        ? new ShowFileHistoryInViewQuickPickItem(
+                              gitUri,
+                              (args.branchOrTag && args.branchOrTag.ref) || gitUri.sha
+                          )
                         : undefined
             });
             if (pick === undefined) return undefined;
@@ -146,7 +166,7 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
                 return commands.executeCommand(Commands.ShowQuickFileHistory, gitUri, {
                     ...args,
                     log: undefined,
-                    branchOrTag: branchOrTag.branchOrTag,
+                    branchOrTag: branchOrTag.item,
                     goBackCommand: currentCommand
                 } as ShowQuickFileHistoryCommandArgs);
             }
@@ -163,10 +183,10 @@ export class ShowQuickFileHistoryCommand extends ActiveEditorCachedCommand {
         }
         catch (ex) {
             Logger.error(ex, 'ShowQuickFileHistoryCommand');
-            return window.showErrorMessage(`Unable to show file history. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to show file history');
         }
         finally {
-            progressCancellation.cancel();
+            progressCancellation && progressCancellation.cancel();
         }
     }
 }

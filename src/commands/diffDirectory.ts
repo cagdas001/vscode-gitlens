@@ -1,12 +1,14 @@
 'use strict';
-import { CancellationTokenSource, commands, TextEditor, Uri, window } from 'vscode';
+import { commands, TextEditor, Uri, window } from 'vscode';
 import { BuiltInCommands, GlyphChars } from '../constants';
 import { Container } from '../container';
 import { Logger } from '../logger';
+import { Messages } from '../messages';
 import { BranchesAndTagsQuickPick, CommandQuickPickItem } from '../quickpicks';
-import { ComparisonResultsNode } from '../views/nodes';
+import { CompareResultsNode } from '../views/nodes';
 import {
     ActiveEditorCommand,
+    command,
     CommandContext,
     Commands,
     getCommandUri,
@@ -19,31 +21,32 @@ export interface DiffDirectoryCommandArgs {
     ref2?: string;
 }
 
+@command()
 export class DiffDirectoryCommand extends ActiveEditorCommand {
     constructor() {
         super([
             Commands.DiffDirectory,
-            Commands.ExternalDiffAll,
-            Commands.ExplorersOpenDirectoryDiff,
-            Commands.ExplorersOpenDirectoryDiffWithWorking
+            Commands.DiffDirectoryWithHead,
+            Commands.ViewsOpenDirectoryDiff,
+            Commands.ViewsOpenDirectoryDiffWithWorking
         ]);
     }
 
     protected async preExecute(context: CommandContext, args: DiffDirectoryCommandArgs = {}): Promise<any> {
         switch (context.command) {
-            case Commands.ExternalDiffAll:
+            case Commands.DiffDirectoryWithHead:
                 args.ref1 = 'HEAD';
                 args.ref2 = undefined;
                 break;
 
-            case Commands.ExplorersOpenDirectoryDiff:
-                if (context.type === 'view' && context.node instanceof ComparisonResultsNode) {
+            case Commands.ViewsOpenDirectoryDiff:
+                if (context.type === 'viewItem' && context.node instanceof CompareResultsNode) {
                     args.ref1 = context.node.ref1.ref;
                     args.ref2 = context.node.ref2.ref;
                 }
                 break;
 
-            case Commands.ExplorersOpenDirectoryDiffWithWorking:
+            case Commands.ViewsOpenDirectoryDiffWithWorking:
                 if (isCommandViewContextWithRef(context)) {
                     args.ref1 = context.node.ref;
                     args.ref2 = undefined;
@@ -57,8 +60,6 @@ export class DiffDirectoryCommand extends ActiveEditorCommand {
     async execute(editor?: TextEditor, uri?: Uri, args: DiffDirectoryCommandArgs = {}): Promise<any> {
         uri = getCommandUri(uri, editor);
 
-        let progressCancellation: CancellationTokenSource | undefined;
-
         try {
             const repoPath = await getRepoPathOrActiveOrPrompt(
                 uri,
@@ -70,25 +71,15 @@ export class DiffDirectoryCommand extends ActiveEditorCommand {
             if (!args.ref1) {
                 args = { ...args };
 
-                const placeHolder = `Compare Working Tree to${GlyphChars.Ellipsis}`;
-
-                progressCancellation = BranchesAndTagsQuickPick.showProgress(placeHolder);
-
-                const [branches, tags] = await Promise.all([
-                    Container.git.getBranches(repoPath),
-                    Container.git.getTags(repoPath)
-                ]);
-
-                if (progressCancellation.token.isCancellationRequested) return undefined;
-
-                const pick = await BranchesAndTagsQuickPick.show(branches, tags, placeHolder, {
-                    progressCancellation: progressCancellation
-                });
+                const pick = await new BranchesAndTagsQuickPick(repoPath).show(
+                    `Compare Working Tree with${GlyphChars.Ellipsis}`,
+                    { allowCommitId: true }
+                );
                 if (pick === undefined) return undefined;
 
                 if (pick instanceof CommandQuickPickItem) return pick.execute();
 
-                args.ref1 = pick.name;
+                args.ref1 = pick.ref;
                 if (args.ref1 === undefined) return undefined;
             }
 
@@ -111,10 +102,7 @@ export class DiffDirectoryCommand extends ActiveEditorCommand {
             }
 
             Logger.error(ex, 'DiffDirectoryCommand');
-            return window.showErrorMessage(`Unable to open directory compare. See output channel for more details`);
-        }
-        finally {
-            progressCancellation && progressCancellation.cancel();
+            return Messages.showGenericErrorMessage('Unable to open directory compare');
         }
     }
 }

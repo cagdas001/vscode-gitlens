@@ -1,34 +1,39 @@
 'use strict';
-import { Disposable, ExtensionContext, languages, workspace } from 'vscode';
+import { commands, Disposable, ExtensionContext } from 'vscode';
 import { CommentsDecoratorController } from './annotations/commentsDecoratorController';
 import { FileAnnotationController } from './annotations/fileAnnotationController';
 import { LineAnnotationController } from './annotations/lineAnnotationController';
-import { CodeLensController } from './codelens/codeLensController';
-import { GitRevisionCodeLensProvider } from './codelens/gitRevisionCodeLensProvider';
-import { configuration, IConfig } from './configuration';
+import { GitCodeLensController } from './codelens/codeLensController';
+import { Commands, ToggleFileBlameCommandArgs } from './commands';
+import { AnnotationsToggleMode, Config, configuration } from './configuration';
 import { GitCommentService } from './gitCommentService';
-import { GitContentProvider } from './gitContentProvider';
-import { GitService } from './gitService';
+import { GitFileSystemProvider } from './git/fsProvider';
+import { GitService } from './git/gitService';
 import { LineHoverController } from './hovers/lineHoverController';
 import { Keyboard } from './keyboard';
 import { StatusBarController } from './statusbar/statusBarController';
 import { GitDocumentTracker } from './trackers/gitDocumentTracker';
 import { GitLineTracker } from './trackers/gitLineTracker';
-import { ExplorerCommands } from './views/explorerCommands';
-import { GitExplorer } from './views/gitExplorer';
-import { HistoryExplorer } from './views/historyExplorer';
-import { ResultsExplorer } from './views/resultsExplorer';
+import { CompareView } from './views/compareView';
+import { FileHistoryView } from './views/fileHistoryView';
+import { LineHistoryView } from './views/lineHistoryView';
+import { RepositoriesView } from './views/repositoriesView';
+import { SearchView } from './views/searchView';
+import { ViewCommands } from './views/viewCommands';
+import { VslsController } from './vsls/vsls';
 import { SearchEditor } from './webviews/searchEditor';
 import { SettingsEditor } from './webviews/settingsEditor';
 import { WelcomeEditor } from './webviews/welcomeEditor';
 
 export class Container {
-    static initialize(context: ExtensionContext, config: IConfig) {
+    static initialize(context: ExtensionContext, config: Config) {
         this._context = context;
         this._config = Container.applyMode(config);
 
         context.subscriptions.push((this._lineTracker = new GitLineTracker()));
         context.subscriptions.push((this._tracker = new GitDocumentTracker()));
+        context.subscriptions.push((this._vsls = new VslsController()));
+
         context.subscriptions.push((this._git = new GitService()));
         context.subscriptions.push((this._commentService = new GitCommentService()));
 
@@ -40,55 +45,98 @@ export class Container {
         context.subscriptions.push((this._lineAnnotationController = new LineAnnotationController()));
         context.subscriptions.push((this._lineHoverController = new LineHoverController()));
         context.subscriptions.push((this._statusBarController = new StatusBarController()));
-        context.subscriptions.push((this._codeLensController = new CodeLensController()));
+        context.subscriptions.push((this._codeLensController = new GitCodeLensController()));
         context.subscriptions.push((this._keyboard = new Keyboard()));
         context.subscriptions.push((this._settingsEditor = new SettingsEditor()));
         context.subscriptions.push((this._searchEditor = new SearchEditor()));
         context.subscriptions.push((this._welcomeEditor = new WelcomeEditor()));
 
-        if (config.gitExplorer.enabled) {
-            context.subscriptions.push((this._gitExplorer = new GitExplorer()));
+        if (config.views.compare.enabled) {
+            context.subscriptions.push((this._compareView = new CompareView()));
         }
         else {
             let disposable: Disposable;
             disposable = configuration.onDidChange(e => {
-                if (configuration.changed(e, configuration.name('gitExplorer')('enabled').value)) {
+                if (configuration.changed(e, configuration.name('views')('compare')('enabled').value)) {
                     disposable.dispose();
-                    context.subscriptions.push((this._gitExplorer = new GitExplorer()));
+                    context.subscriptions.push((this._compareView = new CompareView()));
                 }
             });
         }
 
-        if (config.historyExplorer.enabled) {
-            context.subscriptions.push((this._historyExplorer = new HistoryExplorer()));
+        if (config.views.fileHistory.enabled) {
+            context.subscriptions.push((this._fileHistoryView = new FileHistoryView()));
         }
         else {
             let disposable: Disposable;
             disposable = configuration.onDidChange(e => {
-                if (configuration.changed(e, configuration.name('historyExplorer')('enabled').value)) {
+                if (configuration.changed(e, configuration.name('views')('fileHistory')('enabled').value)) {
                     disposable.dispose();
-                    context.subscriptions.push((this._historyExplorer = new HistoryExplorer()));
+                    context.subscriptions.push((this._fileHistoryView = new FileHistoryView()));
                 }
             });
         }
 
-        context.subscriptions.push(
-            workspace.registerTextDocumentContentProvider(GitContentProvider.scheme, new GitContentProvider())
-        );
-        context.subscriptions.push(
-            languages.registerCodeLensProvider(GitRevisionCodeLensProvider.selector, new GitRevisionCodeLensProvider())
-        );
+        if (config.views.lineHistory.enabled) {
+            context.subscriptions.push((this._lineHistoryView = new LineHistoryView()));
+        }
+        else {
+            let disposable: Disposable;
+            disposable = configuration.onDidChange(e => {
+                if (configuration.changed(e, configuration.name('views')('lineHistory')('enabled').value)) {
+                    disposable.dispose();
+                    context.subscriptions.push((this._lineHistoryView = new LineHistoryView()));
+                }
+            });
+        }
+
+        if (config.views.repositories.enabled) {
+            context.subscriptions.push((this._repositoriesView = new RepositoriesView()));
+        }
+        else {
+            let disposable: Disposable;
+            disposable = configuration.onDidChange(e => {
+                if (configuration.changed(e, configuration.name('views')('repositories')('enabled').value)) {
+                    disposable.dispose();
+                    context.subscriptions.push((this._repositoriesView = new RepositoriesView()));
+                }
+            });
+        }
+
+        if (config.views.search.enabled) {
+            context.subscriptions.push((this._searchView = new SearchView()));
+        }
+        else {
+            let disposable: Disposable;
+            disposable = configuration.onDidChange(e => {
+                if (configuration.changed(e, configuration.name('views')('search')('enabled').value)) {
+                    disposable.dispose();
+                    context.subscriptions.push((this._searchView = new SearchView()));
+                }
+            });
+        }
+
+        context.subscriptions.push(new GitFileSystemProvider());
     }
 
-    private static _codeLensController: CodeLensController;
+    private static _codeLensController: GitCodeLensController;
     static get codeLens() {
         return this._codeLensController;
     }
 
-    private static _config: IConfig | undefined;
+    private static _compareView: CompareView | undefined;
+    static get compareView() {
+        if (this._compareView === undefined) {
+            this._context.subscriptions.push((this._compareView = new CompareView()));
+        }
+
+        return this._compareView;
+    }
+
+    private static _config: Config | undefined;
     static get config() {
         if (this._config === undefined) {
-            this._config = Container.applyMode(configuration.get<IConfig>());
+            this._config = Container.applyMode(configuration.get<Config>());
         }
         return this._config;
     }
@@ -98,23 +146,25 @@ export class Container {
         return this._context;
     }
 
-    private static _explorerCommands: ExplorerCommands | undefined;
-    static get explorerCommands() {
-        if (this._explorerCommands === undefined) {
-            this._context.subscriptions.push((this._explorerCommands = new ExplorerCommands()));
-        }
-        return this._explorerCommands;
-    }
-
     private static _fileAnnotationController: FileAnnotationController;
     static get fileAnnotations() {
         return this._fileAnnotationController;
+    }
+
+    private static _fileHistoryView: FileHistoryView | undefined;
+    static get fileHistoryView() {
+        if (this._fileHistoryView === undefined) {
+            this._context.subscriptions.push((this._fileHistoryView = new FileHistoryView()));
+        }
+
+        return this._fileHistoryView;
     }
 
     private static _git: GitService;
     static get git() {
         return this._git;
     }
+
 
     private static _commentService: GitCommentService;
     static get commentService() {
@@ -124,20 +174,6 @@ export class Container {
     private static _commentsDecoratorController: CommentsDecoratorController;
     static get commentsDecorator() {
         return this._commentsDecoratorController;
-    }
-
-    private static _gitExplorer: GitExplorer | undefined;
-    static get gitExplorer(): GitExplorer {
-        return this._gitExplorer!;
-    }
-
-    private static _historyExplorer: HistoryExplorer | undefined;
-    static get historyExplorer() {
-        if (this._historyExplorer === undefined) {
-            this._context.subscriptions.push((this._historyExplorer = new HistoryExplorer()));
-        }
-
-        return this._historyExplorer;
     }
 
     private static _keyboard: Keyboard;
@@ -150,6 +186,15 @@ export class Container {
         return this._lineAnnotationController;
     }
 
+    private static _lineHistoryView: LineHistoryView | undefined;
+    static get lineHistoryView() {
+        if (this._lineHistoryView === undefined) {
+            this._context.subscriptions.push((this._lineHistoryView = new LineHistoryView()));
+        }
+
+        return this._lineHistoryView;
+    }
+
     private static _lineHoverController: LineHoverController;
     static get lineHovers() {
         return this._lineHoverController;
@@ -160,13 +205,18 @@ export class Container {
         return this._lineTracker;
     }
 
-    private static _resultsExplorer: ResultsExplorer | undefined;
-    static get resultsExplorer() {
-        if (this._resultsExplorer === undefined) {
-            this._context.subscriptions.push((this._resultsExplorer = new ResultsExplorer()));
+    private static _repositoriesView: RepositoriesView | undefined;
+    static get repositoriesView(): RepositoriesView {
+        return this._repositoriesView!;
+    }
+
+    private static _searchView: SearchView | undefined;
+    static get searchView() {
+        if (this._searchView === undefined) {
+            this._context.subscriptions.push((this._searchView = new SearchView()));
         }
 
-        return this._resultsExplorer;
+        return this._searchView;
     }
 
     private static _settingsEditor: SettingsEditor;
@@ -189,6 +239,19 @@ export class Container {
         return this._tracker;
     }
 
+    private static _viewCommands: ViewCommands | undefined;
+    static get viewCommands() {
+        if (this._viewCommands === undefined) {
+            this._context.subscriptions.push((this._viewCommands = new ViewCommands()));
+        }
+        return this._viewCommands;
+    }
+
+    private static _vsls: VslsController;
+    static get vsls() {
+        return this._vsls;
+    }
+
     private static _welcomeEditor: WelcomeEditor;
     static get welcomeEditor() {
         return this._welcomeEditor;
@@ -198,29 +261,71 @@ export class Container {
         this._config = undefined;
     }
 
-    private static applyMode(config: IConfig) {
+    private static applyMode(config: Config) {
         if (!config.mode.active) return config;
 
         const mode = config.modes[config.mode.active];
         if (mode == null) return config;
 
+        if (mode.annotations != null) {
+            let command: string | undefined;
+            switch (mode.annotations) {
+                case 'blame':
+                    config.blame.toggleMode = AnnotationsToggleMode.Window;
+                    command = Commands.ToggleFileBlame;
+                    break;
+                case 'heatmap':
+                    config.heatmap.toggleMode = AnnotationsToggleMode.Window;
+                    command = Commands.ToggleFileHeatmap;
+                    break;
+                case 'recentChanges':
+                    config.recentChanges.toggleMode = AnnotationsToggleMode.Window;
+                    command = Commands.ToggleFileRecentChanges;
+                    break;
+            }
+
+            if (command !== undefined) {
+                // Make sure to delay the execution by a bit so that the configuration changes get propegated first
+                setTimeout(
+                    () =>
+                        commands.executeCommand(command!, {
+                            on: true
+                        } as ToggleFileBlameCommandArgs),
+                    50
+                );
+            }
+        }
+
         if (mode.codeLens != null) {
             config.codeLens.enabled = mode.codeLens;
         }
+
         if (mode.currentLine != null) {
             config.currentLine.enabled = mode.currentLine;
         }
-        if (mode.explorers != null) {
-            config.gitExplorer.enabled = mode.explorers;
-        }
-        if (mode.explorers != null) {
-            config.historyExplorer.enabled = mode.explorers;
-        }
+
         if (mode.hovers != null) {
             config.hovers.enabled = mode.hovers;
         }
+
         if (mode.statusBar != null) {
             config.statusBar.enabled = mode.statusBar;
+        }
+
+        if (mode.views != null) {
+            config.views.compare.enabled = mode.views;
+        }
+        if (mode.views != null) {
+            config.views.fileHistory.enabled = mode.views;
+        }
+        if (mode.views != null) {
+            config.views.lineHistory.enabled = mode.views;
+        }
+        if (mode.views != null) {
+            config.views.repositories.enabled = mode.views;
+        }
+        if (mode.views != null) {
+            config.views.search.enabled = mode.views;
         }
 
         return config;

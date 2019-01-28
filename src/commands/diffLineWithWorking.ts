@@ -1,10 +1,10 @@
 'use strict';
-import { commands, TextDocumentShowOptions, TextEditor, Uri, window } from 'vscode';
+import { commands, TextDocumentShowOptions, TextEditor, Uri } from 'vscode';
 import { Container } from '../container';
-import { GitCommit, GitService, GitUri } from '../gitService';
+import { GitCommit, GitService, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
-import { ActiveEditorCommand, Commands, getCommandUri } from './common';
+import { ActiveEditorCommand, command, Commands, getCommandUri } from './common';
 import { DiffWithCommandArgs } from './diffWith';
 
 export interface DiffLineWithWorkingCommandArgs {
@@ -14,6 +14,7 @@ export interface DiffLineWithWorkingCommandArgs {
     showOptions?: TextDocumentShowOptions;
 }
 
+@command()
 export class DiffLineWithWorkingCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.DiffLineWithWorking);
@@ -63,7 +64,7 @@ export class DiffLineWithWorkingCommand extends ActiveEditorCommand {
             }
             catch (ex) {
                 Logger.error(ex, 'DiffLineWithWorkingCommand', `getBlameForLine(${blameline})`);
-                return window.showErrorMessage(`Unable to open compare. See output channel for more details`);
+                return Messages.showGenericErrorMessage('Unable to open compare');
             }
         }
 
@@ -75,7 +76,7 @@ export class DiffLineWithWorkingCommand extends ActiveEditorCommand {
             },
             rhs: {
                 sha: '',
-                uri: args.commit.uri
+                uri: args.commit.workingUri
             },
             line: args.line,
             showOptions: args.showOptions

@@ -1,9 +1,9 @@
 'use strict';
 import { CancellationTokenSource, QuickPickOptions, window } from 'vscode';
-import { Commands, ShowCommitSearchCommandArgs, ShowQuickBranchHistoryCommandArgs } from '../commands';
+import { Commands, ShowQuickBranchHistoryCommandArgs } from '../commands';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitLog, GitUri, RemoteResource } from '../gitService';
+import { GitLog, GitUri, RemoteResourceType } from '../git/gitService';
 import { KeyNoopCommand } from '../keyboard';
 import { Iterables, Strings } from '../system';
 import {
@@ -65,35 +65,13 @@ export class BranchHistoryQuickPick {
                 new OpenRemotesCommandQuickPickItem(
                     remotes,
                     {
-                        type: 'branch',
-                        branch
-                    } as RemoteResource,
+                        type: RemoteResourceType.Branch,
+                        branch: branch
+                    },
                     currentCommand
                 )
             );
         }
-
-        items.splice(
-            0,
-            0,
-            new CommandQuickPickItem(
-                {
-                    label: `$(search) Show Commit Search`,
-                    description: `${Strings.pad(
-                        GlyphChars.Dash,
-                        2,
-                        3
-                    )} search for commits by message, author, files, or commit id`
-                },
-                Commands.ShowCommitSearch,
-                [
-                    GitUri.fromRepoPath(log.repoPath),
-                    {
-                        goBackCommand: currentCommand
-                    } as ShowCommitSearchCommandArgs
-                ]
-            )
-        );
 
         let previousPageCommand: CommandQuickPickItem | undefined = undefined;
 

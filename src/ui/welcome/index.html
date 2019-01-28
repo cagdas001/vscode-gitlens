@@ -1,1338 +1,1046 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+    </head>
 
-<head>
-    <meta charset="utf-8">
-</head>
-
-<body class="preload">
-    <div class="container">
-        <div class="content">
-            <header>
-                <a class="header__link" title="Learn more about GitLens" href="http://gitlens.amod.io">
-                    <div class="header__logo">
-                        <img class="image__logo" src="{{root}}/images/gitlens-icon.png" />
-                        <div>
-                            <h1>GitLens</h1>
-                            <p class="header__subtitle">Git supercharged</p>
+    <body class="preload">
+        <!-- <canvas class="snow"></canvas>
+        <div class="snow__trigger">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 125">
+                <path
+                    fill="#b21a18"
+                    d="M31.25 23.64C45.96 13.15 70.42 11.19 80.7 29.1c3.1 5.4 5.18 11.4 6.86 17.37 1.16 4.1 4.48 12.42.08 15.67-2.96 2.18-10.78 3.95-22.16 3.95s-23.17-2.3-25.32-7.87c-1.02-2.65 1.26-5.5.97-8.31-.63-6.2-7.5-5.97-10.86-3.75-4.58 3-5.17 6.66-9.64 10-1.5 1.12-3.6 1.93-5.22.98-1.5-.9-1.96-2.88-1.96-4.63 0-12.08 10.88-23.94 17.8-28.87z"
+                />
+                <circle fill="#C5C5C5" cx="13.45" cy="69.81" r="8.45" />
+                <path
+                    fill="#C5C5C5"
+                    d="M64.66 84.31c-17.4 0-35.17-1.38-28.93-25.06.37 13.72 29 12.57 29 12.57s30.12.28 29.88-11.27C97.69 85.43 82.06 84.3 64.66 84.3z"
+                />
+            </svg>
+        </div> -->
+        <div class="container">
+            <div class="content">
+                <header>
+                    <a class="header__link" title="Learn more about GitLens" href="https://gitlens.amod.io">
+                        <div class="header__logo">
+                            <!-- prettier-ignore-attribute src -->
+                            <img class="image__logo" src="{{root}}/images/gitlens-icon.png" />
+                            <div>
+                                <h1>Git<span class="header__logo--highlight">Lens</span></h1>
+                                <p class="header__subtitle">Git supercharged</p>
+                            </div>
                         </div>
+                    </a>
+                    <p class="header__blurb">
+                        GitLens <b>supercharges</b> the Git capabilities built into Visual Studio Code. It helps you to
+                        <b>visualize code authorship</b> at a glance via Git blame annotations and code lens,
+                        <b>seamlessly navigate and explore</b> Git repositories, <b>gain valuable insights</b> via
+                        powerful comparison commands, and so much more.
+                    </p>
+                </header>
+
+                <div class="about">
+                    <p>
+                        <a class="bold" title="Learn more about GitLens" href="https://gitlens.amod.io">GitLens</a> is
+                        an
+                        <a class="bold" title="Open GitLens on GitHub" href="https://github.com/eamodio/vscode-gitlens"
+                            >open-source</a
+                        >
+                        extension for Visual Studio Code created by
+                        <a class="bold" title="Learn more about Eric" href="https://www.amod.io/?utm_source=gitlens"
+                            >Eric Amodio</a
+                        >.
+                    </p>
+                    <p>
+                        GitLens simply helps you <b>better understand code</b>. Quickly glimpse into whom, why, and when
+                        a line or code block was changed. Jump back through history to <b>gain further insights</b> as
+                        to how and why the code evolved. Effortlessly explore the history and evolution of a codebase.
+                        Dive right in and see how GitLens can help!
+                    </p>
+                    <p>
+                        While GitLens is <b>powerful and feature rich</b>, it is also highly customizable to meet your
+                        specific needs &mdash; find code lens intrusive or the current line blame annotation distracting
+                        &mdash; no problem, it is quick and easy to turn them off or change how they behave via the
+                        built-in
+                        <a class="command" title="Open GitLens Settings" href="command:gitlens.showSettingsPage"
+                            >GitLens Settings</a
+                        >
+                        editor, an <b>interactive editor</b> covering many of GitLens' powerful settings. While for more
+                        advanced customizations, refer to the
+                        <a
+                            class="bold"
+                            title="Open the GitLens docs"
+                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#gitlens-settings-"
+                            >GitLens docs</a
+                        >
+                        and edit your
+                        <a class="command" title="Open User Settings" href="command:workbench.action.openGlobalSettings"
+                            >User Settings</a
+                        >.
+                    </p>
+                </div>
+
+                <div class="cta__container center">
+                    <div class="cta__secondary">
+                        <a
+                            class="button button--flat button--big"
+                            title="Support GitLens"
+                            href="https://gitlens.amod.io/#support-gitlens"
+                            >Support GitLens &#x2764;</a
+                        >
                     </div>
-                </a>
-                <p class="header__blurb">
-                    GitLens
-                    <b>supercharges</b> the Git capabilities built into Visual Studio Code. It helps you to
-                    <b>visualize code authorship</b> at a glance via Git blame annotations and code lens,
-                    <b>seamlessly navigate and explore</b> Git repositories,
-                    <b>gain valuable insights</b> via powerful comparison commands, and so much more.
-                </p>
-            </header>
-
-            <div class="cta__container center">
-                <div class="cta__primary">
-                    <a class="button button--flat-primary button--big" title="Open GitLens Settings" href="command:gitlens.showSettingsPage">Configure
-                        GitLens
-                    </a>
-                    <p>Don't miss how easy it is to configure GitLens!</p>
+                    <div class="cta__primary">
+                        <a
+                            class="button button--flat-primary button--big"
+                            title="Open GitLens Settings"
+                            href="command:gitlens.showSettingsPage"
+                            >Configure GitLens</a
+                        >
+                        <p>Don't miss how easy it is to configure GitLens!</p>
+                    </div>
                 </div>
-                <div class="cta__secondary">
-                    <a class="button button--flat button--big" title="Support GitLens" href="#support-gitlens">Support GitLens
-                        &#x2764;
-                    </a>
-                </div>
-            </div>
 
-            <section id="whats-new" class="changelog">
-                <h2 class="changelog__title">What's New in
-                    <span class="changelog__version">GitLens 8</span> &#x1F389;&#x1F388;</h2>
-                <div class="changelog__scroller">
-                    <ul class="changelog__list">
-                        <li>
-                            <span class="changelog__badge changelog__badge--version">8.5</span>
-                            <span class="changelog__date">JULY &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds an all-new
-                            <i>GitLens</i> sidebar view to contain the
-                            <i>GitLens</i>,
-                            <i>GitLens File History</i>, and
-                            <i>GitLens Results</i> explorers
-                            <div class="changelog__details changelog__details--list">
-                                <p>The new view is enabled by default, but can easily be configured back to the existing
-                                    locations via the
-                                    <i>GitLens</i> interactive settings editor
-                                </p>
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds emoji support, e.g. :smile: in commit messages will now be 😃 &mdash; closes
-                            <a title="Open Issue #429" href="https://github.com/eamodio/vscode-gitlens/issues/429">#429</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Compare with Selected</i> and
-                            <i>Select for Compare</i> commands to file nodes in the
-                            <i>GitLens</i>,
-                            <i>GitLens File History</i>, and
-                            <i>GitLens Results</i> explorers &mdash; closes
-                            <a title="Open Issue #446" href="https://github.com/eamodio/vscode-gitlens/issues/446">#446</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds tag annotations to the tag tooltips in the
-                            <i>GitLens</i> explorer &mdash; closes
-                            <a title="Open Issue #431" href="https://github.com/eamodio/vscode-gitlens/issues/431">#431</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Choose from Branch or Tag History...</i> command to the quick pick menu shown by the
-                            <i>Show File History...</i> command (
-                            <code>gitlens.showQuickFileHistory</code>) &mdash; closes
-                            <a title="Open Issue #316" href="https://github.com/eamodio/vscode-gitlens/issues/316">#316</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds the
-                            <i>Compare File with Revision...
-                            </i> command (
-                            <code>gitlens.diffWithRevision</code>) as an alternate (
-                            <code>alt+click</code>) for the
-                            <i>Compare File with Previous Revision</i> command in the editor toolbar
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Checkout Commit (via Terminal)</i> command (
-                            <code>gitlens.terminalCheckoutCommit</code>) to commit node(s) of the <i>GitLens</i> explorer
-                            &mdash; closes
-                            <a title="Open Issue #463" href="https://github.com/eamodio/vscode-gitlens/issues/463">#463</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds a
-                            <code>gitlens.hovers.avatars</code> setting to specify whether to show avatar images in hovers
-                            &mdash; closes
-                            <a title="Open Issue #432" href="https://github.com/eamodio/vscode-gitlens/issues/432">#432</a>
-                            thanks to
-                            <a title="Pull Request #441" href="https://github.com/eamodio/vscode-gitlens/pull/441">PR #441</a>
-                            by
-                            <a title="Segev Finer (@segevfiner)" href="https://github.com/segevfiner">Segev Finer</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <code>gitlens.historyExplorer.avatars</code> setting to specify whether to show avatar images
-                            instead of status icons in the
-                            <i>GitLens File History</i> explorer &mdash; allows for an independent value from the other explorers
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds the
-                            <code>gitlens.hovers.avatars</code> setting to the
-                            <i>GitLens</i> interactive settings editor to specify whether to show avatar images in hovers
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds <i>Copy Remote File Url to Clipboard</i> (<code>gitlens.copyRemoteFileUrlToClipboard</code>)
-                            command &mdash; copies the remote url of the current file and line to the clipboard &mdash; closes
-                            <a title="Open Issue #467" href="https://github.com/eamodio/vscode-gitlens/issues/467">#467</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Improves performance of providing blame annotations, especially for large files (a ~33% improvement on some files)
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Changes commit search by sha to jump directly to the commit (if one is found), rather than having to click through to the
-                            commit
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames the
-                            <i>GitLens History</i> explorer to
-                            <i>GitLens File History </i> explorer for better clarity
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Changes the
-                            <i>GitLens File History</i> explorer to always show the full file history even when reviewing
-                            revisions
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Changes the behavior of and renames the
-                            <i>Show Branches and Tags</i> command and on the quick pick menu shown by the
-                            <i>Compare File with Revision...</i> command (
-                            <code>gitlens.diffWithRevision</code>) to
-                            <i>Choose from Branch or Tag History...</i>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Changes <i>Rebase to Commit (via Terminal)</i> command (<code>gitlens.terminalRebaseCommit</code>)
-                            to apply to all commit node(s) of the <i>GitLens</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Changes <i>Reset to Commit (via Terminal)</i> command (<code>gitlens.terminalResetCommit</code>)
-                            to apply to all commit node(s) of the <i>GitLens</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Removes
-                            <code>gitlens:activeIsTracked</code>,
-                            <code>gitlens:activeIsBlameable</code>,
-                            <code>gitlens:activeIsRevision</code>, and
-                            <code>gitlens:activeHasRemotes</code> contexts and consolidates them into
-                            <code>gitlens:activeFileStatus</code> for better performance and UX
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #436" href="https://github.com/eamodio/vscode-gitlens/issues/436">#436</a>
-                            &mdash; Copy to clipboard not working
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #442" href="https://github.com/eamodio/vscode-gitlens/issues/442">#442</a>
-                            &mdash; GitLens File History fails if name (or path) starts with
-                            <code>-</code>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #440" href="https://github.com/eamodio/vscode-gitlens/issues/440">#440</a>
-                            &mdash; Searching for commits with an empty query yields to no results anymore
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #444" href="https://github.com/eamodio/vscode-gitlens/issues/444">#444</a>
-                            &mdash; GitLens custom viewlet icon slightly larger than standard
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #437" href="https://github.com/eamodio/vscode-gitlens/issues/437">#437</a>
-                            &mdash; Remove
-                            <code>--first-parent</code> from git commands to show file history from merged in
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #252" href="https://github.com/eamodio/vscode-gitlens/issues/252">#252</a>
-                            &mdash; Cannot read property 'push' of undefined
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #451" href="https://github.com/eamodio/vscode-gitlens/issues/451">#451</a>
-                            &mdash; "apply Changes" has discarded all my changes
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #449" href="https://github.com/eamodio/vscode-gitlens/issues/449">#449</a>
-                            &mdash; Stop hiding explorers by default when in Zen mode
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #454" href="https://github.com/eamodio/vscode-gitlens/issues/454">#454</a>
-                            &mdash; Search for string returns merge commits (unlike raw `git log -S`)
-                            <div class="changelog__details"></div>
-                        </li>
-
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #462" href="https://github.com/eamodio/vscode-gitlens/issues/462">#462</a>
-                            &mdash; Source Control shortcut on macOS (⌃⇧G) shouldn't be overridden
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #457" href="https://github.com/eamodio/vscode-gitlens/issues/457">#457</a>
-                            &mdash; Displays the wrong username (You) &mdash; thanks to
-                            <a title="Pull Request #460" href="https://github.com/eamodio/vscode-gitlens/pull/460">PR #460</a>
-                            by
-                            <a title="Zyck (@qzyse2017)" href="https://github.com/qzyse2017">Zyck</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #459" href="https://github.com/eamodio/vscode-gitlens/issues/459">#459</a>
-                            &mdash; File blame annotation text overflow with letter spacing setting
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #471" href="https://github.com/eamodio/vscode-gitlens/issues/471">#471</a>
-                            &mdash; Don't use Ctrl+Alt+[character] as a shortcut
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #478" href="https://github.com/eamodio/vscode-gitlens/issues/478">#478</a>
-                            &mdash; <code>suppressShowKeyBindingsNotice</code> gets saved even when it is not required
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #468" href="https://github.com/eamodio/vscode-gitlens/issues/468">#468</a>
-                            &mdash; Commit history for detached HEAD doesn't work properly
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #477" href="https://github.com/eamodio/vscode-gitlens/issues/477">#477</a>
-                            &mdash; Can't load any GitLens features or UI
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #482" href="https://github.com/eamodio/vscode-gitlens/issues/482">#482</a>
-                            &mdash; UI displays "undefined" in results panel when comparing
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issues with GitLens Welcome and the interactive settings editor with light themes
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where commands in the editor toolbar would flash unnecessarily when navigating history or switching tabs
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where the
-                            <i>Compare File with Previous Revision </i> command wouldn't work properly when the file had
-                            been renamed in some cases
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where the
-                            <i>Compare File with Next Revision </i> command wouldn't work properly when the file had been
-                            renamed in some cases
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where changed files count was wrong when the branch was behind the upstream
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where the
-                            <i>GitLens File History</i> explorer wasn't being updated automatically for working changes
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where the
-                            <i>Compare File with * Revision</i> commands in the editor toolbar would show and hide too often
-                            because of insignificant focus changes
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where the scope box would be empty when there was no workspace open in the interactive settings editor
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where GitLens saves a couple settings with default values into user settings (rather than just removing the setting)
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue showing changes with untracked stashed files
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue showing changes with working file when the file has been renamed
-                            <div class="changelog__details"></div>
-                        </li>
-
-                        <li class="changelog__list-item--version">
-                            <span class="changelog__badge changelog__badge--version">8.4</span>
-                            <span class="changelog__date">JUNE &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds completely revamped heatmap annotations
-                            <div class="changelog__details changelog__details--list">
-                                <p>The indicator's color, now customizable, will either be hot or cold based on the age of
-                                    the most recent change (cold after 90 days by default) &mdash; closes
-                                    <a title="Open Issue #419" href="https://github.com/eamodio/vscode-gitlens/issues/419">#419</a>
-                                </p>
-                                <img class="changelog__image" src="{{root}}/images/cl-heatmap-cold.png" alt="Cold Heatmap" />
-                                <p>The indicator's brightness ranges from bright (newer) to dim (older) based on the relative
-                                    age, which is calculated from the median age of all the changes in the file
-                                </p>
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds new branch history node under the
-                            <i>Repository Status</i> node in the
-                            <i>GitLens</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds GitLab and Visual Studio Team Services icons to the remote nodes in the
-                            <i>GitLens</i> explorer &mdash; thanks to
-                            <a title="Pull Request #421" href="https://github.com/eamodio/vscode-gitlens/pull/421">PR #421</a>
-                            by
-                            <a title="Maxim Pekurin (@pmaxim25)" href="https://github.com/pmaxim25">Maxim Pekurin</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <code>gitlens.heatmap.ageThreshold</code> setting to specify the age of the most recent change
-                            (in days) after which the gutter heatmap annotations will be cold rather than hot (i.e. will
-                            use
-                            <code>gitlens.heatmap.coldColor</code> instead of
-                            <code>gitlens.heatmap.hotColor</code>)
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <code>gitlens.heatmap.coldColor</code> setting to specify the base color of the gutter heatmap
-                            annotations when the most recent change is older (cold) than the
-                            <code>gitlens.heatmap.ageThreshold</code> setting
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <code>gitlens.heatmap.hotColor</code> setting to specify the base color of the gutter heatmap
-                            annotations when the most recent change is newer (hot) than the
-                            <code>gitlens.heatmap.ageThreshold</code> setting
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #400" href="https://github.com/eamodio/vscode-gitlens/issues/400">#400</a>
-                            &mdash; GitLens logging to debug console when debugging different extension
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #409" href="https://github.com/eamodio/vscode-gitlens/issues/409">#409</a>
-                            &mdash; Literal $(ellipsis) inserted into commit QuickPick menu entry placeholder text
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #415" href="https://github.com/eamodio/vscode-gitlens/issues/415">#415</a>
-                            &mdash; Branch names get mangled by color escapes &mdash; thanks to
-                            <a title="Pull Request #416" href="https://github.com/eamodio/vscode-gitlens/pull/416">PR #416</a>
-                            by
-                            <a title="Roy Ivy III (@rivy)" href="https://github.com/rivy">Roy Ivy III</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue with insiders builds because of the new
-                            <code>SymbolInformation</code> API changes (see
-                            <a title="Open Microsoft/vscode Issue #34968" href="https://github.com/Microsoft/vscode/issues/34968">Microsoft/vscode#34968</a>)
-                            <div class="changelog__details"></div>
-                        </li>
-
-                        <li class="changelog__list-item--version">
-                            <span class="changelog__badge changelog__badge--version">8.3</span>
-                            <span class="changelog__date">MAY &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds the ability to control where the
-                            <i>GitLens</i>,
-                            <i>GitLens File History</i>, and
-                            <i>GitLens Results</i> explorers are shown 🎉 &mdash; closes
-                            <a title="Open Issue #213" href="https://github.com/eamodio/vscode-gitlens/issues/213">#213</a>,
-                            <a title="Open Issue #377" href="https://github.com/eamodio/vscode-gitlens/issues/377">#377</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds user-defined modes for quickly toggling between sets of settings
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-mode-switch.png" alt="Mode Switch" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Switch Mode</i> command (
-                            <code>gitlens.switchMode</code>) to quickly switch the active GitLens mode
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Toggle Zen Mode</i> command (
-                            <code>gitlens.toggleZenMode</code>) to toggle Zen mode which disables many visual features
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Toggle Review Mode</i> command (
-                            <code>gitlens.toggleReviewMode</code>) to toggle Review mode which enables many visual features
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds modes settings (
-                            <code>gitlens.mode.*</code>) to the interactive settings editor
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-modes-settings.png" alt="Mode Settings" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds an icon for the
-                            <i>Compare File with Previous Revision</i> command (
-                            <code>gitlens.diffWithPrevious</code>) and moves it into the editor toolbar
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds an icon for the
-                            <i>Compare File with Next Revision</i> command (
-                            <code>gitlens.diffWithNext</code>) and moves it into the editor toolbar
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds menu settings (
-                            <code>gitlens.menus.*</code>) to the interactive settings editor
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-menu-settings.png" alt="Menu Settings" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds a display mode dropdown at the top of the interactive settings editor to reduce complexity
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-settings-mode.png" alt="Settings Mode" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds (re-adds) support for handling single files &mdash; closes
-                            <a title="Open Issue #321" href="https://github.com/eamodio/vscode-gitlens/issues/321">#321</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds a tree layout option to tags in the
-                            <i>GitLens</i> explorer &mdash; closes
-                            <a title="Open Issue #358" href="https://github.com/eamodio/vscode-gitlens/issues/358">#358</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Show GitLens Explorer</i> command (
-                            <code>gitlens.showGitExplorer</code>) &mdash; shows/expands the
-                            <i>GitLens</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Show File History Explorer</i> command (
-                            <code>gitlens.showHistoryExplorer</code>) &mdash; shows/expands the
-                            <i>GitLens File History</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Show Results Explorer</i> command (
-                            <code>gitlens.showResultsExplorer</code>) &mdash; shows/expands the
-                            <i>GitLens Results</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <i>Close Repository</i> command (
-                            <code>gitlens.explorers.closeRepository</code>) to repository and repository status nodes in
-                            the
-                            <i>GitLens</i> explorer &mdash; closes (hides) the repository in the
-                            <i>GitLens</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds clipboard support for Linux without requiring any external dependencies &mdash; thanks to
-                            <a title="Pull Request #394" href="https://github.com/eamodio/vscode-gitlens/pull/394">PR #394</a>
-                            by
-                            <a title="Cédric Malard (@cmalard)" href="https://github.com/cmalard">Cédric Malard</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds a select branch quick pick menu to the
-                            <i>Open File in Remote</i> command (
-                            <code>gitlens.openFileInRemote</code>) when the current branch has no upstream tracking branch
-                            &mdash; closes
-                            <a title="Open Issue #209" href="https://github.com/eamodio/vscode-gitlens/issues/209">#209</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Showing results in the
-                            <i>GitLens Results</i> explorer now properly shows the explorer first
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames
-                            <i>Compare Line Revision with Previous</i> command to
-                            <i>Compare Commit with Previous</i> for better consistency with other commands
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames
-                            <i>Compare Line Revision with Working File</i> command to
-                            <i>Compare Commit with Working File</i> for better consistency with other commands
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames
-                            <i>Show Commit File Details</i> command to
-                            <i>Show Commit Details</i> for better consistency with other commands
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Reworks GitLens menu contributions and configuration &mdash; see menu settings above
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames the
-                            <code>gitlens.advanced.menus</code> setting to
-                            <code>gitlens.menus</code>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Uses the new Webview API for better interactions and behavior with the interactive settings editor and welcome page
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Moves the
-                            <i>Open Working File</i> command (
-                            <code>gitlens.openWorkingFile</code>) to the right of the
-                            <i>Compare File with * Revision</i> commands in the editor toolbar
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #366" href="https://github.com/eamodio/vscode-gitlens/issues/366">#366</a>
-                            &mdash; Running a GitLens command from a keybinding fails
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #155" href="https://github.com/eamodio/vscode-gitlens/issues/155">#155</a>
-                            &mdash; Navigating file diffs with
-                            <code>alt+,</code> gets stuck
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #359" href="https://github.com/eamodio/vscode-gitlens/issues/359">#359</a>
-                            &mdash; Show changes of an added file in the first commit
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #372" href="https://github.com/eamodio/vscode-gitlens/issues/372">#372</a>
-                            &mdash; Wrong URL to VSTS work item when using hash work item id in commit
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #362" href="https://github.com/eamodio/vscode-gitlens/issues/362">#362</a>
-                            &mdash; Too many code lenses in postcss files
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #381" href="https://github.com/eamodio/vscode-gitlens/issues/381">#381</a>
-                            &mdash; Can't stash single files with older versions of Git
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #384" href="https://github.com/eamodio/vscode-gitlens/issues/384">#384</a>
-                            &mdash; Absolute dates not always honored in
-                            <i>GitLens Results</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #385" href="https://github.com/eamodio/vscode-gitlens/issues/385">#385</a>
-                            &mdash; Wrong git command to delete remote branch
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #400" href="https://github.com/eamodio/vscode-gitlens/issues/400">#400</a>
-                            &mdash; Reset TO commit also resets chosen one
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #399" href="https://github.com/eamodio/vscode-gitlens/issues/399">#399</a>
-                            &mdash; "Open x in Remote" commands aren't always available
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #397" href="https://github.com/eamodio/vscode-gitlens/issues/397">#397</a>
-                            &mdash; Error while opening the gitlens view using
-                            <code>Open View</code> command
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #391" href="https://github.com/eamodio/vscode-gitlens/issues/391">#391</a>
-                            &mdash; GitLens adds some settings in settings.json
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #343" href="https://github.com/eamodio/vscode-gitlens/issues/343">#343</a>
-                            &mdash; Can't show blame when VSCode starts on branch without upstream &mdash; thanks to
-                            <a title="Pull Request #390" href="https://github.com/eamodio/vscode-gitlens/pull/390">PR #390</a>
-                            by
-                            <a title="ryenus (@ryenus)" href="https://github.com/ryenus">ryenus</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #392" href="https://github.com/eamodio/vscode-gitlens/issues/392">#392</a>
-                            &mdash; unable to contribute if default script shell is sh &mdash; thanks to
-                            <a title="Pull Request #393" href="https://github.com/eamodio/vscode-gitlens/pull/393">PR #393</a>
-                            by
-                            <a title="Cédric Malard (@cmalard)" href="https://github.com/cmalard">Cédric Malard</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes more instances of
-                            <a title="Open Issue #295" href="https://github.com/eamodio/vscode-gitlens/issues/295">#295</a>
-                            and
-                            <a title="Open Issue #318" href="https://github.com/eamodio/vscode-gitlens/issues/318">#318</a>
-                            &mdash; Any error encountered during the search for repositories could cause GitLens to die
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue with the
-                            <code>chorded</code> keyboard shortcut for the
-                            <i>Compare File with Previous Revision</i> command (
-                            <code>gitlens.diffWithPreviousInDiff</code>) &mdash; from
-                            <a title="Open Issue #395" href="https://github.com/eamodio/vscode-gitlens/issues/395">#395</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <i>bronze</i> typo thanks to
-                            <a title="Pull Request #361" href="https://github.com/eamodio/vscode-gitlens/pull/361">PR #361</a>
-                            by
-                            <a title="Cory Forsyth (@bantic)" href="https://github.com/bantic">Cory Forsyth</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <i>individually</i> typo thanks to
-                            <a title="Pull Request #364" href="https://github.com/eamodio/vscode-gitlens/pull/364">PR #364</a>
-                            by
-                            <a title="Brett Cannon (@brettcannon)" href="https://github.com/brettcannon">Brett Cannon</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue where comparing previous revision during a merge/rebase conflict failed to show the correct contents
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issue with the current line blame toggle not working when current line blame starts disabled
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes various issues when not on a branch
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes many issues where commands wouldn't work if the active file wasn't part of an open repository &mdash; now GitLens will
-                            try to find the best repository otherwise it will open a repository quick pick menu if there
-                            is more than one
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes the
-                            <i>Open Working File</i> command (
-                            <code>gitlens.openWorkingFile</code>) not always showing in the editor toolbar when appropriate
-                            <div class="changelog__details"></div>
-                        </li>
-
-                        <li class="changelog__list-item--version">
-                            <span class="changelog__badge changelog__badge--version">8.2</span>
-                            <span class="changelog__date">APRIL &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds new stand-alone
-                            <i>GitLens File History</i> explorer to visualize the history of the current file &mdash; undocked
-                            version of the
-                            <i>GitLens</i> explorer history view
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-history-explorer.png" alt="GitLens File History explorer" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds richer tooltips to the
-                            <i>GitLens</i> and
-                            <i>GitLens Results</i> explorers, and richer working tree and upstream status to the
-                            <i>GitLens</i> explorer
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-rich-tooltips.png" alt="Richer tooltips and working tree and upstream status"
+                <div class="section-groups">
+                    <div class="section-group__content">
+                        <section id="whats-new" class="section-group-section changelog">
+                            <h2 class="changelog__title">
+                                What's New in <span class="changelog__version">GitLens 9</span>
+                            </h2>
+                            <p class="changelog__hint">
+                                See the
+                                <a
+                                    title="Open Release Notes"
+                                    href="https://github.com/eamodio/vscode-gitlens/blob/master/CHANGELOG.md"
+                                    ><b>release notes</b></a
+                                >
+                                for the full set of changes
+                            </p>
+                            <div class="settings-group__setting settings-group__setting--small nowrap ml-1">
+                                <input
+                                    class="setting"
+                                    id="showWhatsNewAfterUpgrades"
+                                    name="showWhatsNewAfterUpgrades"
+                                    type="checkbox"
                                 />
+                                <label for="showWhatsNewAfterUpgrades"
+                                    >Show <b>What's New</b> after upgrading to new feature releases</label
+                                >
                             </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds an indicator to the
-                            <i>GitLens</i> explorer's branch history to mark the synchronization point between the local
-                            and remote branch (if available)
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-branch-upstream-indicator.png" alt="Branch upstream indicator" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds ability to easily switch between relative and absolute dates via the
-                            <code>gitlens.defaultDateStyle</code> settings &mdash; closes
-                            <a title="Open Issue #312" href="https://github.com/eamodio/vscode-gitlens/issues/312">#312</a>
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-general-settings.png" alt="General settings" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds annotation format settings (
-                            <code>gitlens.*.format</code>) to the interactive settings editor
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-annotation-format.png" alt="Annotation format settings" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds new
-                            <code>gitlens.currentLine.scrollable</code> setting to specify whether the current line blame
-                            annotation can be scrolled into view when it is outside the viewport &mdash; closes
-                            <a title="Open Issue #149" href="https://github.com/eamodio/vscode-gitlens/issues/149">#149</a>,
-                            <a title="Open Issue #290" href="https://github.com/eamodio/vscode-gitlens/issues/290">#290</a>,
-                            <a title="Open Issue #265" href="https://github.com/eamodio/vscode-gitlens/issues/265">#265</a>
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-current-line-scrollable.png" alt="Allow scrolling to annotation setting"
-                                />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds
-                            <code>gitlens.statusBar.reduceFlicker</code> setting to the interactive settings editor
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-status-bar-reduce-flashing.png" alt="Reduce status bar flashing setting"
-                                />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #314" href="https://github.com/eamodio/vscode-gitlens/issues/314">#314</a>
-                            &mdash; Toggle line annotation doesn't work properly
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #310" href="https://github.com/eamodio/vscode-gitlens/issues/310">#310</a>
-                            &mdash; "via Terminal" commands need quoting around work directory
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issues with the active repository in the
-                            <i>GitLens</i> explorer failed to update properly
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issues with
-                            <i>Open File</i>,
-                            <i>Open Revision</i>, and
-                            <i>Show File History</i> commands and images and other binary files
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issues preventing nodes in the
-                            <i>GitLens</i> explorer from expanding properly in certain cases
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes issues when refreshing nodes in the
-                            <i>GitLens Results</i> explorer
-                            <div class="changelog__details"></div>
-                        </li>
 
-                        <li class="changelog__list-item--version">
-                            <span class="changelog__badge changelog__badge--version">8.1</span>
-                            <span class="changelog__date">MARCH &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds automatic issue linking to Bitbucket, GitHub, GitLab, and Visual Studio Team Services for commit messages in hovers
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-issue-linking.png" alt="Issue linking in commit messages" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds support to toggle annotations for each file individually or for all files at once &mdash; closes
-                            <a title="Open Issue #289" href="https://github.com/eamodio/vscode-gitlens/issues/289">#289</a>
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-annotations-toggle.png" alt="Annotations toggle" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds icons to remotes in the
-                            <i>GitLens</i> explorer based on the remote service provider
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds multi-cursor support to current line annotations &mdash; closes
-                            <a title="Open Issue #291" href="https://github.com/eamodio/vscode-gitlens/issues/291">#291</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Renames
-                            <i>Compare Selected Ancestor with Working Tree</i> command to
-                            <i>Compare Ancestry with Working Tree</i> and removes the need to select a branch first, since
-                            all compares are performed with the working tree &mdash; closes
-                            <a title="Open Issue #279" href="https://github.com/eamodio/vscode-gitlens/issues/279">#279</a>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Fixes
-                            <a title="Open Issue #294" href="https://github.com/eamodio/vscode-gitlens/issues/294">#294</a>
-                            &mdash; Keyboard shortcuts will now default to
-                            <i>chorded</i> to avoid conflicts. Only affects new installs or if you remove the
-                            <span class="setting-key">gitlens.keymap</span> setting
-                            <div class="changelog__details"></div>
-                        </li>
-
-                        <li class="changelog__list-item--version">
-                            <span class="changelog__badge changelog__badge--version">8.0</span>
-                            <span class="changelog__date">FEBRUARY &nbsp;2018</span>
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Brand new welcome experience &mdash; you're looking at it
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Brand new interactive
-                            <a class="command" title="Open GitLens Settings" href="command:gitlens.showSettingsPage">settings
-                                editor
-                            </a> &mdash; GitLens is easier than ever to customize to suit your needs
-                            <div class="changelog__details">
-                                <img class="changelog__image" src="{{root}}/images/cl-settings.png" />
-                            </div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Brand new
-                            <a title="Learn more about GitLens" href="http://gitlens.amod.io">website</a> &mdash; check it
-                            out!
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--added">NEW</span>
-                            Adds a tree layout option to branches in the
-                            <i>GitLens</i> explorer &mdash; thanks to
-                            <a title="Yukai Huang (@Yukaii)" href="https://github.com/Yukaii">Yukai Huang</a>!
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--changed">IMPROVED</span>
-                            Reworked settings &mdash; clearer, simpler settings
-                            <div class="changelog__details"></div>
-                        </li>
-                        <li>
-                            <span class="changelog__badge changelog__badge--fixed">FIXED</span>
-                            Previous settings will now be migrated properly &mdash; sorry everyone &#x1F622;
-                        </li>
-                    </ul>
-                </div>
-                <p class="changelog__hint">
-                    See the
-                    <a title="Open Release Notes" href="https://github.com/eamodio/vscode-gitlens/blob/master/CHANGELOG.md">release
-                        notes
-                    </a> for the full set of changes
-                </p>
-
-                <div class="settings-group__setting nowrap ml-1">
-                    <input class="setting" id="showWhatsNewAfterUpgrades" name="showWhatsNewAfterUpgrades" type="checkbox" />
-                    <label for="showWhatsNewAfterUpgrades">Show What's New after upgrading to new feature releases</label>
-                </div>
-            </section>
-
-            <div class="page-header">
-                <h2 class="page-header__title">Welcome</h2>
-                <p class="page-header__subtitle">Thank you for taking the time to try GitLens!</p>
-            </div>
-
-            <div class="section-groups">
-                <div class="section-group__content">
-                    <div class="section-group-section">
-                        <p>
-                            <a class="bold" title="Learn more about GitLens" href="http://gitlens.amod.io">GitLens</a> is
-                            an
-                            <a class="bold" title="Open GitLens on GitHub" href="https://github.com/eamodio/vscode-gitlens">open-source</a>
-                            extension for Visual Studio Code created by
-                            <a class="bold" title="Learn more about Eric" href="http://www.amod.io/?utm_source=gitlens">Eric
-                                Amodio
-                            </a>. While GitLens is generously offered to everyone free of charge, if you find it useful please
-                            consider
-                            <a class="bold" title="Support GitLens" href="#support-gitlens">supporting</a> it.
-                        </p>
-                        <p>
-                            GitLens simply helps you understand code better. Quickly glimpse into whom, why, and when a line or code block was changed.
-                            Jump back through history to gain further insights as to how and why the code evolved. Explore
-                            the history and evolution of a codebase. Dive right in and see how GitLens can help!
-                        </p>
-                        <p>Here are just some of the features that GitLens provides,
-                            <ul class="section-list">
-                                <li>a
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gitlens-explorer">
-                                        <i>GitLens</i> explorer</a> to navigate and explore repositories</li>
-                                <li>a
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gitlens-file-history-explorer">
-                                        <i>GitLens File History</i> explorer</a> to navigate and explore file histories
-                                </li>
-                                <li>an on-demand
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gitlens-results-explorer">
-                                        <i>GitLens Results</i> explorer</a> to navigate and explore commits, histories, and
-                                    searches, or visualize comparisons between branches, tags, commits, and more</li>
-                                <li>authorship
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#code-lens">code
-                                        lens
-                                    </a> showing the most recent commit and # of authors to the top of files and/or on code
-                                    blocks
-                                </li>
-                                <li>an unobtrusive
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#current-line-blame">current
-                                        line blame</a> annotation at the end of the line</li>
-                                <li>on-demand
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gutter-blame">gutter
-                                        blame
-                                    </a> annotations, including a heatmap, for the whole file
-                                </li>
-                                <li>on-demand
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gutter-heatmap">gutter
-                                        heatmap
-                                    </a> annotations to show how recently lines were changed, relative to all the other changes
-                                    in the file and to now (hot vs. cold)
-                                </li>
-                                <li>detailed blame information accessible via
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#hovers">hovers</a>
-                                </li>
-                                <li>on-demand
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#recent-changes">recent
-                                        changes
-                                    </a> annotations to highlight lines changed by the most recent commit</li>
-                                <li>a
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#status-bar-blame">status
-                                        bar blame</a> annotation showing author and date for the current line
+                            <ul class="changelog__list">
+                                <li>
+                                    <span class="changelog__badge changelog__badge--version">9.4</span>
+                                    <span class="changelog__date">JAN &nbsp;2019</span>
+                                    <div class="changelog__details"></div>
                                 </li>
                                 <li>
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#commit-search">commit
-                                        search
-                                    </a> &mdash; by message, author, filename, commit id, or code changes</li>
-                                <li>many powerful commands for exploring commits and histories, comparing and navigating
-                                    revisions, stash access, repository status, etc</li>
-                                <li>and so much
-                                    <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#features">more</a>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds pinning of
+                                    comparisons in the <i>Compare</i> view &mdash; pinned comparisons will persist
+                                    across reloads
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds an
+                                    <i>Open in Terminal</i> command to repositories in the <i>Repositories</i> view
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #606"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/606"
+                                        >#606</a
+                                    >
+                                    &mdash; ID for xxx is already registered?!
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #607"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/607"
+                                        >#607</a
+                                    >
+                                    &mdash; Open file in Remote Doesn't URL encode
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #608"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/608"
+                                        >#608</a
+                                    >
+                                    &mdash; Add an option to change the abbreviated commit SHA length &mdash; thanks to
+                                    <a
+                                        title="Open Issue #611"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/611"
+                                        >PR #611</a
+                                    >
+                                    by Skybbles // L5474 (<a title="@Luxray5474" href="https://github.com/Luxray5474"
+                                        >@Luxray5474</a
+                                    >)
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #613"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/613"
+                                        >#613</a
+                                    >
+                                    &mdash; Change Copy Remote URL to Clipboard to always copy a permalink (e.g.
+                                    revision link)
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+
+                                <li class="changelog__list-item--version">
+                                    <span class="changelog__badge changelog__badge--version">9.3</span>
+                                    <span class="changelog__date">JAN &nbsp;2019</span>
+                                    <div class="changelog__details"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds favoriting of
+                                    repositories and branches in the <i>Repositories</i> view to allow for better
+                                    (user-customized) sorting
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds the ability to
+                                    specify a default remote selection when using the <i>Open * in Remote</i> commands
+                                    &mdash; closes
+                                    <a
+                                        title="Open Issue #504"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/504"
+                                        >#504</a
+                                    >
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            Adds <i>Set as Default</i> and <i>Unset as Default</i> commands to remotes
+                                            in the <i>Repositories</i> view
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds the ability to
+                                    turn on file annotations (blame, heatmap, and recent changes) via user-defined modes
+                                    &mdash; closes
+                                    <a
+                                        title="Open Issue #542"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/542"
+                                        >#542</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds the ability to
+                                    stage and unstage files by folders in the <i>Repositories</i> view &mdash; closes
+                                    <a
+                                        title="Open Issue #599"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/599"
+                                        >#599</a
+                                    >
+                                    thanks to
+                                    <a
+                                        title="Open Issue #600"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/600"
+                                        >PR #600</a
+                                    >
+                                    by Tony Brix (<a title="@UziTech" href="https://github.com/UziTech">@UziTech</a>)
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            Adds <i>Stage All Changes</i> and <i>Unstage All Changes</i> commands to
+                                            folders in the <i>Repositories</i> view
+                                        </p>
+                                    </div>
+                                </li>
+
+                                <li class="changelog__list-item--version">
+                                    <span class="changelog__badge changelog__badge--version">9.2</span>
+                                    <span class="changelog__date">DEC &nbsp;2018</span>
+                                    <div class="changelog__details"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Improves the commit
+                                    search experience
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            Remembers and restores the last commit search string. Adds a
+                                            <i>Search Commits</i> command to the search results inline toolbar. Reopens
+                                            the commit search when clicking on a search results without results
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a
+                                    <i>Collapse</i> command to the toolbars of the <i>Compare</i> and
+                                    <i>Search Commits</i> views &mdash; closes
+                                    <a
+                                        title="Open Issue #383"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/383"
+                                        >#383</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds support for
+                                    the
+                                    <a
+                                        title="Open VS Code 1.30 Release Notes"
+                                        href="https://code.visualstudio.com/updates/v1_30#_custom-views"
+                                        >new ability</a
+                                    >
+                                    to have descriptions on view nodes &mdash; provides a much cleaner layout
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a
+                                    <code>gitlens.views.repositories.compact</code> setting to specify whether to show
+                                    the <i>Repositories</i> view in a compact display density &mdash; closes
+                                    <a
+                                        title="Open Issue #571"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/571"
+                                        >#571</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #559"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/559"
+                                        >#559</a
+                                    >
+                                    &mdash; Html encoding issues with the empty state of the <i>Compare</i> and
+                                    <i>Search Commits</i> views
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #574"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/574"
+                                        >#574</a
+                                    >
+                                    &mdash; Apply Changes not working because of whitespace conflicts
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #589"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/589"
+                                        >#589</a
+                                    >
+                                    &mdash; Bad revision for stash
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+
+                                <li class="changelog__list-item--version">
+                                    <span class="changelog__badge changelog__badge--version">9.1</span>
+                                    <span class="changelog__date">DEC &nbsp;2018</span>
+                                    <div class="changelog__details"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds more detailed
+                                    branch tracking status (if available) to the <b>Branches</b> list in the
+                                    <i>Repositories</i> view
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            <b>* Commits Behind</b> &mdash; quickly see and explore the specific commits
+                                            behind the upstream (i.e. commits that haven't been pulled)
+                                        </p>
+                                        <p>
+                                            <b>* Commits Ahead</b> &mdash; quickly see and explore the specific commits
+                                            ahead of the upstream (i.e. commits that haven't been pushed)
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds the date and a
+                                    changes indicator (+x ~x -x) to stashed changes in GitLens views
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds the changed
+                                    file status (added, modified, renamed, deleted, etc) to the tooltip of each revision
+                                    in the <i>File History</i> and <i>Line History</i> views
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds Git extended
+                                    regular expression support to commit searches
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds control over
+                                    the menu commands contributed to the Source Control side bar to the GitLens
+                                    interactive settings editor
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--changed">IMPROVED</span>Changes the
+                                    <i>Show Revision Details</i> command to show file commit details
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--changed">IMPROVED</span>Changes the
+                                    <code>alt</code>-command of the <i>Toggle File Blame Annotations</i> command to be
+                                    the <i>Toggle File Heatmap Annotations</i> command
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--changed">IMPROVED</span>Changes
+                                    searching for commits by message to be case-insensitive
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes an issue
+                                    where gravatar icons would sometimes not show up &mdash; thanks to
+                                    <a
+                                        title="Open Issue #579"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/579"
+                                        >PR #579</a
+                                    >
+                                    by sgtwilko (<a title="@sgtwilko" href="https://github.com/sgtwilko">@sgtwilko</a>)
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a title="Open Issue #33" href="https://github.com/eamodio/vscode-gitlens/issues/33"
+                                        >#33</a
+                                    >
+                                    &mdash; Commit messages can causes markdown formatting in hovers
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #501"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/501"
+                                        >#501</a
+                                    >
+                                    &mdash; Azure DevOps ssh remotes aren't handled properly
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #523"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/523"
+                                        >#523</a
+                                    >
+                                    &mdash; File History doesn't show all commits on file
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #552"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/552"
+                                        >#552</a
+                                    >
+                                    &mdash; "Open Line Changes with..." doesn't work for renamed files
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #566"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/566"
+                                        >#566</a
+                                    >
+                                    &mdash; History error with UNC
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #572"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/572"
+                                        >#572</a
+                                    >
+                                    &mdash; Explorer can't expand some branch folders
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #584"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/584"
+                                        >#584</a
+                                    >
+                                    &mdash; Unexpected results when opening diff from file history
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #588"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/588"
+                                        >#588</a
+                                    >
+                                    &mdash; Output channel doesn't exist with <code>gitlens.outputLevel</code> default
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+
+                                <li class="changelog__list-item--version">
+                                    <span class="changelog__badge changelog__badge--version">9.0</span>
+                                    <span class="changelog__date">DEC &nbsp;2018</span>
+                                    <div class="changelog__details"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds GitLens over
+                                    Visual Studio Live Share
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            Live Share guests will now have read-only access to GitLens' features,
+                                            provided both the host and guest have GitLens installed
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a new Git
+                                    virtual file system provider for the <code>gitlens:</code> scheme &mdash; closes
+                                    <a
+                                        title="Open Issue #430"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/430"
+                                        >#430</a
+                                    >
+                                    <div class="changelog__details changelog__details--list">
+                                        <p>
+                                            Replaces GitLens' internal handling of file revisions, which allows for
+                                            better performance, as well as avoiding the use of temp files. It also
+                                            provides a much better experience when dealing with file encodings, images,
+                                            etc.
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds an
+                                    <i>Explore the Repository from Here</i> command which opens a virtual workspace
+                                    folder (using the new Git virtual file system provider) for the repository at the
+                                    specified point in time (commit, branch, tag, etc) &mdash; closes
+                                    <a
+                                        title="Open Issue #398"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/398"
+                                        >#398</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a new
+                                    <a
+                                        title="Jump to the Repositories view docs"
+                                        href="https://github.com/eamodio/vscode-gitlens/tree/master/#repositories-view-"
+                                        ><i>Repositories</i> view</a
+                                    >, formerly the <i>GitLens</i> view, to visualize, navigate, and explore Git
+                                    repositories &mdash; closes
+                                    <a
+                                        title="Open Issue #456"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/456"
+                                        >#456</a
+                                    >,
+                                    <a
+                                        title="Open Issue #470"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/470"
+                                        >#470</a
+                                    >,
+                                    <a
+                                        title="Open Issue #494"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/494"
+                                        >#494</a
+                                    >
+                                    <div class="changelog__details changelog__details--list">
+                                        <a
+                                            class="changelog__image-link"
+                                            title="Jump to the Repositories view docs"
+                                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#repositories-view-"
+                                        >
+                                            <img
+                                                class="changelog__image"
+                                                src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/docs/view-repositories.png"
+                                            />
+                                        </a>
+                                        <p>
+                                            Provides a cleaner information-rich view of your opened repositories, more
+                                            git commands (fetch, push, pull, checkout, stage, unstage, etc), better
+                                            visibility and accessibility of existing features, and
+                                            <a
+                                                title="Jump to the Repositories view docs"
+                                                href="https://github.com/eamodio/vscode-gitlens/tree/master/#repositories-view-"
+                                                >more</a
+                                            >
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a new
+                                    <a
+                                        title="Jump to the File History view docs"
+                                        href="https://github.com/eamodio/vscode-gitlens/tree/master/#file-history-view-"
+                                        ><i>File History</i> view</a
+                                    >, formerly the <i>History</i> view, to visualize, navigate, and explore the
+                                    revision history of the current file
+                                    <div class="changelog__details changelog__details--list">
+                                        <a
+                                            class="changelog__image-link"
+                                            title="Jump to the File History view docs"
+                                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#file-history-view-"
+                                        >
+                                            <img
+                                                class="changelog__image"
+                                                src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/docs/view-file-history.png"
+                                            />
+                                        </a>
+                                        <p>
+                                            Provides similar features to the former <i>History</i> view as well as
+                                            quickly toggling file tracking on and off, changing the base (branch, tag,
+                                            commit, etc) of the file's history, and
+                                            <a
+                                                title="Jump to the File History view docs"
+                                                href="https://github.com/eamodio/vscode-gitlens/tree/master/#file-history-view-"
+                                                >more</a
+                                            >
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds an all-new
+                                    <a
+                                        title="Jump to the Line History view docs"
+                                        href="https://github.com/eamodio/vscode-gitlens/tree/master/#line-history-view-"
+                                        ><i>Line History</i> view</a
+                                    >
+                                    to visualize, navigate, and explore the revision history of the selected lines of
+                                    current file &mdash; closes
+                                    <a
+                                        title="Open Issue #354"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/354"
+                                        >#354</a
+                                    >
+                                    <div class="changelog__details changelog__details--list">
+                                        <a
+                                            class="changelog__image-link"
+                                            title="Jump to the Line History view docs"
+                                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#line-history-view-"
+                                        >
+                                            <img
+                                                class="changelog__image"
+                                                src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/docs/view-line-history.png"
+                                            />
+                                        </a>
+                                        <p>
+                                            Provides similar features to the <i>File History</i> view including quickly
+                                            toggling line tracking on and off, changing the base (branch, tag, commit,
+                                            etc) of the selected lines' history, and
+                                            <a
+                                                title="Jump to the Line History view docs"
+                                                href="https://github.com/eamodio/vscode-gitlens/tree/master/#line-history-view-"
+                                                >more</a
+                                            >
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds an all-new
+                                    <a
+                                        title="Jump to the Search Commits view docs"
+                                        href="https://github.com/eamodio/vscode-gitlens/tree/master/#search-commits-view-"
+                                        ><i>Search Commits</i> view</a
+                                    >
+                                    to search and explore commit histories by message, author, files, id, etc &mdash;
+                                    closes
+                                    <a
+                                        title="Open Issue #455"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/455"
+                                        >#455</a
+                                    >
+                                    <div class="changelog__details changelog__details--list">
+                                        <a
+                                            class="changelog__image-link"
+                                            title="Jump to the Search Commits view docs"
+                                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#search-commits-view-"
+                                        >
+                                            <img
+                                                class="changelog__image"
+                                                src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/docs/view-search.png"
+                                            />
+                                        </a>
+                                        <p>
+                                            Provides somewhat similar features to the former <i>Results</i> view as well
+                                            as it is now a persistent view, makes it easier to start a commit search,
+                                            and
+                                            <a
+                                                title="Jump to the Search Commits view docs"
+                                                href="https://github.com/eamodio/vscode-gitlens/tree/master/#search-commits-view-"
+                                                >more</a
+                                            >
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds an all-new
+                                    <a
+                                        title="Jump to the Compare view docs"
+                                        href="https://github.com/eamodio/vscode-gitlens/tree/master/#compare-view-"
+                                        ><i>Compare</i> view</a
+                                    >
+                                    to visualize comparisons between branches, tags, commits, and more
+                                    <div class="changelog__details changelog__details--list">
+                                        <a
+                                            class="changelog__image-link"
+                                            title="Jump to the Compare view docs"
+                                            href="https://github.com/eamodio/vscode-gitlens/tree/master/#compare-view-"
+                                        >
+                                            <img
+                                                class="changelog__image"
+                                                src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/docs/view-search.png"
+                                            />
+                                        </a>
+                                        <p>
+                                            Provides somewhat similar and powerful features to the former
+                                            <i>Results</i> view as well as it is now a persistent view, makes it easier
+                                            to start a comparison, and
+                                            <a
+                                                title="Jump to the Compare view docs"
+                                                href="https://github.com/eamodio/vscode-gitlens/tree/master/#compare-view-"
+                                                >more</a
+                                            >
+                                        </p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Reduces the
+                                    overhead of all GitLens views &mdash; GitLens now only tracks changes and updates
+                                    the views if they are visible, collapsed or hidden views should have almost zero
+                                    overhead
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds relative date
+                                    markers (<i>Less than a week ago</i>, <i>Over a week ago</i>,
+                                    <i>Over a month ago</i>, etc) to revision (commit) histories in GitLens views
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds branch and tag
+                                    tip markers to revision (commit) histories in GitLens views &mdash; closes
+                                    <a
+                                        title="Open Issue #560"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/560"
+                                        >#560</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a changes
+                                    indicator (+x ~x -x) to commits in GitLens views &mdash; closes
+                                    <a
+                                        title="Open Issue #493"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/493"
+                                        >#493</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds comparisons to
+                                    commit ids, by prefixing with a <code>#</code>, in addition to branches and tags
+                                    &mdash; closes
+                                    <a
+                                        title="Open Issue #535"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/535"
+                                        >#535</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds support for
+                                    git mailmap &mdash; closes
+                                    <a
+                                        title="Open Issue #388"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/388"
+                                        >#388</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds support for
+                                    Azure DevOps (formerly VSTS) remotes &mdash; closes
+                                    <a
+                                        title="Open Issue #501"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/501"
+                                        >#501</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds better
+                                    detection of on-prem BitBucket and GitLab remotes &mdash; closes
+                                    <a
+                                        title="Open Issue #214"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/214"
+                                        >#214</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds some missing
+                                    gitmojis &mdash; thanks to
+                                    <a
+                                        title="Open Issue #510"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/510"
+                                        >PR #510</a
+                                    >
+                                    by Loris Bettazza (<a title="@Pustur" href="https://github.com/Pustur">@Pustur</a>)
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--added">NEW</span>Adds a
+                                    <i>Directory Compare All Changes</i> to open the configured git difftool to compare
+                                    the working directory with HEAD &mdash; closes
+                                    <a
+                                        title="Open Issue #569"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/569"
+                                        >#569</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--changed">IMPROVED</span>Changes the
+                                    sorting of branch, tags, and files in GitLens views to be a natural sort
+                                    <a
+                                        title="Open Issue #547"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/547"
+                                        >#547</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--changed">IMPROVED</span>Changes the
+                                    <i>Apply Changes</i> command to truly apply only the patch of the specified change
+                                    <a
+                                        title="Open Issue #539"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/539"
+                                        >#539</a
+                                    >
+                                    <div class="changelog__details changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #405"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/405"
+                                        >#405</a
+                                    >
+                                    &mdash; Secondary, blank repository appears repeatedly in Repositories view
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #430"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/430"
+                                        >#430</a
+                                    >
+                                    &mdash; File revisions can end up being parsed by language servers (causing errors
+                                    and warnings, etc)
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #496"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/496"
+                                        >#496</a
+                                    >
+                                    &mdash; Short hash length doesn't match git's default length
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #503"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/503"
+                                        >#503</a
+                                    >
+                                    &mdash; Open Changes (with difftool) opens one difftool window per changed file
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #507"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/507"
+                                        >#507</a
+                                    >
+                                    &mdash; Restrict commit message size
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #527"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/527"
+                                        >#527</a
+                                    >
+                                    &mdash; GitLens icon flashes on startup
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #533"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/533"
+                                        >#533</a
+                                    >
+                                    &mdash; Some descriptions not using markdown properly in Settings GUI
+                                    <div class="changelog__details  changelog__details--list"></div>
+                                </li>
+                                <li>
+                                    <span class="changelog__badge changelog__badge--fixed">FIXED</span>Fixes
+                                    <a
+                                        title="Open Issue #544"
+                                        href="https://github.com/eamodio/vscode-gitlens/issues/544"
+                                        >#544</a
+                                    >
+                                    &mdash; Some commit messages have one letter missing
+                                    <div class="changelog__details  changelog__details--list"></div>
                                 </li>
                             </ul>
-                        </p>
-                        <p class="mb-2">GitLens is powerful, feature rich, and highly customizable to meet your specific
-                            needs &mdash; find code lens intrusive or the current line blame annotation distracting &mdash;
-                            no problem, it is quick and easy to turn them off or change how they behave via the built-in
-                            <a class="command" title="Open GitLens Settings" href="command:gitlens.showSettingsPage">GitLens
-                                Settings
-                            </a> editor, an interactive editor covering many of GitLens' powerful settings. While for more
-                            advanced customizations, refer to the
-                            <a title="Open the GitLens docs" href="https://github.com/eamodio/vscode-gitlens/#gitlens-settings">GitLens
-                                settings docs</a>
-                            and edit your
-                            <a class="command" title="Open User Settings" href="command:workbench.action.openGlobalSettings">User
-                                Settings
-                            </a>.
-                        </p>
+                        </section>
                     </div>
-                    <div id="support-gitlens" class="section-group-section">
-                        <h2>Support GitLens</h2>
-                        <p>
-                            While GitLens is generously offered to everyone free of charge, if you find it useful please consider supporting it.
-                        </p>
-                        <p>
-                            I've been building GitLens in my spare time
-                            <sup>
-                                <a title="nights and weekends, i.e. trading sleep for time">1</a>
-                            </sup> for almost 2 years now. From its very humble beginnings, GitLens has grown wildly beyond
-                            my expectations &mdash; in both its reach as well as its demands on my time and attention. While
-                            I enjoy giving my free time and attention to GitLens' development and growth, I would like to
-                            do even more.
-                        </p>
-                        <h3>Show Your Support &#x2764;</h3>
-                        <p>
-                            To my incredible backers &mdash; thank you so much for your contributions. I am truly humbled by your generosity and support.
-                            Please know that your support plays a important role in helping me realize GitLens' potential
-                            in making developer's lives easier.
-                        </p>
-                        <p>
-                            If you'd like to join them in supporting GitLens, please consider the following &mdash; feel free to choose more than one.
-                            &#x1F609;
-                        </p>
-                        <div class="button-group button-group--support-gitlens">
-                            <a class="button button--flat-primary" title="Become a sponsor on Patreon" href="https://www.patreon.com/eamodio" target="_blank">Become
-                                a Sponsor</a>
-                            <a class="button button--flat-primary" title="One-time donations via PayPal" href="https://www.paypal.me/eamodio" target="_blank">Donations
-                                via PayPal</a>
-                            <a class="button button--flat-primary" title="One-time donations via Cash App" href="https://cash.me/$eamodio" target="_blank">Donations
-                                via Cash App</a>
-                        </div>
-                        <ul class="section-list">
-                            <li>
-                                <a title="Write a review" href="https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens#review-details">Write
-                                    a Review</a>
-                            </li>
-                            <li>
-                                <a title="Star or fork me on GitHub" href="https://github.com/eamodio/vscode-gitlens">Star
-                                    or Fork me on GitHub</a>
-                            </li>
-                            <li>
-                                <a title="Follow me on Twitter" href="https://twitter.com/eamodio">Follow me on Twitter</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="section-group-section">
-                        <div class="section-group-section__cols">
-                            <div class="section-group-section__col">
-                                <h2>Customize</h2>
-                                <button class="list-button" data-href="command:gitlens.showSettingsPage">
-                                    <h3 class="list-button__title">Open GitLens Settings</h3>
-                                    <span class="list-button__detail" title="Customize common GitLens settings in an easy to use editor">Customize
-                                        common GitLens settings in an easy to use editor</span>
-                                </button>
-                                <button class="list-button" data-href="command:workbench.action.openGlobalSettings">
-                                    <h3 class="list-button__title">Open User Settings</h3>
-                                    <span class="list-button__detail" title="Find and customize all GitLens settings">Search
-                                        for
-                                        <b>
-                                            <i>gitlens</i>
-                                        </b> to find and customize all GitLens settings</span>
-                                </button>
-                                <button class="list-button" data-href="command:workbench.action.openGlobalKeybindings">
-                                    <h3 class="list-button__title">Open Keyboard Shortcuts</h3>
-                                    <span class="list-button__detail" title="Find and customize GitLens keyboard shortcuts">Search
-                                        for
-                                        <b>
-                                            <i>gitlens</i>
-                                        </b> to find and customize GitLens keyboard shortcuts</span>
-                                </button>
+                    <div class="section-group__sidebar section-group__sidebar--welcome">
+                        <div class="sidebar-group">
+                            <h2>Sponsors</h2>
+                            <a
+                                title="Try CodeStream"
+                                href="https://codestream.com/?utm_source=gitlens_welcome&utm_medium=banner&utm_campaign=gitlens"
+                            >
+                                <!-- prettier-ignore-attribute src -->
+                                <img
+                                    class="sponsor__image light"
+                                    src="{{root}}/images/sponsors/codestream-vertical-light.png"
+                                    alt="CodeStream Logo"
+                                />
+                                <!-- prettier-ignore-attribute src -->
+                                <img
+                                    class="sponsor__image dark"
+                                    src="{{root}}/images/sponsors/codestream-vertical-dark.png"
+                                    alt="CodeStream Logo"
+                                />
+                            </a>
+                            <p class="sponsor__tag">
+                                CodeStream enables continuous code review by putting team chat in VS Code. Save
+                                discussions about code with your code. Integrates w/Slack.
+                            </p>
+
+                            <h2 name="#support-gitlens">Show Your Support &nbsp;&#x2764;</h2>
+                            <p class="sidebar-group__message">
+                                While GitLens is generously offered to everyone free of charge, if you find it useful,
+                                please consider supporting it.
+                            </p>
+                            <div class="button-group button-group--support-gitlens-sidebar">
+                                <a
+                                    class="button button--flat-primary"
+                                    title="Become a sponsor on Patreon"
+                                    href="https://www.patreon.com/eamodio"
+                                    target="_blank"
+                                    >Become a Sponsor</a
+                                >
+                                <a
+                                    class="button button--flat-primary"
+                                    title="Donate via PayPal"
+                                    href="https://www.paypal.me/eamodio"
+                                    target="_blank"
+                                    >Donate via PayPal</a
+                                >
+                                <a
+                                    class="button button--flat-primary"
+                                    title="Donate via Cash App"
+                                    href="https://cash.me/$eamodio"
+                                    target="_blank"
+                                    >Donate via Cash App</a
+                                >
                             </div>
-                            <div class="section-group-section__col">
-                                <h2>Learn</h2>
-                                <button class="list-button" data-href="command:workbench.action.showCommands">
-                                    <h3 class="list-button__title">Find and run all GitLens commands</h3>
-                                    <span class="list-button__detail" title="Find and access GitLens commands from the Command Palette">Search
-                                        for
-                                        <b>
-                                            <i>gitlens</i>
-                                        </b> to find and access GitLens commands from the Command Palette</span>
-                                </button>
-                            </div>
+                            <ul>
+                                <li>
+                                    <a
+                                        title="Write a review"
+                                        href="https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens#review-details"
+                                        >Write a Review</a
+                                    >
+                                </li>
+                                <li>
+                                    <a
+                                        title="Star or fork me on GitHub"
+                                        href="https://github.com/eamodio/vscode-gitlens"
+                                        >Star or Fork me on GitHub</a
+                                    >
+                                </li>
+                                <li>
+                                    <a title="Follow me on Twitter" href="https://twitter.com/eamodio"
+                                        >Follow me on Twitter</a
+                                    >
+                                </li>
+                            </ul>
                         </div>
-                    </div>
-                </div>
-                <div class="section-group__sidebar section-group__sidebar--welcome">
-                    <div class="sidebar-group">
-                        <h2>Show Your Support</h2>
-                        <div class="button-group button-group--support-gitlens-sidebar">
-                            <a class="button button--flat-primary" title="Become a sponsor on Patreon" href="https://www.patreon.com/eamodio" target="_blank">Become
-                                a Sponsor</a>
-                            <a class="button button--flat-primary" title="One-time donations via PayPal" href="https://www.paypal.me/eamodio" target="_blank">Donations
-                                via PayPal</a>
-                            <a class="button button--flat-primary" title="One-time donations via Cash App" href="https://cash.me/$eamodio" target="_blank">Donations
-                                via Cash App</a>
+                        <div class="sidebar-group">
+                            <h2>Help</h2>
+                            <ul>
+                                <li>
+                                    <a href="https://github.com/eamodio/vscode-gitlens/blob/master/README.md"
+                                        >Documentation</a
+                                    >
+                                </li>
+                                <li>
+                                    <a href="https://github.com/eamodio/vscode-gitlens/issues"
+                                        >Questions &amp; Issues</a
+                                    >
+                                </li>
+                                <li>
+                                    <a
+                                        href="https://join.slack.com/t/vscode-dev-community/shared_invite/enQtMjIxOTgxNDE3NzM0LWU5M2ZiZDU1YjBlMzdlZjA2YjBjYzRhYTM5NTgzMTAxMjdiNWU0ZmQzYWI3MWU5N2Q1YjBiYmQ4MzY0NDE1MzY"
+                                        >Slack</a
+                                    >
+                                    <small> &nbsp;&nbsp;&mdash;&nbsp; #gitlens channel</small>
+                                </li>
+                                <li>
+                                    <a href="https://twitter.com/eamodio">Twitter</a>
+                                    <small> &nbsp;&nbsp;&mdash;&nbsp; #gitlens hashtag</small>
+                                </li>
+                            </ul>
                         </div>
-                        <ul>
-                            <li>
-                                <a title="Write a review" href="https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens#review-details">Write
-                                    a Review</a>
-                            </li>
-                            <li>
-                                <a title="Star or fork me on GitHub" href="https://github.com/eamodio/vscode-gitlens">Star
-                                    or Fork me on GitHub</a>
-                            </li>
-                            <li>
-                                <a title="Follow me on Twitter" href="https://twitter.com/eamodio">Follow me on Twitter</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="sidebar-group">
-                        <h2>Help</h2>
-                        <ul>
-                            <li>
-                                <a href="https://github.com/eamodio/vscode-gitlens/blob/master/README.md">Documentation</a>
-                            </li>
-                            <li>
-                                <a href="https://github.com/eamodio/vscode-gitlens/issues">Questions &amp; Issues</a>
-                            </li>
-                            <li>
-                                <a href="https://join.slack.com/t/vscode-dev-community/shared_invite/enQtMjIxOTgxNDE3NzM0LWU5M2ZiZDU1YjBlMzdlZjA2YjBjYzRhYTM5NTgzMTAxMjdiNWU0ZmQzYWI3MWU5N2Q1YjBiYmQ4MzY0NDE1MzY">Slack</a>
-                                <small> &nbsp;&nbsp;&mdash;&nbsp; #gitlens channel</small>
-                            </li>
-                            <li>
-                                <a href="https://twitter.com/eamodio">Twitter</a>
-                                <small> &nbsp;&nbsp;&mdash;&nbsp; #gitlens hashtag</small>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="sidebar-group">
-                        <h2>Resources</h2>
-                        <ul>
-                            <li>
-                                <a href="http://gitlens.amod.io">Website</a>
-                            </li>
-                            <li>
-                                <a href="https://marketplace.visualstudio.com/items/eamodio.gitlens/changelog">Changelog</a>
-                            </li>
-                            <li>
-                                <a href="https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens">Marketplace</a>
-                            </li>
-                            <li>
-                                <a href="https://github.com/eamodio/vscode-gitlens">GitHub</a>
-                            </li>
-                            <li>
-                                <a href="https://marketplace.visualstudio.com/items/eamodio.gitlens/license">License</a>
-                            </li>
-                        </ul>
+                        <div class="sidebar-group">
+                            <h2>Resources</h2>
+                            <ul>
+                                <li><a href="https://gitlens.amod.io">Website</a></li>
+                                <li>
+                                    <a href="https://marketplace.visualstudio.com/items/eamodio.gitlens/changelog"
+                                        >Changelog</a
+                                    >
+                                </li>
+                                <li>
+                                    <a href="https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens"
+                                        >Marketplace</a
+                                    >
+                                </li>
+                                <li><a href="https://github.com/eamodio/vscode-gitlens">GitHub</a></li>
+                                <li>
+                                    <a href="https://marketplace.visualstudio.com/items/eamodio.gitlens/license"
+                                        >License</a
+                                    >
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <a id="commandRelay" style="display: none"></a>
-    <script type="text/javascript">
-        window.bootstrap = '{{bootstrap}}';
-    </script>
-</body>
-
+        <a id="commandRelay" style="display: none"></a>
+        <script type="text/javascript">
+            window.bootstrap = '{{bootstrap}}';
+        </script>
+    </body>
 </html>

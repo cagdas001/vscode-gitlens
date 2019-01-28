@@ -10,13 +10,13 @@ import {
     Uri,
     workspace
 } from 'vscode';
-import { CommandContext, extensionConfigName, setCommandContext } from './constants';
+import { extensionConfigName } from './constants';
 import { Container } from './container';
-import { clearGravatarCache } from './gitService';
+import { clearGravatarCache } from './git/gitService';
 import { Functions } from './system';
-import { IConfig, KeyMap } from './ui/config';
+import { Config } from './ui/config';
 
-const emptyConfig: any = new Proxy<any>({} as IConfig, {
+const emptyConfig: any = new Proxy<any>({} as Config, {
     get(target, propKey, receiver) {
         return emptyConfig;
     }
@@ -40,12 +40,18 @@ export class Configuration {
         this._configAffectedByMode = [
             `gitlens.${this.name('mode').value}`,
             `gitlens.${this.name('modes').value}`,
+            `gitlens.${this.name('blame')('toggleMode').value}`,
             `gitlens.${this.name('codeLens').value}`,
             `gitlens.${this.name('currentLine').value}`,
-            `gitlens.${this.name('gitExplorer').value}`,
-            `gitlens.${this.name('historyExplorer').value}`,
+            `gitlens.${this.name('heatmap')('toggleMode').value}`,
             `gitlens.${this.name('hovers').value}`,
-            `gitlens.${this.name('statusBar').value}`
+            `gitlens.${this.name('recentChanges')('toggleMode').value}`,
+            `gitlens.${this.name('statusBar').value}`,
+            `gitlens.${this.name('views')('compare').value}`,
+            `gitlens.${this.name('views')('fileHistory').value}`,
+            `gitlens.${this.name('views')('lineHistory').value}`,
+            `gitlens.${this.name('views')('repositories').value}`,
+            `gitlens.${this.name('views')('search').value}`
         ];
     }
 
@@ -56,11 +62,6 @@ export class Configuration {
 
         if (configuration.changed(e, configuration.name('defaultGravatarsStyle').value)) {
             clearGravatarCache();
-        }
-
-        const section = configuration.name('keymap').value;
-        if (configuration.changed(e, section)) {
-            setCommandContext(CommandContext.KeyMap, this.get<KeyMap>(section));
         }
 
         if (
@@ -84,7 +85,7 @@ export class Configuration {
     }
 
     readonly initializingChangeEvent: ConfigurationChangeEvent = {
-        affectsConfiguration: (section: string, resource?: Uri) => false
+        affectsConfiguration: (section: string, resource?: Uri) => true
     };
 
     get<T>(section?: string, resource?: Uri | null, defaultValue?: T) {
@@ -243,8 +244,8 @@ export class Configuration {
         }
     }
 
-    name<K extends keyof IConfig>(name: K) {
-        return Functions.propOf(emptyConfig as IConfig, name);
+    name<K extends keyof Config>(name: K) {
+        return Functions.propOf(emptyConfig as Config, name);
     }
 
     update(section: string, value: any, target: ConfigurationTarget, resource?: Uri | null) {

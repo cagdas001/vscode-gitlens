@@ -1,11 +1,11 @@
 'use strict';
-import * as path from 'path';
 import { Range, TextDocumentShowOptions, TextEditor, Uri, window } from 'vscode';
 import { FileAnnotationType } from '../configuration';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
+import { GitUri } from '../git/gitService';
 import { Logger } from '../logger';
-import { ActiveEditorCommand, Commands, getCommandUri, openEditor } from './common';
+import { Messages } from '../messages';
+import { ActiveEditorCommand, command, Commands, getCommandUri, openEditor } from './common';
 
 export interface OpenWorkingFileCommandArgs {
     uri?: Uri;
@@ -14,6 +14,7 @@ export interface OpenWorkingFileCommandArgs {
     annotationType?: FileAnnotationType;
 }
 
+@command()
 export class OpenWorkingFileCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.OpenWorkingFile);
@@ -36,9 +37,13 @@ export class OpenWorkingFileCommand extends ActiveEditorCommand {
                         args.uri.fsPath,
                         args.uri.repoPath
                     );
-                    if (fileName !== undefined && repoPath !== undefined) {
-                        args.uri = new GitUri(Uri.file(path.resolve(repoPath, fileName)), repoPath);
+                    if (fileName === undefined) {
+                        return window.showWarningMessage(
+                            'Unable to open working file. File could not be found in the working tree'
+                        );
                     }
+
+                    args.uri = new GitUri(GitUri.resolveToUri(fileName, repoPath), repoPath);
                 }
             }
 
@@ -56,7 +61,7 @@ export class OpenWorkingFileCommand extends ActiveEditorCommand {
         }
         catch (ex) {
             Logger.error(ex, 'OpenWorkingFileCommand');
-            return window.showErrorMessage(`Unable to open working file. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to open working file');
         }
     }
 }

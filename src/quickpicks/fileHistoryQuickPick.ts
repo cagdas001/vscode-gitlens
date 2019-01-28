@@ -1,10 +1,10 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { CancellationTokenSource, QuickPickOptions, Uri, window } from 'vscode';
 import { Commands, ShowQuickCurrentBranchHistoryCommandArgs, ShowQuickFileHistoryCommandArgs } from '../commands';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitLog, GitUri, RemoteResource } from '../gitService';
+import { GitLog, GitUri, RemoteResource, RemoteResourceType } from '../git/gitService';
 import { KeyNoopCommand } from '../keyboard';
 import { Iterables, Strings } from '../system';
 import {
@@ -37,7 +37,7 @@ export class FileHistoryQuickPick {
             pickerOnly?: boolean;
             progressCancellation?: CancellationTokenSource;
             showAllCommand?: CommandQuickPickItem;
-            showInResultsExplorerCommand?: CommandQuickPickItem;
+            showInViewCommand?: CommandQuickPickItem;
         } = {}
     ): Promise<CommitQuickPickItem | CommandQuickPickItem | undefined> {
         options = { pickerOnly: false, ...options };
@@ -55,9 +55,9 @@ export class FileHistoryQuickPick {
             new ChooseFromBranchesAndTagsQuickPickItem(log.repoPath, placeHolder, options.currentCommand)
         );
 
-        if (options.showInResultsExplorerCommand !== undefined) {
+        if (options.showInViewCommand !== undefined) {
             index++;
-            items.splice(0, 0, options.showInResultsExplorerCommand);
+            items.splice(0, 0, options.showInViewCommand);
         }
 
         if (log.truncated || log.sha) {
@@ -67,7 +67,7 @@ export class FileHistoryQuickPick {
             }
             else if (!options.pickerOnly) {
                 const [workingFileName] = await Container.git.findWorkingFileName(
-                    path.relative(log.repoPath, uri.fsPath),
+                    paths.relative(log.repoPath, uri.fsPath),
                     log.repoPath
                 );
                 if (workingFileName) {
@@ -78,20 +78,20 @@ export class FileHistoryQuickPick {
                         new CommandQuickPickItem(
                             {
                                 label: `$(history) Show File History`,
-                                description: `${Strings.pad(GlyphChars.Dash, 2, 3)} of ${path.basename(
+                                description: `${Strings.pad(GlyphChars.Dash, 2, 3)} of ${paths.basename(
                                     workingFileName
                                 )}`
                             },
                             Commands.ShowQuickFileHistory,
                             [
-                                Uri.file(path.resolve(log.repoPath, workingFileName)),
+                                GitUri.resolveToUri(workingFileName, log.repoPath),
                                 {
                                     goBackCommand: new CommandQuickPickItem(
                                         {
                                             label: `go back ${GlyphChars.ArrowBack}`,
                                             description: `${Strings.pad(GlyphChars.Dash, 2, 3)} to history of ${
                                                 GlyphChars.Space
-                                            }$(file-text) ${path.basename(uri.fsPath)}${
+                                            }$(file-text) ${paths.basename(uri.fsPath)}${
                                                 uri.sha ? ` from ${GlyphChars.Space}$(git-commit) ${uri.shortSha}` : ''
                                             }`
                                         },
@@ -133,7 +133,7 @@ export class FileHistoryQuickPick {
                         label: `go back ${GlyphChars.ArrowBack}`,
                         description: `${Strings.pad(GlyphChars.Dash, 2, 3)} to history of ${
                             GlyphChars.Space
-                        }$(file-text) ${path.basename(uri.fsPath)}${
+                        }$(file-text) ${paths.basename(uri.fsPath)}${
                             uri.sha ? ` from ${GlyphChars.Space}$(git-commit) ${uri.shortSha}` : ''
                         }`
                     },
@@ -173,19 +173,19 @@ export class FileHistoryQuickPick {
 
                 const remotes = await Container.git.getRemotes(uri.repoPath!);
                 if (remotes.length) {
-                    const resource =
+                    const resource: RemoteResource =
                         uri.sha !== undefined
-                            ? ({
-                                  type: 'revision',
+                            ? {
+                                  type: RemoteResourceType.Revision,
                                   branch: branch.name,
                                   fileName: uri.getRelativePath(),
                                   sha: uri.sha
-                              } as RemoteResource)
-                            : ({
-                                  type: 'file',
+                              }
+                            : {
+                                  type: RemoteResourceType.File,
                                   branch: branch.name,
                                   fileName: uri.getRelativePath()
-                              } as RemoteResource);
+                              };
                     items.splice(index++, 0, new OpenRemotesCommandQuickPickItem(remotes, resource, currentCommand));
                 }
             }

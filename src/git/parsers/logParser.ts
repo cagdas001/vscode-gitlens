@@ -1,23 +1,24 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { Range } from 'vscode';
 import { Arrays, Strings } from '../../system';
-import { Git, GitAuthor, GitCommitType, GitLog, GitLogCommit, GitStatusFileStatus, IGitStatusFile } from './../git';
+import { Git, GitAuthor, GitCommitType, GitFile, GitFileStatus, GitLog, GitLogCommit } from './../git';
 
 interface LogEntry {
     ref?: string;
 
     author?: string;
     date?: string;
+    committedDate?: string;
     email?: string;
 
     parentShas?: string[];
 
     fileName?: string;
     originalFileName?: string;
-    fileStatuses?: IGitStatusFile[];
+    files?: GitFile[];
 
-    status?: GitStatusFileStatus;
+    status?: GitFileStatus;
 
     summary?: string;
 }
@@ -60,6 +61,7 @@ export class GitLogParser {
 
         const authors: Map<string, GitAuthor> = new Map();
         const commits: Map<string, GitLogCommit> = new Map();
+        let truncationCount = maxCount;
 
         while (true) {
             next = lines.next();
@@ -98,6 +100,10 @@ export class GitLogParser {
                     entry.date = line.substring(4);
                     break;
 
+                case 99: // 'c': // committer-date
+                    entry.committedDate = line.substring(4);
+                    break;
+
                 case 112: // 'p': // parents
                     entry.parentShas = line.substring(4).split(' ');
                     break;
@@ -118,8 +124,8 @@ export class GitLogParser {
                         }
                     }
 
-                    if (entry.summary !== undefined) {
-                        // Remove the trailing newline
+                    // Remove the trailing newline
+                    if (entry.summary != null && entry.summary.charCodeAt(entry.summary.length - 1) === 10) {
                         entry.summary = entry.summary.replace(/\n$/g, '');
                     }
                     break;
@@ -140,17 +146,17 @@ export class GitLogParser {
 
                         if (type === GitCommitType.Branch) {
                             const status = {
-                                status: line[0] as GitStatusFileStatus,
+                                status: line[0] as GitFileStatus,
                                 fileName: line.substring(1),
                                 originalFileName: undefined
-                            } as IGitStatusFile;
+                            };
                             this.parseFileName(status);
 
                             if (status.fileName) {
-                                if (entry.fileStatuses === undefined) {
-                                    entry.fileStatuses = [];
+                                if (entry.files === undefined) {
+                                    entry.files = [];
                                 }
-                                entry.fileStatuses.push(status);
+                                entry.files.push(status);
                             }
                         }
                         else if (line.startsWith('diff')) {
@@ -160,8 +166,11 @@ export class GitLogParser {
                                 const originalFileName = matches[2];
                                 if (entry.fileName !== originalFileName) {
                                     entry.originalFileName = originalFileName;
+                                    entry.status = 'R';
                                 }
-                                entry.status = entry.fileName !== entry.originalFileName ? 'R' : 'M';
+                                else {
+                                    entry.status = 'M';
+                                }
                             }
 
                             while (true) {
@@ -171,17 +180,16 @@ export class GitLogParser {
                             break;
                         }
                         else {
-                            entry.status = line[0] as GitStatusFileStatus;
+                            entry.status = line[0] as GitFileStatus;
                             entry.fileName = line.substring(1);
                             this.parseFileName(entry);
                         }
                     }
 
-                    if (entry.fileStatuses !== undefined) {
-                        entry.fileName = Arrays.filterMap(
-                            entry.fileStatuses,
-                            f => (!!f.fileName ? f.fileName : undefined)
-                        ).join(', ');
+                    if (entry.files !== undefined) {
+                        entry.fileName = Arrays.filterMap(entry.files, f => (f.fileName ? f.fileName : undefined)).join(
+                            ', '
+                        );
                     }
 
                     if (first && repoPath === undefined && type === GitCommitType.File && fileName !== undefined) {
@@ -189,7 +197,7 @@ export class GitLogParser {
                         repoPath = Strings.normalizePath(
                             fileName.replace(fileName.startsWith('/') ? `/${entry.fileName}` : entry.fileName!, '')
                         );
-                        relativeFileName = Strings.normalizePath(path.relative(repoPath, fileName));
+                        relativeFileName = Strings.normalizePath(paths.relative(repoPath, fileName));
                     }
                     else {
                         relativeFileName = entry.fileName!;
@@ -200,6 +208,11 @@ export class GitLogParser {
                     if (commit === undefined) {
                         i++;
                     }
+                    else if (truncationCount) {
+                        // Since this matches an existing commit it will be skipped, so reduce our truncationCount to ensure accurate truncation detection
+                        truncationCount--;
+                    }
+
                     recentCommit = GitLogParser.parseEntry(
                         entry,
                         commit,
@@ -224,7 +237,7 @@ export class GitLogParser {
             count: i,
             maxCount: maxCount,
             range: range,
-            truncated: !!(maxCount && i >= maxCount && maxCount !== 1)
+            truncated: Boolean(truncationCount && i >= truncationCount && truncationCount !== 1)
         } as GitLog;
     }
 
@@ -265,12 +278,12 @@ export class GitLogParser {
 
             const originalFileName = relativeFileName !== entry.fileName ? entry.fileName : undefined;
             if (type === GitCommitType.File) {
-                entry.fileStatuses = [
+                entry.files = [
                     {
-                        status: entry.status,
+                        status: entry.status!,
                         fileName: relativeFileName,
                         originalFileName: originalFileName
-                    } as IGitStatusFile
+                    }
                 ];
             }
 
@@ -281,12 +294,13 @@ export class GitLogParser {
                 entry.author!,
                 entry.email,
                 new Date((entry.date! as any) * 1000),
+                new Date((entry.committedDate! as any) * 1000),
                 entry.summary === undefined ? '' : entry.summary,
                 relativeFileName,
-                entry.fileStatuses || [],
+                entry.files || [],
                 entry.status,
                 originalFileName,
-                undefined,
+                `${entry.ref!}^`,
                 undefined,
                 entry.parentShas!
             );
@@ -298,8 +312,6 @@ export class GitLogParser {
         // }
 
         if (recentCommit !== undefined) {
-            recentCommit.previousSha = commit.sha;
-
             // If the commit sha's match (merge commit), just forward it along
             commit.nextSha = commit.sha !== recentCommit.sha ? recentCommit.sha : recentCommit.nextSha;
 

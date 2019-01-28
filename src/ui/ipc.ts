@@ -1,8 +1,8 @@
 'use strict';
-import { IConfig } from './config';
+import { Config } from './config';
 
 export interface Bootstrap {
-    config: IConfig;
+    config: Config;
 }
 
 export interface SettingsBootstrap extends Bootstrap {
@@ -41,7 +41,7 @@ export interface SearchRepoMessage {
 
 export interface SettingsChangedMessage {
     type: 'settingsChanged';
-    config: IConfig;
+    config: Config;
 }
 
 export interface ShowDiffMessage {

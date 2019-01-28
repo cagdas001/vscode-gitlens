@@ -1,13 +1,14 @@
 'use strict';
 import { Arrays, Strings } from '../../system';
-import { GitCommitType, GitLogParser, GitStash, GitStashCommit, GitStatusFileStatus, IGitStatusFile } from './../git';
+import { GitCommitType, GitFile, GitFileStatus, GitLogParser, GitStash, GitStashCommit } from './../git';
 // import { Logger } from './logger';
 
 interface StashEntry {
     ref?: string;
     date?: string;
+    committedDate?: string;
     fileNames?: string;
-    fileStatuses?: IGitStatusFile[];
+    files?: GitFile[];
     summary?: string;
     stashName?: string;
 }
@@ -54,6 +55,10 @@ export class GitStashParser {
                     entry.date = line.substring(4);
                     break;
 
+                case 99: // 'c': // committer-date
+                    entry.committedDate = line.substring(4);
+                    break;
+
                 case 108: // 'l': // reflog-selector
                     entry.stashName = line.substring(4);
                     break;
@@ -74,8 +79,8 @@ export class GitStashParser {
                         }
                     }
 
-                    if (entry.summary !== undefined) {
-                        // Remove the trailing newline
+                    // Remove the trailing newline
+                    if (entry.summary != null && entry.summary.charCodeAt(entry.summary.length - 1) === 10) {
                         entry.summary = entry.summary.slice(0, -1);
                     }
                     break;
@@ -94,30 +99,28 @@ export class GitStashParser {
                             if (line.startsWith('warning:')) continue;
 
                             const status = {
-                                status: line[0] as GitStatusFileStatus,
+                                status: line[0] as GitFileStatus,
                                 fileName: line.substring(1),
                                 originalFileName: undefined
-                            } as IGitStatusFile;
+                            };
                             GitLogParser.parseFileName(status);
 
                             if (status.fileName) {
-                                if (entry.fileStatuses === undefined) {
-                                    entry.fileStatuses = [];
+                                if (entry.files === undefined) {
+                                    entry.files = [];
                                 }
-                                entry.fileStatuses.push(status);
+                                entry.files.push(status);
                             }
                         }
 
-                        if (entry.fileStatuses !== undefined) {
-                            entry.fileNames = Arrays.filterMap(
-                                entry.fileStatuses,
-                                f => (!!f.fileName ? f.fileName : undefined)
+                        if (entry.files !== undefined) {
+                            entry.fileNames = Arrays.filterMap(entry.files, f =>
+                                f.fileName ? f.fileName : undefined
                             ).join(', ');
                         }
                     }
 
-                    let commit = commits.get(entry.ref!);
-                    commit = GitStashParser.parseEntry(entry, commit, repoPath, commits);
+                    GitStashParser.parseEntry(entry, repoPath, commits);
             }
         }
 
@@ -127,12 +130,8 @@ export class GitStashParser {
         } as GitStash;
     }
 
-    private static parseEntry(
-        entry: StashEntry,
-        commit: GitStashCommit | undefined,
-        repoPath: string,
-        commits: Map<string, GitStashCommit>
-    ): GitStashCommit | undefined {
+    private static parseEntry(entry: StashEntry, repoPath: string, commits: Map<string, GitStashCommit>) {
+        let commit = commits.get(entry.ref!);
         if (commit === undefined) {
             commit = new GitStashCommit(
                 GitCommitType.Stash,
@@ -140,13 +139,13 @@ export class GitStashParser {
                 repoPath,
                 entry.ref!,
                 new Date((entry.date! as any) * 1000),
+                new Date((entry.committedDate! as any) * 1000),
                 entry.summary === undefined ? '' : entry.summary,
                 entry.fileNames!,
-                entry.fileStatuses || []
+                entry.files || []
             );
         }
 
         commits.set(entry.ref!, commit);
-        return commit;
     }
 }

@@ -1,21 +1,25 @@
+'use strict';
+import { StarredBranches, WorkspaceState } from '../../constants';
+import { Container } from '../../container';
 import { Git } from '../git';
 import { GitStatus } from './status';
 
-'use strict';
+export interface GitTrackingState {
+    ahead: number;
+    behind: number;
+}
 
 export class GitBranch {
     readonly detached: boolean;
+    readonly id: string;
     readonly name: string;
     readonly remote: boolean;
     readonly tracking?: string;
-    readonly state: {
-        ahead: number;
-        behind: number;
-    };
+    readonly state: GitTrackingState;
 
     constructor(
         public readonly repoPath: string,
-        branch: string,
+        name: string,
         public readonly current: boolean = false,
         public readonly sha?: string,
         tracking?: string,
@@ -23,23 +27,25 @@ export class GitBranch {
         behind: number = 0,
         detached: boolean = false
     ) {
-        if (branch.startsWith('remotes/')) {
-            branch = branch.substring(8);
+        this.id = `${repoPath}|${name}`;
+
+        if (name.startsWith('remotes/')) {
+            name = name.substring(8);
             this.remote = true;
         }
         else {
             this.remote = false;
         }
 
-        this.detached = detached || (this.current ? GitBranch.isDetached(branch) : false);
+        this.detached = detached || (this.current ? GitBranch.isDetached(name) : false);
         if (this.detached) {
             this.name = GitBranch.formatDetached(this.sha!);
         }
         else {
-            this.name = branch;
+            this.name = name;
         }
 
-        this.tracking = tracking === '' || tracking == null ? undefined : tracking;
+        this.tracking = tracking == null || tracking.length === 0 ? undefined : tracking;
         this.state = {
             ahead: ahead,
             behind: behind
@@ -85,6 +91,35 @@ export class GitBranch {
         suffix?: string;
     }): string {
         return GitStatus.getUpstreamStatus(this.tracking, this.state, options);
+    }
+
+    get starred() {
+        const starred = Container.context.workspaceState.get<StarredBranches>(WorkspaceState.StarredBranches);
+        return starred !== undefined && starred[this.id] === true;
+    }
+
+    star() {
+        return this.updateStarred(true);
+    }
+
+    unstar() {
+        return this.updateStarred(false);
+    }
+
+    private async updateStarred(star: boolean) {
+        let starred = Container.context.workspaceState.get<StarredBranches>(WorkspaceState.StarredBranches);
+        if (starred === undefined) {
+            starred = Object.create(null);
+        }
+
+        if (star) {
+            starred![this.id] = true;
+        }
+        else {
+            const { [this.id]: _, ...rest } = starred!;
+            starred = rest;
+        }
+        await Container.context.workspaceState.update(WorkspaceState.StarredBranches, starred);
     }
 
     static getRemote(branch: string): string {

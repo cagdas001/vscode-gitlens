@@ -1,21 +1,26 @@
 'use strict';
-import * as _path from 'path';
+import * as fs from 'fs';
+import * as paths from 'path';
 import {
+    commands,
     ConfigurationChangeEvent,
     Disposable,
     Event,
     EventEmitter,
+    ProgressLocation,
     RelativePattern,
     Uri,
+    window,
     workspace,
     WorkspaceFolder
 } from 'vscode';
-import { configuration, IRemotesConfig } from '../../configuration';
+import { configuration, RemotesConfig } from '../../configuration';
+import { StarredRepositories, WorkspaceState } from '../../constants';
 import { Container } from '../../container';
-import { GitUri } from '../../gitService';
-import { Functions } from '../../system';
+import { Functions, gate, log } from '../../system';
 import { GitBranch, GitDiffShortStat, GitRemote, GitStash, GitStatus, GitTag } from '../git';
-import { RemoteProviderFactory, RemoteProviderMap } from '../remotes/factory';
+import { GitUri } from '../gitUri';
+import { RemoteProviderFactory, RemoteProviders } from '../remotes/factory';
 
 export enum RepositoryChange {
     Config = 'config',
@@ -55,10 +60,6 @@ export interface RepositoryFileSystemChangeEvent {
     readonly uris: Uri[];
 }
 
-export enum RepositoryStorage {
-    StatusNode = 'statusNode'
-}
-
 export class Repository implements Disposable {
     private _onDidChange = new EventEmitter<RepositoryChangeEvent>();
     get onDidChange(): Event<RepositoryChangeEvent> {
@@ -71,10 +72,11 @@ export class Repository implements Disposable {
     }
 
     readonly formattedName: string;
+    readonly id: string;
     readonly index: number;
     readonly name: string;
     readonly normalizedPath: string;
-    // readonly storage: Map<string, any> = new Map();
+    readonly supportsChangeEvents: boolean = true;
 
     private _branch: Promise<GitBranch | undefined> | undefined;
     private readonly _disposable: Disposable;
@@ -83,7 +85,7 @@ export class Repository implements Disposable {
     private _fsWatchCounter = 0;
     private _fsWatcherDisposable: Disposable | undefined;
     private _pendingChanges: { repo?: RepositoryChangeEvent; fs?: RepositoryFileSystemChangeEvent } = {};
-    private _providerMap: RemoteProviderMap | undefined;
+    private _providers: RemoteProviders | undefined;
     private _remotes: Promise<GitRemote[]> | undefined;
     private _suspended: boolean;
 
@@ -95,22 +97,33 @@ export class Repository implements Disposable {
         suspended: boolean,
         closed: boolean = false
     ) {
+        const relativePath = paths.relative(folder.uri.fsPath, path);
         if (root) {
-            this.formattedName = folder.name;
+            // Check if the repository is not contained by a workspace folder
+            const repoFolder = workspace.getWorkspaceFolder(GitUri.fromRepoPath(path));
+            if (repoFolder === undefined) {
+                // If it isn't within a workspace folder we can't get change events, see: https://github.com/Microsoft/vscode/issues/3025
+                this.supportsChangeEvents = false;
+                this.formattedName = this.name = paths.basename(path);
+            }
+            else {
+                this.formattedName = this.name = folder.name;
+            }
         }
         else {
-            const relativePath = _path.relative(folder.uri.fsPath, path);
             this.formattedName = relativePath ? `${folder.name} (${relativePath})` : folder.name;
+            this.name = folder.name;
         }
         this.index = folder.index;
-        this.name = folder.name;
 
-        this.normalizedPath = (this.path.endsWith('/') ? this.path : `${this.path}/`).toLowerCase();
+        this.normalizedPath = (path.endsWith('/') ? path : `${path}/`).toLowerCase();
+        this.id = this.normalizedPath;
 
         this._suspended = suspended;
         this._closed = closed;
 
         // TODO: createFileSystemWatcher doesn't work unless the folder is part of the workspaceFolders
+        // https://github.com/Microsoft/vscode/issues/3025
         const watcher = workspace.createFileSystemWatcher(
             new RelativePattern(
                 folder,
@@ -150,15 +163,13 @@ export class Repository implements Disposable {
     }
 
     private onConfigurationChanged(e: ConfigurationChangeEvent) {
-        const initializing = configuration.initializing(e);
-
         const section = configuration.name('remotes').value;
-        if (initializing || configuration.changed(e, section, this.folder.uri)) {
-            this._providerMap = RemoteProviderFactory.createMap(
-                configuration.get<IRemotesConfig[] | null | undefined>(section, this.folder.uri)
+        if (configuration.changed(e, section, this.folder.uri)) {
+            this._providers = RemoteProviderFactory.loadProviders(
+                configuration.get<RemotesConfig[] | null | undefined>(section, this.folder.uri)
             );
 
-            if (!initializing) {
+            if (!configuration.initializing(e)) {
                 this._remotes = undefined;
                 this.fireChange(RepositoryChange.Remotes);
             }
@@ -220,14 +231,36 @@ export class Repository implements Disposable {
 
     containsUri(uri: Uri) {
         if (uri instanceof GitUri) {
-            uri = uri.repoPath !== undefined ? Uri.file(uri.repoPath) : uri.fileUri();
+            uri = uri.repoPath !== undefined ? GitUri.file(uri.repoPath) : uri.documentUri();
         }
 
         return this.folder === workspace.getWorkspaceFolder(uri);
     }
 
+    @gate()
+    @log()
+    async fetch(options: { progress?: boolean; remote?: string } = {}) {
+        const { progress, ...opts } = { progress: true, ...options };
+        if (!progress) return this.fetchCore(opts);
+
+        await window.withProgress(
+            {
+                location: ProgressLocation.Notification,
+                title: `Fetching ${opts.remote ? `${opts.remote} of ` : ''}${this.formattedName}...`,
+                cancellable: false
+            },
+            () => this.fetchCore(opts)
+        );
+    }
+
+    private async fetchCore(options: { remote?: string } = {}) {
+        await Container.git.fetch(this.path, options.remote);
+
+        this.fireChange(RepositoryChange.Repository);
+    }
+
     getBranch(): Promise<GitBranch | undefined> {
-        if (this._branch === undefined) {
+        if (this._branch === undefined || !this.supportsChangeEvents) {
             this._branch = Container.git.getBranch(this.path);
         }
         return this._branch;
@@ -241,17 +274,26 @@ export class Repository implements Disposable {
         return Container.git.getChangedFilesCount(this.path, sha);
     }
 
+    async getLastFetched(): Promise<number> {
+        const hasRemotes = await this.hasRemotes();
+        if (!hasRemotes || Container.vsls.isMaybeGuest) return 0;
+
+        return new Promise<number>((resolve, reject) =>
+            fs.stat(paths.join(this.path, '.git/FETCH_HEAD'), (err, stat) => resolve(err ? 0 : stat.mtime.getTime()))
+        );
+    }
+
     getRemotes(): Promise<GitRemote[]> {
-        if (this._remotes === undefined) {
-            if (this._providerMap === undefined) {
-                const remotesCfg = configuration.get<IRemotesConfig[] | null | undefined>(
+        if (this._remotes === undefined || !this.supportsChangeEvents) {
+            if (this._providers === undefined) {
+                const remotesCfg = configuration.get<RemotesConfig[] | null | undefined>(
                     configuration.name('remotes').value,
                     this.folder.uri
                 );
-                this._providerMap = RemoteProviderFactory.createMap(remotesCfg);
+                this._providers = RemoteProviderFactory.loadProviders(remotesCfg);
             }
 
-            this._remotes = Container.git.getRemotesCore(this.path, this._providerMap);
+            this._remotes = Container.git.getRemotesCore(this.path, this._providers);
         }
 
         return this._remotes;
@@ -265,8 +307,8 @@ export class Repository implements Disposable {
         return Container.git.getStatusForRepo(this.path);
     }
 
-    getTags(): Promise<GitTag[]> {
-        return Container.git.getTags(this.path);
+    getTags(options?: { includeRefs?: boolean }): Promise<GitTag[]> {
+        return Container.git.getTags(this.path, options);
     }
 
     async hasRemotes(): Promise<boolean> {
@@ -277,6 +319,50 @@ export class Repository implements Disposable {
     async hasTrackingBranch(): Promise<boolean> {
         const branch = await this.getBranch();
         return branch !== undefined && branch.tracking !== undefined;
+    }
+
+    @gate()
+    @log()
+    async pull(options: { progress?: boolean } = {}) {
+        const { progress } = { progress: true, ...options };
+        if (!progress) return this.pullCore();
+
+        await window.withProgress(
+            {
+                location: ProgressLocation.Notification,
+                title: `Pulling ${this.formattedName}...`,
+                cancellable: false
+            },
+            () => this.pullCore()
+        );
+    }
+
+    private async pullCore() {
+        await commands.executeCommand('git.pull', this.path);
+
+        this.fireChange(RepositoryChange.Repository);
+    }
+
+    @gate()
+    @log()
+    async push(options: { force?: boolean; progress?: boolean } = {}) {
+        const { force, progress } = { progress: true, ...options };
+        if (!progress) return this.pushCore(force);
+
+        await window.withProgress(
+            {
+                location: ProgressLocation.Notification,
+                title: `Pushing ${this.formattedName}...`,
+                cancellable: false
+            },
+            () => this.pushCore(force)
+        );
+    }
+
+    private async pushCore(force: boolean = false) {
+        await commands.executeCommand(force ? 'git.pushForce' : 'git.push', this.path);
+
+        this.fireChange(RepositoryChange.Repository);
     }
 
     resume() {
@@ -295,11 +381,41 @@ export class Repository implements Disposable {
         }
     }
 
+    get starred() {
+        const starred = Container.context.workspaceState.get<StarredRepositories>(WorkspaceState.StarredRepositories);
+        return starred !== undefined && starred[this.id] === true;
+    }
+
+    star() {
+        return this.updateStarred(true);
+    }
+
+    unstar() {
+        return this.updateStarred(false);
+    }
+
+    private async updateStarred(star: boolean) {
+        let starred = Container.context.workspaceState.get<StarredRepositories>(WorkspaceState.StarredRepositories);
+        if (starred === undefined) {
+            starred = Object.create(null);
+        }
+
+        if (star) {
+            starred![this.id] = true;
+        }
+        else {
+            const { [this.id]: _, ...rest } = starred!;
+            starred = rest;
+        }
+        await Container.context.workspaceState.update(WorkspaceState.StarredRepositories, starred);
+    }
+
     startWatchingFileSystem() {
         this._fsWatchCounter++;
         if (this._fsWatcherDisposable !== undefined) return;
 
         // TODO: createFileSystemWatcher doesn't work unless the folder is part of the workspaceFolders
+        // https://github.com/Microsoft/vscode/issues/3025
         const watcher = workspace.createFileSystemWatcher(new RelativePattern(this.folder, `**`));
         this._fsWatcherDisposable = Disposable.from(
             watcher,

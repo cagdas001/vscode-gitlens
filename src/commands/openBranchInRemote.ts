@@ -2,11 +2,12 @@
 import { commands, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
+import { GitUri } from '../git/gitService';
 import { Logger } from '../logger';
-import { BranchesQuickPick, CommandQuickPickItem } from '../quickpicks';
+import { BranchesAndTagsQuickPick, CommandQuickPickItem } from '../quickpicks';
 import {
     ActiveEditorCommand,
+    command,
     CommandContext,
     Commands,
     getCommandUri,
@@ -20,6 +21,7 @@ export interface OpenBranchInRemoteCommandArgs {
     remote?: string;
 }
 
+@command()
 export class OpenBranchInRemoteCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.OpenBranchInRemote);
@@ -43,7 +45,7 @@ export class OpenBranchInRemoteCommand extends ActiveEditorCommand {
         const repoPath = await getRepoPathOrActiveOrPrompt(
             gitUri,
             editor,
-            `Open branch in remote for which repository${GlyphChars.Ellipsis}`
+            `Open branch on remote for which repository${GlyphChars.Ellipsis}`
         );
         if (!repoPath) return undefined;
 
@@ -51,21 +53,19 @@ export class OpenBranchInRemoteCommand extends ActiveEditorCommand {
             if (args.branch === undefined) {
                 args = { ...args };
 
-                const branches = (await Container.git.getBranches(repoPath)).filter(b => b.tracking !== undefined);
-                if (branches.length > 1) {
-                    const pick = await BranchesQuickPick.show(
-                        branches,
-                        `Open which branch in remote${GlyphChars.Ellipsis}`
-                    );
-                    if (pick === undefined) return undefined;
+                const pick = await new BranchesAndTagsQuickPick(repoPath).show(
+                    `Open which branch on remote${GlyphChars.Ellipsis}`,
+                    {
+                        autoPick: true,
+                        filters: {
+                            branches: b => b.tracking !== undefined
+                        },
+                        include: 'branches'
+                    }
+                );
+                if (pick === undefined || pick instanceof CommandQuickPickItem) return undefined;
 
-                    if (pick instanceof CommandQuickPickItem) return undefined;
-
-                    args.branch = pick.branch.name;
-                }
-                else if (branches.length === 1) {
-                    args.branch = branches[0].name;
-                }
+                args.branch = pick.ref;
             }
 
             const remotes = await Container.git.getRemotes(repoPath);
@@ -82,7 +82,7 @@ export class OpenBranchInRemoteCommand extends ActiveEditorCommand {
         catch (ex) {
             Logger.error(ex, 'OpenBranchInRemoteCommandArgs');
             return window.showErrorMessage(
-                `Unable to open branch in remote provider. See output channel for more details`
+                `Unable to open branch on remote provider. See output channel for more details`
             );
         }
     }

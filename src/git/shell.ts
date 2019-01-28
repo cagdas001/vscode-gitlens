@@ -1,7 +1,8 @@
 'use strict';
 import { execFile } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
+import * as iconv from 'iconv-lite';
+import * as paths from 'path';
 import { Logger } from '../logger';
 
 const isWindows = process.platform === 'win32';
@@ -22,7 +23,7 @@ function runDownPath(exe: string): string {
     // Files with any directory path don't get this applied
     if (exe.match(/[\\\/]/)) return exe;
 
-    const target = path.join('.', exe);
+    const target = paths.join('.', exe);
     try {
         if (fs.statSync(target)) return target;
     }
@@ -30,7 +31,7 @@ function runDownPath(exe: string): string {
 
     const haystack = process.env.PATH!.split(isWindows ? ';' : ':');
     for (const p of haystack) {
-        const needle = path.join(p, exe);
+        const needle = paths.join(p, exe);
         try {
             if (fs.statSync(needle)) return needle;
         }
@@ -66,14 +67,14 @@ export function findExecutable(exe: string, args: string[]): { cmd: string; args
     }
 
     if (exe.match(/\.ps1$/i)) {
-        const cmd = path.join(process.env.SYSTEMROOT!, 'System32', 'WindowsPowerShell', 'v1.0', 'PowerShell.exe');
+        const cmd = paths.join(process.env.SYSTEMROOT!, 'System32', 'WindowsPowerShell', 'v1.0', 'PowerShell.exe');
         const psargs = ['-ExecutionPolicy', 'Unrestricted', '-NoLogo', '-NonInteractive', '-File', exe];
 
         return { cmd: cmd, args: psargs.concat(args) };
     }
 
     if (exe.match(/\.(bat|cmd)$/i)) {
-        const cmd = path.join(process.env.SYSTEMROOT!, 'System32', 'cmd.exe');
+        const cmd = paths.join(process.env.SYSTEMROOT!, 'System32', 'cmd.exe');
         const cmdArgs = ['/C', exe, ...args];
 
         return { cmd: cmd, args: cmdArgs };
@@ -89,10 +90,21 @@ export function findExecutable(exe: string, args: string[]): { cmd: string; args
     return { cmd: exe, args: args };
 }
 
-export interface CommandOptions {
-    readonly cwd?: string;
+export class RunError extends Error {
+    constructor(
+        public readonly exitCode: number,
+        ...args: any[]
+    ) {
+        super(...args);
+
+        Error.captureStackTrace(this, RunError);
+    }
+}
+
+export interface RunOptions {
+    cwd?: string;
     readonly env?: Object;
-    readonly encoding?: BufferEncoding;
+    readonly encoding?: BufferEncoding | 'buffer';
     /**
      * The size the output buffer to allocate to the spawned process. Set this
      * if you are anticipating a large amount of output.
@@ -114,33 +126,46 @@ export interface CommandOptions {
     readonly stdinEncoding?: string;
 }
 
-export function runCommand(command: string, args: any[], options: CommandOptions = {}) {
-    const { stdin, stdinEncoding, ...opts } = { maxBuffer: 100 * 1024 * 1024, ...options } as CommandOptions;
+export function run<TOut extends string | Buffer>(
+    command: string,
+    args: any[],
+    encoding: BufferEncoding | 'buffer',
+    options: RunOptions = {}
+): Promise<TOut> {
+    const { stdin, stdinEncoding, ...opts } = { maxBuffer: 100 * 1024 * 1024, ...options } as RunOptions;
 
-    return new Promise<string>((resolve, reject) => {
-        const proc = execFile(command, args, opts, (err: Error & { code?: string | number } | null, stdout, stderr) => {
-            if (!err) {
+    return new Promise<TOut>((resolve, reject) => {
+        const proc = execFile(
+            command,
+            args,
+            opts,
+            (err: (Error & { code?: string | number }) | null, stdout, stderr) => {
+                if (err != null) {
+                    reject(
+                        new RunError(
+                            err.code ? Number(err.code) : 0,
+                            err.message === 'stdout maxBuffer exceeded'
+                                ? `Command output exceeded the allocated stdout buffer. Set 'options.maxBuffer' to a larger value than ${
+                                      opts.maxBuffer
+                                  } bytes`
+                                : stderr || stdout
+                        )
+                    );
+
+                    return;
+                }
+
                 if (stderr) {
                     Logger.warn(`Warning(${command} ${args.join(' ')}): ${stderr}`);
                 }
-                resolve(stdout);
 
-                return;
-            }
-
-            if (err.message === 'stdout maxBuffer exceeded') {
-                reject(
-                    new Error(
-                        `Command output exceeded the allocated stdout buffer. Set 'options.maxBuffer' to a larger value than ${
-                            opts.maxBuffer
-                        } bytes`
-                    )
+                resolve(
+                    encoding === 'utf8' || encoding === 'binary' || encoding === 'buffer'
+                        ? (stdout as TOut)
+                        : (iconv.decode(Buffer.from(stdout, 'binary'), encoding) as TOut)
                 );
             }
-
-            // Logger.warn(`Error(${opts.cwd}): ${command} ${args.join(' ')})\n    (${err.code}) ${err.message}\n${stderr}`);
-            reject(err);
-        });
+        );
 
         if (stdin) {
             proc.stdin.end(stdin, stdinEncoding || 'utf8');

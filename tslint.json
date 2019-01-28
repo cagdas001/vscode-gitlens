@@ -10,7 +10,7 @@
         "curly": [true, "ignore-same-line"],
         "eofline": true,
         "interface-over-type-literal": true,
-        "linebreak-style": [false, "LF"],
+        "linebreak-style": [true, "LF"],
         "new-parens": true,
         "no-angle-bracket-type-assertion": true,
         "no-consecutive-blank-lines": [true, 1],

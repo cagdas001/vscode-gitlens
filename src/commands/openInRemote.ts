@@ -1,11 +1,12 @@
 'use strict';
-import { TextEditor, Uri, window } from 'vscode';
+import { TextEditor, Uri } from 'vscode';
 import { GlyphChars } from '../constants';
-import { GitLogCommit, GitRemote, GitService, RemoteResource, RemoteResourceType } from '../gitService';
+import { GitLogCommit, GitRemote, GitService, RemoteResource, RemoteResourceType } from '../git/gitService';
 import { Logger } from '../logger';
+import { Messages } from '../messages';
 import { CommandQuickPickItem, OpenRemoteCommandQuickPickItem, RemotesQuickPick } from '../quickpicks';
 import { Strings } from '../system';
-import { ActiveEditorCommand, Commands } from './common';
+import { ActiveEditorCommand, command, Commands } from './common';
 
 export interface OpenInRemoteCommandArgs {
     remote?: string;
@@ -16,6 +17,7 @@ export interface OpenInRemoteCommandArgs {
     goBackCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class OpenInRemoteCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.OpenInRemote);
@@ -34,14 +36,22 @@ export class OpenInRemoteCommand extends ActiveEditorCommand {
         }
 
         try {
-            if (args.remotes.length === 1) {
+            let remote: GitRemote | undefined;
+            if (args.remotes.length > 1) {
+                remote = args.remotes.find(r => r.default);
+            }
+            else if (args.remotes.length === 1) {
+                remote = args.remotes[0];
+            }
+
+            if (remote != null) {
                 this.ensureRemoteBranchName(args);
-                const command = new OpenRemoteCommandQuickPickItem(args.remotes[0], args.resource, args.clipboard);
+                const command = new OpenRemoteCommandQuickPickItem(remote, args.resource, args.clipboard);
                 return await command.execute();
             }
 
             const verb = args.clipboard ? 'Copy url for' : 'Open';
-            const suffix = args.clipboard ? `to clipboard from${GlyphChars.Ellipsis}` : `in${GlyphChars.Ellipsis}`;
+            const suffix = args.clipboard ? `to clipboard from${GlyphChars.Ellipsis}` : `on${GlyphChars.Ellipsis}`;
             let placeHolder = '';
             switch (args.resource.type) {
                 case RemoteResourceType.Branch:
@@ -96,7 +106,7 @@ export class OpenInRemoteCommand extends ActiveEditorCommand {
         }
         catch (ex) {
             Logger.error(ex, 'OpenInRemoteCommand');
-            return window.showErrorMessage(`Unable to open in remote provider. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to open in remote provider');
         }
     }
 

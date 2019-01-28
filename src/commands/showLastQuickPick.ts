@@ -1,8 +1,10 @@
 'use strict';
-import { commands, window } from 'vscode';
+import { commands } from 'vscode';
 import { Logger } from '../logger';
-import { Command, Commands, getLastCommand } from './common';
+import { Messages } from '../messages';
+import { command, Command, Commands, getLastCommand } from './common';
 
+@command()
 export class ShowLastQuickPickCommand extends Command {
     constructor() {
         super(Commands.ShowLastQuickPick);
@@ -17,7 +19,7 @@ export class ShowLastQuickPickCommand extends Command {
         }
         catch (ex) {
             Logger.error(ex, 'ShowLastQuickPickCommand');
-            return window.showErrorMessage(`Unable to show last quick pick. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to show last quick pick');
         }
     }
 }

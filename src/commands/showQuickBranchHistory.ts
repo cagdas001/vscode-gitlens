@@ -2,11 +2,12 @@
 import { commands, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitLog, GitUri } from '../gitService';
+import { GitLog, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
-import { BranchesQuickPick, BranchHistoryQuickPick, CommandQuickPickItem } from '../quickpicks';
+import { Messages } from '../messages';
+import { BranchesAndTagsQuickPick, BranchHistoryQuickPick, CommandQuickPickItem } from '../quickpicks';
 import { Strings } from '../system';
-import { ActiveEditorCachedCommand, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
+import { ActiveEditorCachedCommand, command, Commands, getCommandUri, getRepoPathOrActiveOrPrompt } from './common';
 import { ShowQuickCommitDetailsCommandArgs } from './showQuickCommitDetails';
 
 export interface ShowQuickBranchHistoryCommandArgs {
@@ -19,6 +20,7 @@ export interface ShowQuickBranchHistoryCommandArgs {
     nextPageCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class ShowQuickBranchHistoryCommand extends ActiveEditorCachedCommand {
     constructor() {
         super(Commands.ShowQuickBranchHistory);
@@ -44,8 +46,6 @@ export class ShowQuickBranchHistoryCommand extends ActiveEditorCachedCommand {
             if (!repoPath) return undefined;
 
             if (args.branch === undefined) {
-                const branches = await Container.git.getBranches(repoPath);
-
                 let goBackCommand;
                 if (!(await Container.git.getRepoPathOrActive(uri, editor))) {
                     goBackCommand = new CommandQuickPickItem(
@@ -58,14 +58,17 @@ export class ShowQuickBranchHistoryCommand extends ActiveEditorCachedCommand {
                     );
                 }
 
-                const pick = await BranchesQuickPick.show(branches, `Show history for branch${GlyphChars.Ellipsis}`, {
-                    goBackCommand: goBackCommand
-                });
+                const pick = await new BranchesAndTagsQuickPick(repoPath).show(
+                    `Show history for branch${GlyphChars.Ellipsis}`,
+                    {
+                        goBack: goBackCommand,
+                        include: 'branches'
+                    }
+                );
                 if (pick === undefined) return undefined;
-
                 if (pick instanceof CommandQuickPickItem) return pick.execute();
 
-                args.branch = pick.branch.name;
+                args.branch = pick.ref;
                 if (args.branch === undefined) return undefined;
 
                 progressCancellation = BranchHistoryQuickPick.showProgress(args.branch);
@@ -116,7 +119,7 @@ export class ShowQuickBranchHistoryCommand extends ActiveEditorCachedCommand {
         }
         catch (ex) {
             Logger.error(ex, 'ShowQuickBranchHistoryCommand');
-            return window.showErrorMessage(`Unable to show branch history. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to show branch history');
         }
         finally {
             progressCancellation && progressCancellation.cancel();

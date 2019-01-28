@@ -3,12 +3,12 @@ import { CancellationTokenSource, commands, Range, TextDocumentShowOptions, Text
 import { FileAnnotationType } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitBranch, GitTag, GitUri } from '../gitService';
+import { GitBranch, GitTag, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
 import { ChooseFromBranchesAndTagsQuickPickItem, CommandQuickPickItem, FileHistoryQuickPick } from '../quickpicks';
 import { Iterables, Strings } from '../system';
-import { ActiveEditorCommand, Commands, getCommandUri, openEditor } from './common';
+import { ActiveEditorCommand, command, Commands, getCommandUri, openEditor } from './common';
 
 export interface OpenFileRevisionCommandArgs {
     branchOrTag?: GitBranch | GitTag;
@@ -21,6 +21,7 @@ export interface OpenFileRevisionCommandArgs {
     nextPageCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class OpenFileRevisionCommand extends ActiveEditorCommand {
     static getMarkdownCommandArgs(args: OpenFileRevisionCommandArgs): string;
     static getMarkdownCommandArgs(uri: Uri, annotationType?: FileAnnotationType, line?: number): string;
@@ -65,9 +66,9 @@ export class OpenFileRevisionCommand extends ActiveEditorCommand {
 
                 const gitUri = await GitUri.fromUri(uri);
 
-                const placeHolder = `Open revision of ${gitUri.getFormattedPath(
-                    args.branchOrTag ? ` (${args.branchOrTag.name})${Strings.pad(GlyphChars.Dot, 2, 2)}` : undefined
-                )}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''}${
+                const placeHolder = `Open revision of ${gitUri.getFormattedPath({
+                    suffix: args.branchOrTag ? ` (${args.branchOrTag.name})` : undefined
+                })}${gitUri.sha ? ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${gitUri.shortSha}` : ''}${
                     GlyphChars.Ellipsis
                 }`;
 
@@ -136,17 +137,16 @@ export class OpenFileRevisionCommand extends ActiveEditorCommand {
                     currentCommand: currentCommand,
                     nextPageCommand: args.nextPageCommand,
                     previousPageCommand: previousPageCommand,
-                    showAllCommand:
-                        log !== undefined && log.truncated
-                            ? new CommandQuickPickItem(
-                                  {
-                                      label: `$(sync) Show All Commits`,
-                                      description: `${Strings.pad(GlyphChars.Dash, 2, 3)} this may take a while`
-                                  },
-                                  Commands.OpenFileRevision,
-                                  [uri, { ...args, maxCount: 0 } as OpenFileRevisionCommandArgs]
-                              )
-                            : undefined
+                    showAllCommand: log.truncated
+                        ? new CommandQuickPickItem(
+                              {
+                                  label: `$(sync) Show All Commits`,
+                                  description: `${Strings.pad(GlyphChars.Dash, 2, 3)} this may take a while`
+                              },
+                              Commands.OpenFileRevision,
+                              [uri, { ...args, maxCount: 0 } as OpenFileRevisionCommandArgs]
+                          )
+                        : undefined
                 });
                 if (pick === undefined) return undefined;
 
@@ -157,7 +157,7 @@ export class OpenFileRevisionCommand extends ActiveEditorCommand {
 
                     return commands.executeCommand(Commands.OpenFileRevision, gitUri, {
                         ...args,
-                        branchOrTag: branchOrTag.branchOrTag,
+                        branchOrTag: branchOrTag.item,
                         goBackCommand: currentCommand
                     } as OpenFileRevisionCommandArgs);
                 }
@@ -182,7 +182,7 @@ export class OpenFileRevisionCommand extends ActiveEditorCommand {
         }
         catch (ex) {
             Logger.error(ex, 'OpenFileRevisionCommand');
-            return window.showErrorMessage(`Unable to open file revision. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to open file revision');
         }
         finally {
             progressCancellation && progressCancellation.cancel();

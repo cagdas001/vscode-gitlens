@@ -1,120 +1,321 @@
 'use strict';
 import { Disposable, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { GlyphChars } from '../../constants';
-import { GitUri, Repository, RepositoryChange, RepositoryChangeEvent } from '../../gitService';
-import { Logger } from '../../logger';
-import { Strings } from '../../system';
-import { GitExplorer } from '../gitExplorer';
+import { Container } from '../../container';
+import {
+    GitBranch,
+    GitStatus,
+    GitUri,
+    Repository,
+    RepositoryChange,
+    RepositoryChangeEvent,
+    RepositoryFileSystemChangeEvent
+} from '../../git/gitService';
+import { Dates, debug, Functions, gate, log, Strings } from '../../system';
+import { DateStyle } from '../../ui/config';
+import { RepositoriesView } from '../repositoriesView';
 import { BranchesNode } from './branchesNode';
-import { ExplorerNode, ResourceType } from './explorerNode';
+import { BranchNode } from './branchNode';
+import { BranchTrackingStatusNode } from './branchTrackingStatusNode';
+import { MessageNode } from './common';
 import { RemotesNode } from './remotesNode';
 import { StashesNode } from './stashesNode';
-import { StatusNode } from './statusNode';
+import { StatusFilesNode } from './statusFilesNode';
 import { TagsNode } from './tagsNode';
+import { ResourceType, SubscribeableViewNode, ViewNode } from './viewNode';
 
-export class RepositoryNode extends ExplorerNode {
+export class RepositoryNode extends SubscribeableViewNode<RepositoriesView> {
+    private _children: ViewNode[] | undefined;
+    private _lastFetched: number = 0;
+    private _status: Promise<GitStatus | undefined>;
+
     constructor(
         uri: GitUri,
-        public readonly repo: Repository,
-        private readonly explorer: GitExplorer,
-        private readonly active: boolean = false,
-        private readonly activeParent?: ExplorerNode
+        view: RepositoriesView,
+        parent: ViewNode,
+        public readonly repo: Repository
     ) {
-        super(uri);
+        super(uri, view, parent);
+
+        this._status = this.repo.getStatus();
     }
 
     get id(): string {
-        return `gitlens:repository(${this.repo.path})${this.active ? ':active' : ''}`;
+        return `${this._instanceId}:gitlens:repository(${this.repo.path})${this.repo.starred ? '+starred:' : ''}`;
     }
 
-    async getChildren(): Promise<ExplorerNode[]> {
-        if (this.children === undefined) {
-            this.updateSubscription();
+    async getChildren(): Promise<ViewNode[]> {
+        if (this._children === undefined) {
+            const children = [];
 
-            this.children = [
-                new StatusNode(this.uri, this.repo, this.explorer, this.active),
-                new BranchesNode(this.uri, this.repo, this.explorer, this.active),
-                new RemotesNode(this.uri, this.repo, this.explorer, this.active),
-                new StashesNode(this.uri, this.repo, this.explorer, this.active),
-                new TagsNode(this.uri, this.repo, this.explorer, this.active)
-            ];
+            const status = await this._status;
+            if (status !== undefined) {
+                const branch = new GitBranch(
+                    status.repoPath,
+                    status.branch,
+                    true,
+                    status.sha,
+                    status.upstream,
+                    status.state.ahead,
+                    status.state.behind,
+                    status.detached
+                );
+                children.push(new BranchNode(this.uri, this.view, this, branch, true));
+
+                if (status.state.behind) {
+                    children.push(new BranchTrackingStatusNode(this.view, this, status, 'behind', true));
+                }
+
+                if (status.state.ahead) {
+                    children.push(new BranchTrackingStatusNode(this.view, this, status, 'ahead', true));
+                }
+
+                if (status.state.ahead || (status.files.length !== 0 && this.includeWorkingTree)) {
+                    const range = status.upstream ? `${status.upstream}..${branch.ref}` : undefined;
+                    children.push(new StatusFilesNode(this.view, this, status, range));
+                }
+
+                if (!this.view.config.repositories.compact) {
+                    children.push(new MessageNode(this.view, this, '', GlyphChars.Dash.repeat(2), ''));
+                }
+            }
+
+            children.push(
+                new BranchesNode(this.uri, this.view, this, this.repo),
+                new RemotesNode(this.uri, this.view, this, this.repo),
+                new StashesNode(this.uri, this.view, this, this.repo),
+                new TagsNode(this.uri, this.view, this, this.repo)
+            );
+            this._children = children;
         }
-        return this.children;
+        return this._children;
     }
 
-    getTreeItem(): TreeItem {
-        this.updateSubscription();
+    async getTreeItem(): Promise<TreeItem> {
+        const label = this.repo.formattedName || this.uri.repoPath || '';
 
-        const label = this.active
-            ? `Active Repository ${Strings.pad(GlyphChars.Dash, 1, 1)} ${this.repo.formattedName || this.uri.repoPath}`
-            : `${this.repo.formattedName || this.uri.repoPath}`;
+        this._lastFetched = await this.repo.getLastFetched();
 
-        const item = new TreeItem(
-            label,
-            this.active ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
-        );
-        item.id = this.id;
+        const lastFetchedTooltip = this.formatLastFetched({
+            prefix: `${Strings.pad(GlyphChars.Dash, 2, 2)}Last fetched on `,
+            format: Container.config.defaultDateFormat || 'dddd MMMM Do, YYYY h:mm a'
+        });
+
+        let description;
+        let tooltip = this.repo.formattedName
+            ? `${this.repo.formattedName}${lastFetchedTooltip}\n${this.uri.repoPath}`
+            : `${this.uri.repoPath}${lastFetchedTooltip}`;
+        let iconSuffix = '';
+        let workingStatus = '';
+
+        const status = await this._status;
+        if (status !== undefined) {
+            tooltip += `\n\nCurrent branch is ${status.branch}`;
+
+            if (status.files.length !== 0 && this.includeWorkingTree) {
+                workingStatus = status.getFormattedDiffStatus({
+                    compact: true,
+                    prefix: Strings.pad(GlyphChars.Dot, 2, 2)
+                });
+            }
+
+            const upstreamStatus = status.getUpstreamStatus({
+                prefix: `${GlyphChars.Space} `
+            });
+
+            description = `${status.branch}${upstreamStatus}${workingStatus}`;
+
+            iconSuffix = workingStatus ? '-blue' : '';
+            if (status.upstream !== undefined) {
+                tooltip += ` and is tracking ${status.upstream}\n${status.getUpstreamStatus({
+                    empty: `No commits ahead or behind`,
+                    expand: true,
+                    separator: '\n',
+                    suffix: '\n'
+                })}`;
+
+                if (status.state.behind) {
+                    iconSuffix = '-red';
+                }
+                if (status.state.ahead) {
+                    iconSuffix = status.state.behind ? '-yellow' : '-green';
+                }
+            }
+
+            if (workingStatus) {
+                tooltip += `\n\nWorking tree has uncommitted changes${status.getFormattedDiffStatus({
+                    expand: true,
+                    prefix: `\n`,
+                    separator: '\n'
+                })}`;
+            }
+        }
+
+        if (!this.repo.supportsChangeEvents) {
+            description = `<!>${description ? ` ${GlyphChars.Space}${description}` : ''}`;
+            tooltip += `\n\n<!> Unable to automatically detect repository changes`;
+        }
+
+        const item = new TreeItem(label, TreeItemCollapsibleState.Expanded);
         item.contextValue = ResourceType.Repository;
+        if (this.repo.starred) {
+            item.contextValue += '+starred';
+        }
+        item.description = `${description || ''}${this.formatLastFetched({
+            prefix: `${Strings.pad(GlyphChars.Dot, 2, 2)}Last fetched `
+        })}`;
+        item.iconPath = {
+            dark: Container.context.asAbsolutePath(`images/dark/icon-repo${iconSuffix}.svg`),
+            light: Container.context.asAbsolutePath(`images/light/icon-repo${iconSuffix}.svg`)
+        };
+        item.id = this.id;
+        item.tooltip = tooltip;
+
+        void this.ensureSubscription();
+
         return item;
     }
 
-    refresh() {
-        this.resetChildren();
-        this.updateSubscription();
+    @log()
+    fetch(options: { progress?: boolean; remote?: string } = {}) {
+        return this.repo.fetch(options);
     }
 
-    private updateSubscription() {
-        // We only need to subscribe if auto-refresh is enabled, because if it becomes enabled we will be refreshed
-        if (this.explorer.autoRefresh) {
-            this.disposable =
-                this.disposable ||
-                Disposable.from(
-                    this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this),
-                    this.repo.onDidChange(this.onRepoChanged, this)
-                );
+    @log()
+    pull(options: { progress?: boolean } = {}) {
+        return this.repo.pull(options);
+    }
+
+    @log()
+    push(options: { force?: boolean; progress?: boolean } = {}) {
+        return this.repo.push(options);
+    }
+
+    @gate()
+    @debug()
+    async refresh() {
+        this._status = this.repo.getStatus();
+
+        this._children = undefined;
+        await this.ensureSubscription();
+    }
+
+    @log()
+    async star() {
+        await this.repo.star();
+        void this.parent!.triggerChange();
+    }
+
+    @log()
+    async unstar() {
+        await this.repo.unstar();
+        void this.parent!.triggerChange();
+    }
+
+    @debug()
+    protected async subscribe() {
+        const disposables = [this.repo.onDidChange(this.onRepoChanged, this)];
+
+        if (Container.config.defaultDateStyle === DateStyle.Relative) {
+            disposables.push(Functions.interval(() => void this.updateLastFetched(), 60000));
         }
-        else if (this.disposable !== undefined) {
-            this.disposable.dispose();
-            this.disposable = undefined;
+
+        if (this.includeWorkingTree) {
+            disposables.push(this.repo.onDidChangeFileSystem(this.onFileSystemChanged, this), {
+                dispose: () => this.repo.stopWatchingFileSystem()
+            });
+
+            this.repo.startWatchingFileSystem();
         }
+
+        return Disposable.from(...disposables);
     }
 
-    private onAutoRefreshChanged() {
-        this.updateSubscription();
+    private get includeWorkingTree(): boolean {
+        return this.view.config.includeWorkingTree;
     }
 
+    @debug({
+        args: {
+            0: (e: RepositoryFileSystemChangeEvent) =>
+                `{ repository: ${e.repository ? e.repository.name : ''}, uris(${e.uris.length}): [${e.uris
+                    .slice(0, 1)
+                    .map(u => u.fsPath)
+                    .join(', ')}${e.uris.length > 1 ? ', ...' : ''}] }`
+        }
+    })
+    private onFileSystemChanged(e: RepositoryFileSystemChangeEvent) {
+        void this.triggerChange();
+    }
+
+    @debug({
+        args: {
+            0: (e: RepositoryChangeEvent) =>
+                `{ repository: ${e.repository ? e.repository.name : ''}, changes: ${e.changes.join()} }`
+        }
+    })
     private onRepoChanged(e: RepositoryChangeEvent) {
-        Logger.log(`RepositoryNode.onRepoChanged(${e.changes.join()}); triggering node refresh`);
+        if (e.changed(RepositoryChange.Closed)) {
+            this.dispose();
+
+            return;
+        }
 
         if (
-            this.children === undefined ||
+            this._children === undefined ||
             e.changed(RepositoryChange.Repository) ||
             e.changed(RepositoryChange.Config)
         ) {
-            this.explorer.refreshNode(this.active && this.activeParent !== undefined ? this.activeParent : this);
+            void this.triggerChange();
 
             return;
         }
 
         if (e.changed(RepositoryChange.Stashes)) {
-            const node = this.children.find(c => c instanceof StashesNode);
+            const node = this._children.find(c => c instanceof StashesNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.view.triggerNodeChange(node);
             }
         }
 
         if (e.changed(RepositoryChange.Remotes)) {
-            const node = this.children.find(c => c instanceof RemotesNode);
+            const node = this._children.find(c => c instanceof RemotesNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.view.triggerNodeChange(node);
             }
         }
 
         if (e.changed(RepositoryChange.Tags)) {
-            const node = this.children.find(c => c instanceof TagsNode);
+            const node = this._children.find(c => c instanceof TagsNode);
             if (node !== undefined) {
-                this.explorer.refreshNode(node);
+                void this.view.triggerNodeChange(node);
             }
         }
+    }
+
+    private formatLastFetched(options: { prefix?: string; format?: string } = {}) {
+        if (this._lastFetched === 0) return '';
+
+        if (options.format === undefined && Container.config.defaultDateStyle === DateStyle.Relative) {
+            // If less than a day has passed show a relative date
+            if (Date.now() - this._lastFetched < Dates.MillisecondsPerDay) {
+                return `${options.prefix || ''}${Dates.toFormatter(new Date(this._lastFetched)).fromNow()}`;
+            }
+        }
+
+        return `${options.prefix || ''}${Dates.toFormatter(new Date(this._lastFetched)).format(
+            options.format || Container.config.defaultDateShortFormat || 'MMM D, YYYY'
+        )}`;
+    }
+
+    @debug()
+    private async updateLastFetched() {
+        const prevLastFetched = this._lastFetched;
+        this._lastFetched = await this.repo.getLastFetched();
+
+        // If the fetched date hasn't changed and it was over a day ago, kick out
+        if (this._lastFetched === prevLastFetched && Date.now() - this._lastFetched >= Dates.MillisecondsPerDay) return;
+
+        this.view.triggerNodeChange(this);
     }
 }

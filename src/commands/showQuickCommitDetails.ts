@@ -1,15 +1,16 @@
 'use strict';
-import * as path from 'path';
-import { commands, TextEditor, Uri, window } from 'vscode';
+import * as paths from 'path';
+import { commands, TextEditor, Uri } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitCommit, GitLog, GitLogCommit, GitUri } from '../gitService';
+import { GitCommit, GitLog, GitLogCommit, GitRepoSearchBy, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
 import { CommandQuickPickItem, CommitQuickPick, CommitWithFileStatusQuickPickItem } from '../quickpicks';
 import { Strings } from '../system';
 import {
     ActiveEditorCachedCommand,
+    command,
     CommandContext,
     Commands,
     getCommandUri,
@@ -21,10 +22,12 @@ export interface ShowQuickCommitDetailsCommandArgs {
     sha?: string;
     commit?: GitCommit | GitLogCommit;
     repoLog?: GitLog;
+    showInView?: boolean;
 
     goBackCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
     static getMarkdownCommandArgs(sha: string): string;
     static getMarkdownCommandArgs(args: ShowQuickCommitDetailsCommandArgs): string;
@@ -37,11 +40,16 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
     }
 
     constructor() {
-        super(Commands.ShowQuickCommitDetails);
+        super([Commands.ShowCommitInView, Commands.ShowQuickCommitDetails]);
     }
 
     protected async preExecute(context: CommandContext, args: ShowQuickCommitDetailsCommandArgs = {}): Promise<any> {
-        if (context.type === 'view') {
+        if (context.command === Commands.ShowCommitInView) {
+            args = { ...args };
+            args.showInView = true;
+        }
+
+        if (context.type === 'viewItem') {
             args = { ...args };
             args.sha = context.node.uri.sha;
 
@@ -49,6 +57,7 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
                 args.commit = context.node.commit;
             }
         }
+
         return this.execute(context.editor, context.uri, args);
     }
 
@@ -59,7 +68,7 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
         const gitUri = await GitUri.fromUri(uri);
 
         let repoPath = gitUri.repoPath;
-        let workingFileName = path.relative(repoPath || '', gitUri.fsPath);
+        let workingFileName = repoPath ? paths.relative(repoPath, gitUri.fsPath) : gitUri.fsPath;
 
         args = { ...args };
         if (args.sha === undefined) {
@@ -87,7 +96,7 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
             }
             catch (ex) {
                 Logger.error(ex, 'ShowQuickCommitDetailsCommand', `getBlameForLine(${blameline})`);
-                return window.showErrorMessage(`Unable to show commit details. See output channel for more details`);
+                return Messages.showGenericErrorMessage('Unable to show commit details');
             }
         }
 
@@ -117,6 +126,14 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
 
             if (args.commit.workingFileName === undefined) {
                 args.commit.workingFileName = workingFileName;
+            }
+
+            if (args.showInView) {
+                void (await Container.searchView.search(repoPath!, args.commit.sha, GitRepoSearchBy.Sha, {
+                    label: { label: `commits with an id matching '${args.commit.shortSha}'` }
+                }));
+
+                return undefined;
             }
 
             if (args.goBackCommand === undefined) {
@@ -165,7 +182,7 @@ export class ShowQuickCommitDetailsCommand extends ActiveEditorCachedCommand {
         }
         catch (ex) {
             Logger.error(ex, 'ShowQuickCommitDetailsCommand');
-            return window.showErrorMessage(`Unable to show commit details. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to show commit details');
         }
     }
 }

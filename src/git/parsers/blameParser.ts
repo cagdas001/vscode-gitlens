@@ -1,5 +1,5 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { Strings } from '../../system';
 import { Git, GitAuthor, GitBlame, GitBlameCommit, GitCommitLine } from './../git';
 
@@ -73,6 +73,11 @@ export class GitBlameParser {
                     break;
 
                 case 'author-mail':
+                    if (Git.isUncommitted(entry.sha)) {
+                        entry.authorEmail = currentUser !== undefined ? currentUser.email : undefined;
+                        continue;
+                    }
+
                     entry.authorEmail = lineParts
                         .slice(1)
                         .join(' ')
@@ -118,7 +123,10 @@ export class GitBlameParser {
                         repoPath = Strings.normalizePath(
                             fileName.replace(fileName.startsWith('/') ? `/${entry.fileName}` : entry.fileName!, '')
                         );
-                        relativeFileName = Strings.normalizePath(path.relative(repoPath, fileName));
+                        relativeFileName = Strings.normalizePath(paths.relative(repoPath, fileName));
+                    }
+                    else {
+                        relativeFileName = entry.fileName!;
                     }
                     first = false;
 
@@ -132,14 +140,14 @@ export class GitBlameParser {
             }
         }
 
-        commits.forEach(c => {
+        for (const [, c] of commits) {
             if (c.author === undefined) return;
 
             const author = authors.get(c.author);
             if (author === undefined) return;
 
             author.lineCount += c.lines.length;
-        });
+        }
 
         const sortedAuthors = new Map([...authors.entries()].sort((a, b) => b[1].lineCount - a[1].lineCount));
 
@@ -154,7 +162,7 @@ export class GitBlameParser {
     private static parseEntry(
         entry: BlameEntry,
         repoPath: string | undefined,
-        fileName: string | undefined,
+        relativeFileName: string,
         commits: Map<string, GitBlameCommit>,
         authors: Map<string, GitAuthor>,
         lines: GitCommitLine[],
@@ -192,8 +200,8 @@ export class GitBlameParser {
                 entry.authorEmail,
                 new Date((entry.authorDate as any) * 1000),
                 entry.summary!,
-                fileName!,
-                fileName !== entry.fileName ? entry.fileName : undefined,
+                relativeFileName,
+                relativeFileName !== entry.fileName ? entry.fileName : undefined,
                 entry.previousSha,
                 entry.previousSha && entry.previousFileName,
                 []

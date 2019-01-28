@@ -1,5 +1,101 @@
 'use strict';
 
+export interface Config {
+    blame: {
+        avatars: boolean;
+        compact: boolean;
+        dateFormat: string | null;
+        format: string;
+        heatmap: {
+            enabled: boolean;
+            location: 'left' | 'right';
+        };
+        highlight: {
+            enabled: boolean;
+            locations: HighlightLocations[];
+        };
+        ignoreWhitespace: boolean;
+        separateLines: boolean;
+        toggleMode: AnnotationsToggleMode;
+    };
+    currentLine: {
+        scrollable: boolean;
+        dateFormat: string | null;
+        enabled: boolean;
+        format: string;
+    };
+    codeLens: CodeLensConfig;
+    debug: boolean;
+    defaultDateFormat: string | null;
+    defaultDateShortFormat: string | null;
+    defaultDateStyle: DateStyle;
+    defaultGravatarsStyle: GravatarDefaultStyle;
+    heatmap: {
+        ageThreshold: number;
+        coldColor: string;
+        hotColor: string;
+        toggleMode: AnnotationsToggleMode;
+    };
+    hovers: {
+        annotations: {
+            changes: boolean;
+            details: boolean;
+            enabled: boolean;
+            over: 'line' | 'annotation';
+        };
+        currentLine: {
+            changes: boolean;
+            details: boolean;
+            enabled: boolean;
+            over: 'line' | 'annotation';
+        };
+        avatars: boolean;
+        enabled: boolean;
+    };
+    insiders: boolean;
+    keymap: KeyMap;
+    liveshare: {
+        allowGuestAccess: boolean;
+    };
+    menus: boolean | MenuConfig;
+    mode: {
+        active: string;
+        statusBar: {
+            enabled: boolean;
+            alignment: 'left' | 'right';
+        };
+    };
+    modes: { [key: string]: ModeConfig };
+    outputLevel: LogLevel;
+    recentChanges: {
+        highlight: {
+            locations: HighlightLocations[];
+        };
+        toggleMode: AnnotationsToggleMode;
+    };
+    remotes: RemotesConfig[];
+    showWhatsNewAfterUpgrades: boolean;
+    statusBar: {
+        alignment: 'left' | 'right';
+        command: StatusBarCommand;
+        dateFormat: string | null;
+        enabled: boolean;
+        format: string;
+        reduceFlicker: boolean;
+    };
+    strings: {
+        codeLens: {
+            unsavedChanges: {
+                recentChangeAndAuthors: string;
+                recentChangeOnly: string;
+                authorsOnly: string;
+            };
+        };
+    };
+    views: ViewsConfig;
+    advanced: AdvancedConfig;
+}
+
 export enum AnnotationsToggleMode {
     File = 'file',
     Window = 'window'
@@ -12,12 +108,6 @@ export enum CodeLensCommand {
     ShowQuickCurrentBranchHistory = 'gitlens.showQuickRepoHistory',
     ShowQuickFileHistory = 'gitlens.showQuickFileHistory',
     ToggleFileBlame = 'gitlens.toggleFileBlame'
-}
-
-export interface CodeLensLanguageScope {
-    language: string | undefined;
-    scopes?: CodeLensScopes[];
-    symbolScopes?: string[];
 }
 
 export enum CodeLensScopes {
@@ -39,34 +129,17 @@ export enum DateStyle {
     Relative = 'relative'
 }
 
-export enum ExplorerBranchesLayout {
-    List = 'list',
-    Tree = 'tree'
-}
-
-export enum ExplorerFilesLayout {
-    Auto = 'auto',
-    List = 'list',
-    Tree = 'tree'
-}
-
 export enum FileAnnotationType {
     Blame = 'blame',
     Heatmap = 'heatmap',
     RecentChanges = 'recentChanges'
 }
 
-export enum GitExplorerView {
-    Auto = 'auto',
-    History = 'history',
-    Repository = 'repository'
-}
-
 export enum GravatarDefaultStyle {
     Faces = 'wavatar',
     Geometric = 'identicon',
     Monster = 'monsterid',
-    MysteryMan = 'mm',
+    MysteryPerson = 'mp',
     Retro = 'retro',
     Robot = 'robohash'
 }
@@ -83,7 +156,7 @@ export enum KeyMap {
     None = 'none'
 }
 
-export enum OutputLevel {
+export enum LogLevel {
     Silent = 'silent',
     Errors = 'errors',
     Verbose = 'verbose',
@@ -101,6 +174,17 @@ export enum StatusBarCommand {
     ToggleFileBlame = 'gitlens.toggleFileBlame'
 }
 
+export enum ViewBranchesLayout {
+    List = 'list',
+    Tree = 'tree'
+}
+
+export enum ViewFilesLayout {
+    Auto = 'auto',
+    List = 'list',
+    Tree = 'tree'
+}
+
 export enum StatusIcon {
     '!' = 'icon-status-ignored.svg',
     '?' = 'icon-status-untracked.svg',
@@ -115,21 +199,18 @@ export enum StatusIcon {
     B = 'icon-status-unknown.svg'
 }
 
-export interface IAdvancedConfig {
+export interface AdvancedConfig {
+    abbreviatedShaLength: number;
     blame: {
         customArguments: string[] | null;
         delayAfterEdit: number;
         sizeThresholdAfterEdit: number;
     };
-
     caching: {
         enabled: boolean;
     };
-
-    git: string;
     fileHistoryFollowsRenames: boolean;
     maxListItems: number;
-
     messages: {
         suppressCommitHasNoPreviousCommitWarning: boolean;
         suppressCommitNotFoundWarning: boolean;
@@ -138,15 +219,12 @@ export interface IAdvancedConfig {
         suppressGitVersionWarning: boolean;
         suppressLineUncommittedWarning: boolean;
         suppressNoRepositoryWarning: boolean;
-        suppressShowKeyBindingsNotice: boolean;
+        suppressSupportGitLensNotification: boolean;
     };
-
     quickPick: {
         closeOnFocusOut: boolean;
     };
-
     repositorySearchDepth: number;
-
     telemetry: {
         enabled: boolean;
     };
@@ -154,72 +232,50 @@ export interface IAdvancedConfig {
     useApiV2: boolean;
 }
 
-export interface ICodeLensConfig {
+export interface CodeLensConfig {
     authors: {
         enabled: boolean;
         command: CodeLensCommand;
     };
-
     enabled: boolean;
-
+    includeSingleLineSymbols: boolean;
     recentChange: {
         enabled: boolean;
         command: CodeLensCommand;
     };
-
     scopes: CodeLensScopes[];
     scopesByLanguage: CodeLensLanguageScope[];
     symbolScopes: string[];
 }
 
-export interface IExplorersConfig {
+export interface CodeLensLanguageScope {
+    language: string | undefined;
+    scopes?: CodeLensScopes[];
+    symbolScopes?: string[];
+}
+
+export interface CompareViewConfig {
     avatars: boolean;
-
-    files: {
-        layout: ExplorerFilesLayout;
-        compact: boolean;
-        threshold: number;
-    };
-
-    commitFileFormat: string;
-    commitFormat: string;
-    // dateFormat: string | null;
-
-    stashFileFormat: string;
-    stashFormat: string;
-    statusFileFormat: string;
-}
-
-export interface IExplorersFilesConfig {
-    compact: boolean;
-    layout: ExplorerFilesLayout;
-    threshold: number;
-}
-
-export interface IGitExplorerConfig {
-    autoRefresh: boolean;
-
-    branches: {
-        layout: ExplorerBranchesLayout;
-    };
-
     enabled: boolean;
-    files: IExplorersFilesConfig;
-    includeWorkingTree: boolean;
+    files: ViewsFilesConfig;
     location: 'explorer' | 'gitlens' | 'scm';
-    showTrackingBranch: boolean;
-    view: GitExplorerView;
 }
 
-export interface IHistoryExplorerConfig {
+export interface FileHistoryViewConfig {
     avatars: boolean;
     enabled: boolean;
-    location: 'explorer' | 'scm';
+    location: 'explorer' | 'gitlens' | 'scm';
 }
 
-export interface IMenuConfig {
+export interface LineHistoryViewConfig {
+    avatars: boolean;
+    enabled: boolean;
+    location: 'explorer' | 'gitlens' | 'scm';
+}
+
+export interface MenuConfig {
     editor:
-        | boolean
+        | false
         | {
               blame: boolean;
               clipboard: boolean;
@@ -229,52 +285,67 @@ export interface IMenuConfig {
               remote: boolean;
           };
     editorGroup:
-        | boolean
+        | false
         | {
               compare: boolean;
               history: boolean;
           };
     editorTab:
-        | boolean
+        | false
         | {
+              clipboard: boolean;
               compare: boolean;
               history: boolean;
               remote: boolean;
           };
     explorer:
-        | boolean
+        | false
         | {
+              clipboard: boolean;
               compare: boolean;
               history: boolean;
               remote: boolean;
           };
+    scmGroup:
+        | false
+        | {
+              compare: boolean;
+              openClose: boolean;
+              stash: boolean;
+              stashInline: boolean;
+          };
+    scmItem:
+        | false
+        | {
+              clipboard: boolean;
+              compare: boolean;
+              history: boolean;
+              remote: boolean;
+              stash: boolean;
+          };
 }
 
-export interface IModeConfig {
+export interface ModeConfig {
     name: string;
     statusBarItemName?: string;
     description?: string;
+    annotations?: 'blame' | 'heatmap' | 'recentChanges';
     codeLens?: boolean;
     currentLine?: boolean;
-    explorers?: boolean;
     hovers?: boolean;
     statusBar?: boolean;
+    views?: boolean;
 }
 
-export interface IResultsExplorerConfig {
-    files: IExplorersFilesConfig;
-    location: 'explorer' | 'scm';
-}
-
-export interface IRemotesConfig {
+export interface RemotesConfig {
     domain: string;
     name?: string;
     protocol?: string;
     type: CustomRemoteType;
-    urls?: IRemotesUrlsConfig;
+    urls?: RemotesUrlsConfig;
 }
 
-export interface IRemotesUrlsConfig {
+export interface RemotesUrlsConfig {
     repository: string;
     branches: string;
     branch: string;
@@ -286,115 +357,50 @@ export interface IRemotesUrlsConfig {
     fileRange: string;
 }
 
-export interface IConfig {
-    blame: {
-        avatars: boolean;
-        compact: boolean;
-        dateFormat: string | null;
-        format: string;
-        heatmap: {
-            enabled: boolean;
-            location: 'left' | 'right';
-        };
-        highlight: {
-            enabled: boolean;
-            locations: HighlightLocations[];
-        };
-        ignoreWhitespace: boolean;
-        separateLines: boolean;
-        toggleMode: AnnotationsToggleMode;
+export interface RepositoriesViewConfig {
+    autoRefresh: boolean;
+    autoReveal: boolean;
+    avatars: boolean;
+    branches: {
+        layout: ViewBranchesLayout;
     };
+    compact: boolean;
+    enabled: boolean;
+    files: ViewsFilesConfig;
+    includeWorkingTree: boolean;
+    location: 'explorer' | 'gitlens' | 'scm';
+    showTrackingBranch: boolean;
+}
 
-    currentLine: {
-        scrollable: boolean;
-        dateFormat: string | null;
-        enabled: boolean;
-        format: string;
-    };
+export interface SearchViewConfig {
+    avatars: boolean;
+    enabled: boolean;
+    files: ViewsFilesConfig;
+    location: 'explorer' | 'gitlens' | 'scm';
+}
 
-    codeLens: ICodeLensConfig;
+export interface ViewsConfig {
+    fileHistory: FileHistoryViewConfig;
+    commitFileDescriptionFormat: string;
+    commitFileFormat: string;
+    commitDescriptionFormat: string;
+    commitFormat: string;
+    compare: CompareViewConfig;
+    defaultItemLimit: number;
+    lineHistory: LineHistoryViewConfig;
+    repositories: RepositoriesViewConfig;
+    search: SearchViewConfig;
+    showRelativeDateMarkers: boolean;
+    stashFileDescriptionFormat: string;
+    stashFileFormat: string;
+    stashDescriptionFormat: string;
+    stashFormat: string;
+    statusFileDescriptionFormat: string;
+    statusFileFormat: string;
+}
 
-    debug: boolean;
-    defaultDateFormat: string | null;
-    defaultDateStyle: DateStyle;
-    defaultGravatarsStyle: GravatarDefaultStyle;
-
-    explorers: IExplorersConfig;
-
-    gitExplorer: IGitExplorerConfig;
-
-    heatmap: {
-        ageThreshold: number;
-        coldColor: string;
-        hotColor: string;
-        toggleMode: AnnotationsToggleMode;
-    };
-
-    historyExplorer: IHistoryExplorerConfig;
-
-    hovers: {
-        annotations: {
-            changes: boolean;
-            details: boolean;
-            enabled: boolean;
-            over: 'line' | 'annotation';
-        };
-
-        currentLine: {
-            changes: boolean;
-            details: boolean;
-            enabled: boolean;
-            over: 'line' | 'annotation';
-        };
-
-        avatars: boolean;
-        enabled: boolean;
-    };
-
-    insiders: boolean;
-    keymap: KeyMap;
-    menus: boolean | IMenuConfig;
-    mode: {
-        active: string;
-        statusBar: {
-            enabled: boolean;
-            alignment: 'left' | 'right';
-        };
-    };
-    modes: { [key: string]: IModeConfig };
-    outputLevel: OutputLevel;
-
-    recentChanges: {
-        highlight: {
-            locations: HighlightLocations[];
-        };
-        toggleMode: AnnotationsToggleMode;
-    };
-
-    remotes: IRemotesConfig[];
-
-    resultsExplorer: IResultsExplorerConfig;
-
-    showWhatsNewAfterUpgrades: boolean;
-
-    statusBar: {
-        alignment: 'left' | 'right';
-        command: StatusBarCommand;
-        dateFormat: string | null;
-        enabled: boolean;
-        format: string;
-        reduceFlicker: boolean;
-    };
-
-    strings: {
-        codeLens: {
-            unsavedChanges: {
-                recentChangeAndAuthors: string;
-                recentChangeOnly: string;
-                authorsOnly: string;
-            };
-        };
-    };
-
-    advanced: IAdvancedConfig;
+export interface ViewsFilesConfig {
+    compact: boolean;
+    layout: ViewFilesLayout;
+    threshold: number;
 }

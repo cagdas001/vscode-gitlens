@@ -13,10 +13,15 @@ import { Commands, openEditor } from '../commands';
 import { configuration } from '../configuration';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitLog, GitLogCommit, GitStashCommit } from '../gitService';
+import { GitLog, GitLogCommit, GitRepoSearchBy, GitStashCommit, GitUri } from '../git/gitService';
 import { KeyMapping, Keys } from '../keyboard';
 import { Strings } from '../system';
-import { BranchesAndTagsQuickPick, BranchOrTagQuickPickItem } from './branchesAndTagsQuickPick';
+import {
+    BranchesAndTagsQuickPick,
+    BranchQuickPickItem,
+    RefQuickPickItem,
+    TagQuickPickItem
+} from './branchesAndTagsQuickPick';
 
 export function getQuickPickIgnoreFocusOut() {
     return !configuration.get<boolean>(configuration.name('advanced')('quickPick')('closeOnFocusOut').value);
@@ -116,13 +121,17 @@ export class CommitQuickPickItem implements QuickPickItem {
                 GlyphChars.Dot,
                 1,
                 1
-            )} ${commit.formattedDate} ${Strings.pad(GlyphChars.Dot, 1, 1)} ${commit.getDiffStatus()}`;
+            )} ${commit.formattedDate} ${Strings.pad(GlyphChars.Dot, 1, 1)} ${commit.getFormattedDiffStatus({
+                compact: true
+            })}`;
         }
         else {
             this.label = message;
             this.description = `${Strings.pad('$(git-commit)', 1, 1)} ${commit.shortSha}`;
             this.detail = `${GlyphChars.Space} ${commit.author}, ${commit.formattedDate}${
-                commit.isFile ? '' : ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${commit.getDiffStatus()}`
+                commit.isFile
+                    ? ''
+                    : ` ${Strings.pad(GlyphChars.Dot, 1, 1)} ${commit.getFormattedDiffStatus({ compact: true })}`
             }`;
         }
     }
@@ -132,7 +141,7 @@ export class ChooseFromBranchesAndTagsQuickPickItem extends CommandQuickPickItem
     constructor(
         private readonly repoPath: string,
         private readonly placeHolder: string,
-        private readonly goBackCommand?: CommandQuickPickItem,
+        private readonly _goBack?: CommandQuickPickItem,
         item: QuickPickItem = {
             label: 'Choose from Branch or Tag History...',
             description: `${Strings.pad(GlyphChars.Dash, 2, 2)} shows list of branches and tags`
@@ -141,27 +150,11 @@ export class ChooseFromBranchesAndTagsQuickPickItem extends CommandQuickPickItem
         super(item, undefined, undefined);
     }
 
-    async execute(
-        options: TextDocumentShowOptions = { preserveFocus: false, preview: false }
-    ): Promise<CommandQuickPickItem | BranchOrTagQuickPickItem | undefined> {
-        const progressCancellation = BranchesAndTagsQuickPick.showProgress(this.placeHolder);
-
-        try {
-            const [branches, tags] = await Promise.all([
-                Container.git.getBranches(this.repoPath),
-                Container.git.getTags(this.repoPath)
-            ]);
-
-            if (progressCancellation.token.isCancellationRequested) return undefined;
-
-            return BranchesAndTagsQuickPick.show(branches, tags, this.placeHolder, {
-                progressCancellation: progressCancellation,
-                goBackCommand: this.goBackCommand
-            });
-        }
-        finally {
-            progressCancellation.cancel();
-        }
+    execute(): Promise<CommandQuickPickItem | BranchQuickPickItem | TagQuickPickItem | RefQuickPickItem | undefined> {
+        return new BranchesAndTagsQuickPick(this.repoPath).show(this.placeHolder, {
+            allowCommitId: true,
+            goBack: this._goBack
+        });
     }
 }
 
@@ -188,6 +181,13 @@ export class OpenFileCommandQuickPickItem extends CommandQuickPickItem {
     async execute(options?: TextDocumentShowOptions): Promise<TextEditor | undefined> {
         return openEditor(this.uri, options);
     }
+
+    // onDidSelect(): Promise<{} | undefined> {
+    //     return this.execute({
+    //         preserveFocus: true,
+    //         preview: true
+    //     });
+    // }
 
     onDidPressKey(key: Keys): Promise<{} | undefined> {
         return this.execute({
@@ -222,54 +222,69 @@ export class OpenFilesCommandQuickPickItem extends CommandQuickPickItem {
     }
 }
 
-export class ShowCommitInResultsQuickPickItem extends CommandQuickPickItem {
+export class ShowCommitInViewQuickPickItem extends CommandQuickPickItem {
     constructor(
         public readonly commit: GitLogCommit,
         item: QuickPickItem = {
-            label: 'Show in Results',
-            description: `${Strings.pad(GlyphChars.Dash, 2, 2)} displays commit in the GitLens Results explorer`
+            label: 'Show in View',
+            description: `${Strings.pad(GlyphChars.Dash, 2, 2)} displays the commit in the GitLens Search Commits view`
         }
     ) {
         super(item, undefined, undefined);
     }
 
-    async execute(
-        options: TextDocumentShowOptions = { preserveFocus: false, preview: false }
-    ): Promise<{} | undefined> {
-        Container.resultsExplorer.showCommitInResults(this.commit);
+    async execute(): Promise<{} | undefined> {
+        await Container.searchView.search(this.commit.repoPath, this.commit.sha, GitRepoSearchBy.Sha, {
+            label: { label: `commits with an id matching '${this.commit.shortSha}'` }
+        });
         return undefined;
     }
 }
 
-export class ShowCommitsInResultsQuickPickItem extends CommandQuickPickItem {
+export class ShowCommitSearchResultsInViewQuickPickItem extends CommandQuickPickItem {
     constructor(
+        public readonly search: string,
+        public readonly searchBy: GitRepoSearchBy,
         public readonly results: GitLog,
         public readonly resultsLabel: string | { label: string; resultsType?: { singular: string; plural: string } },
         item: QuickPickItem = {
-            label: 'Show in Results',
-            description: `${Strings.pad(GlyphChars.Dash, 2, 2)} displays commits in the GitLens Results explorer`
+            label: 'Show in View',
+            description: `${Strings.pad(
+                GlyphChars.Dash,
+                2,
+                2
+            )} displays the search results in the GitLens Search Commits view`
         }
     ) {
         super(item, undefined, undefined);
     }
 
-    async execute(
-        options: TextDocumentShowOptions = { preserveFocus: false, preview: false }
-    ): Promise<{} | undefined> {
-        Container.resultsExplorer.showCommitsInResults(this.results, this.resultsLabel);
+    async execute(): Promise<{} | undefined> {
+        await Container.searchView.showSearchResults(this.results.repoPath, this.search, this.searchBy, this.results, {
+            label: this.resultsLabel
+        });
         return undefined;
     }
 }
 
-export class ShowCommitsSearchInResultsQuickPickItem extends ShowCommitsInResultsQuickPickItem {
+export class ShowFileHistoryInViewQuickPickItem extends CommandQuickPickItem {
     constructor(
-        public readonly results: GitLog,
-        public readonly search: string,
+        public readonly uri: GitUri,
+        public readonly baseRef: string | undefined,
         item: QuickPickItem = {
-            label: 'Show in Results',
-            description: `${Strings.pad(GlyphChars.Dash, 2, 2)} displays results in the GitLens Results explorer`
+            label: 'Show in View',
+            description: `${Strings.pad(
+                GlyphChars.Dash,
+                2,
+                2
+            )} displays the file history in the GitLens File History view`
         }
     ) {
-        super(results, { label: search }, item);
+        super(item, undefined, undefined);
+    }
+
+    async execute(): Promise<{} | undefined> {
+        await Container.fileHistoryView.showHistoryForUri(this.uri, this.baseRef);
+        return undefined;
     }
 }

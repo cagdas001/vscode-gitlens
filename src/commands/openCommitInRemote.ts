@@ -1,21 +1,29 @@
 'use strict';
 import { commands, TextEditor, Uri, window } from 'vscode';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
+import { GitUri, RemoteResourceType } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
-import { ActiveEditorCommand, CommandContext, Commands, getCommandUri, isCommandViewContextWithCommit } from './common';
+import {
+    ActiveEditorCommand,
+    command,
+    CommandContext,
+    Commands,
+    getCommandUri,
+    isCommandViewContextWithCommit
+} from './common';
 import { OpenInRemoteCommandArgs } from './openInRemote';
 
 export interface OpenCommitInRemoteCommandArgs {
     sha?: string;
 }
 
+@command()
 export class OpenCommitInRemoteCommand extends ActiveEditorCommand {
     static getMarkdownCommandArgs(sha: string): string;
     static getMarkdownCommandArgs(args: OpenCommitInRemoteCommandArgs): string;
     static getMarkdownCommandArgs(argsOrSha: OpenCommitInRemoteCommandArgs | string): string {
-        const args = typeof argsOrSha === 'string' ? { sha: argsOrSha } : argsOrSha;
+        const args: OpenCommitInRemoteCommandArgs = typeof argsOrSha === 'string' ? { sha: argsOrSha } : argsOrSha;
         return super.getMarkdownCommandArgsCore<OpenCommitInRemoteCommandArgs>(Commands.OpenCommitInRemote, args);
     }
 
@@ -50,7 +58,7 @@ export class OpenCommitInRemoteCommand extends ActiveEditorCommand {
                         : await Container.git.getBlameForLine(gitUri, blameline);
                 if (blame === undefined) {
                     return Messages.showFileNotUnderSourceControlWarningMessage(
-                        'Unable to open commit in remote provider'
+                        'Unable to open commit on remote provider'
                     );
                 }
 
@@ -72,7 +80,7 @@ export class OpenCommitInRemoteCommand extends ActiveEditorCommand {
 
             return commands.executeCommand(Commands.OpenInRemote, uri, {
                 resource: {
-                    type: 'commit',
+                    type: RemoteResourceType.Commit,
                     sha: args.sha
                 },
                 remotes
@@ -81,7 +89,7 @@ export class OpenCommitInRemoteCommand extends ActiveEditorCommand {
         catch (ex) {
             Logger.error(ex, 'OpenCommitInRemoteCommand');
             return window.showErrorMessage(
-                `Unable to open commit in remote provider. See output channel for more details`
+                `Unable to open commit on remote provider. See output channel for more details`
             );
         }
     }

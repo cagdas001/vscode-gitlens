@@ -16,11 +16,15 @@ export enum BuiltInCommands {
     EditorScroll = 'editorScroll',
     ExecuteDocumentSymbolProvider = 'vscode.executeDocumentSymbolProvider',
     ExecuteCodeLensProvider = 'vscode.executeCodeLensProvider',
+    FocusFilesExplorer = 'workbench.files.action.focusFilesExplorer',
     Open = 'vscode.open',
+    OpenFolder = 'vscode.openFolder',
+    OpenInTerminal = 'openInTerminal',
     NextEditor = 'workbench.action.nextEditor',
     PreviewHtml = 'vscode.previewHtml',
     RevealLine = 'revealLine',
     SetContext = 'setContext',
+    ShowExplorerActivity = 'workbench.view.explorer',
     ShowReferences = 'editor.action.showReferences'
 }
 
@@ -30,18 +34,19 @@ export enum CommandContext {
     BitbucketLoggedIn = 'gitlens:bitbucketLoggedIn',
     CanToggleCodeLens = 'gitlens:canToggleCodeLens',
     Enabled = 'gitlens:enabled',
-    ExplorersCanCompare = 'gitlens:explorers:canCompare',
-    GitExplorer = 'gitlens:gitExplorer',
-    GitExplorerAutoRefresh = 'gitlens:gitExplorer:autoRefresh',
-    GitExplorerView = 'gitlens:gitExplorer:view',
     HasRemotes = 'gitlens:hasRemotes',
     ShowDiffNext = 'gitlens:showDiffNext',
     ShowDiffPrevious = 'gitlens:showDiffPrevious',
-    HistoryExplorer = 'gitlens:historyExplorer',
     Key = 'gitlens:key',
-    KeyMap = 'gitlens:keymap',
-    ResultsExplorer = 'gitlens:resultsExplorer',
-    ResultsExplorerKeepResults = 'gitlens:resultsExplorer:keepResults'
+    Readonly = 'gitlens:readonly',
+    ViewsCanCompare = 'gitlens:views:canCompare',
+    ViewsCanCompareFile = 'gitlens:views:canCompare:file',
+    ViewsCompareKeepResults = 'gitlens:views:compare:keepResults',
+    ViewsHideSupportGitLens = 'gitlens:views:supportGitLens:hide',
+    ViewsFileHistoryEditorFollowing = 'gitlens:views:fileHistory:editorFollowing',
+    ViewsLineHistoryEditorFollowing = 'gitlens:views:lineHistory:editorFollowing',
+    ViewsRepositoriesAutoRefresh = 'gitlens:views:repositories:autoRefresh',
+    ViewsSearchKeepResults = 'gitlens:views:search:keepResults'
 }
 
 export function setCommandContext(key: CommandContext | string, value: any) {
@@ -52,8 +57,9 @@ export enum DocumentSchemes {
     DebugConsole = 'debug',
     File = 'file',
     Git = 'git',
-    GitLensGit = 'gitlens-git',
-    Output = 'output'
+    GitLens = 'gitlens',
+    Output = 'output',
+    Vsls = 'vsls'
 }
 
 export function getEditorIfActive(document: TextDocument): TextEditor | undefined {
@@ -98,12 +104,14 @@ export enum GlyphChars {
     Dash = '\u2014',
     Dot = '\u2022',
     Ellipsis = '\u2026',
+    EnDash = '\u2013',
     MiddleEllipsis = '\u22EF',
     MuchGreaterThan = '\u226A',
     MuchLessThan = '\u22D8',
     Pencil = '\u270E',
     Space = '\u00a0',
     SpaceThin = '\u2009',
+    SpaceThinnest = '\u200A',
     SquareWithBottomShadow = '\u274F',
     SquareWithTopShadow = '\u2750',
     ZeroWidthSpace = '\u200b'
@@ -113,10 +121,47 @@ export enum GlobalState {
     GitLensVersion = 'gitlensVersion'
 }
 
-export const ImageExtensions = ['.png', '.gif', '.jpg', '.jpeg', '.webp', '.tif', '.tiff', '.bmp'];
+export const ImageMimetypes: { [key: string]: string } = {
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.jpe': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.tif': 'image/tiff',
+    '.tiff': 'image/tiff',
+    '.bmp': 'image/bmp'
+};
+
+export interface NamedRef {
+    label?: string;
+    ref: string;
+}
+
+export interface PinnedComparison {
+    path: string;
+    ref1: NamedRef;
+    ref2: NamedRef;
+}
+
+export interface PinnedComparisons {
+    [id: string]: PinnedComparison;
+}
+
+export interface StarredBranches {
+    [id: string]: boolean;
+}
+
+export interface StarredRepositories {
+    [id: string]: boolean;
+}
 
 export enum WorkspaceState {
-    GitExplorerAutoRefresh = 'gitlens:gitExplorer:autoRefresh',
-    GitExplorerView = 'gitlens:gitExplorer:view',
-    ResultsExplorerKeepResults = 'gitlens:resultsExplorer:keepResults'
+    DefaultRemote = 'gitlens:remote:default',
+    PinnedComparisons = 'gitlens:pinned:comparisons',
+    StarredBranches = 'gitlens:starred:branches',
+    StarredRepositories = 'gitlens:starred:repositories',
+    ViewsCompareKeepResults = 'gitlens:views:compare:keepResults',
+    ViewsRepositoriesAutoRefresh = 'gitlens:views:repositories:autoRefresh',
+    ViewsSearchKeepResults = 'gitlens:views:search:keepResults'
 }

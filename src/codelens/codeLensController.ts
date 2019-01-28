@@ -9,9 +9,9 @@ import {
     DocumentDirtyIdleTriggerEvent,
     GitDocumentState
 } from '../trackers/gitDocumentTracker';
-import { GitCodeLensProvider } from './gitCodeLensProvider';
+import { GitCodeLensProvider } from './codeLensProvider';
 
-export class CodeLensController implements Disposable {
+export class GitCodeLensController implements Disposable {
     private _canToggle: boolean = false;
     private _disposable: Disposable | undefined;
     private _provider: GitCodeLensProvider | undefined;
@@ -28,16 +28,13 @@ export class CodeLensController implements Disposable {
     }
 
     private onConfigurationChanged(e: ConfigurationChangeEvent) {
-        const initializing = configuration.initializing(e);
-
         const section = configuration.name('codeLens').value;
         if (
-            initializing ||
             configuration.changed(e, section, null) ||
             configuration.changed(e, configuration.name('defaultDateStyle').value) ||
             configuration.changed(e, configuration.name('defaultDateFormat').value)
         ) {
-            if (!initializing) {
+            if (!configuration.initializing(e)) {
                 Logger.log('CodeLens config changed; resetting CodeLens provider');
             }
 

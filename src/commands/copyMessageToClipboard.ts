@@ -1,16 +1,25 @@
 'use strict';
-import { TextEditor, Uri, window } from 'vscode';
+import { env, TextEditor, Uri, window } from 'vscode';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
+import { GitUri } from '../git/gitService';
 import { Logger } from '../logger';
+import { Messages } from '../messages';
 import { Iterables } from '../system';
-import { ActiveEditorCommand, CommandContext, Commands, getCommandUri, isCommandViewContextWithCommit } from './common';
+import {
+    ActiveEditorCommand,
+    command,
+    CommandContext,
+    Commands,
+    getCommandUri,
+    isCommandViewContextWithCommit
+} from './common';
 
 export interface CopyMessageToClipboardCommandArgs {
     message?: string;
     sha?: string;
 }
 
+@command()
 export class CopyMessageToClipboardCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.CopyMessageToClipboard);
@@ -30,8 +39,6 @@ export class CopyMessageToClipboardCommand extends ActiveEditorCommand {
         uri = getCommandUri(uri, editor);
 
         try {
-            const clipboard = await import('clipboardy');
-
             args = { ...args };
 
             // If we don't have an editor then get the message of the last commit to the branch
@@ -71,7 +78,7 @@ export class CopyMessageToClipboardCommand extends ActiveEditorCommand {
                     }
                     catch (ex) {
                         Logger.error(ex, 'CopyMessageToClipboardCommand', `getBlameForLine(${blameline})`);
-                        return window.showErrorMessage(`Unable to copy message. See output channel for more details`);
+                        return Messages.showGenericErrorMessage('Unable to copy message');
                     }
                 }
 
@@ -82,19 +89,19 @@ export class CopyMessageToClipboardCommand extends ActiveEditorCommand {
                 args.message = commit.message;
             }
 
-            void (await clipboard.write(args.message));
+            void (await env.clipboard.writeText(args.message));
             return undefined;
         }
         catch (ex) {
             if (ex.message.includes("Couldn't find the required `xsel` binary")) {
                 window.showErrorMessage(
-                    `Unable to copy message, xsel is not installed. You can install it via \`sudo apt install xsel\``
+                    `Unable to copy message, xsel is not installed. Please install it via your package manager, e.g. \`sudo apt install xsel\``
                 );
                 return;
             }
 
             Logger.error(ex, 'CopyMessageToClipboardCommand');
-            return window.showErrorMessage(`Unable to copy message. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to copy message');
         }
     }
 }

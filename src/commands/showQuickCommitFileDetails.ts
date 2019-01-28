@@ -1,15 +1,16 @@
 'use strict';
-import * as path from 'path';
+import * as paths from 'path';
 import { TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitCommit, GitLog, GitLogCommit, GitService, GitUri } from '../gitService';
+import { GitCommit, GitLog, GitLogCommit, GitService, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { Messages } from '../messages';
 import { CommandQuickPickItem, CommitFileQuickPick } from '../quickpicks';
 import { Strings } from '../system';
 import {
     ActiveEditorCachedCommand,
+    command,
     CommandContext,
     Commands,
     getCommandUri,
@@ -25,6 +26,7 @@ export interface ShowQuickCommitFileDetailsCommandArgs {
     goBackCommand?: CommandQuickPickItem;
 }
 
+@command()
 export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand {
     static getMarkdownCommandArgs(sha: string): string;
     static getMarkdownCommandArgs(args: ShowQuickCommitFileDetailsCommandArgs): string;
@@ -37,14 +39,21 @@ export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand
     }
 
     constructor() {
-        super(Commands.ShowQuickCommitFileDetails);
+        super([Commands.ShowQuickCommitFileDetails, Commands.ShowQuickRevisionDetails]);
     }
 
     protected async preExecute(
         context: CommandContext,
         args: ShowQuickCommitFileDetailsCommandArgs = {}
     ): Promise<any> {
-        if (context.type === 'view') {
+        if (context.command === Commands.ShowQuickRevisionDetails && context.editor !== undefined) {
+            args = { ...args };
+
+            const gitUri = await GitUri.fromUri(context.editor.document.uri);
+            args.sha = gitUri.sha;
+        }
+
+        if (context.type === 'viewItem') {
             args = { ...args };
             args.sha = context.node.uri.sha;
 
@@ -52,6 +61,7 @@ export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand
                 args.commit = context.node.commit;
             }
         }
+
         return this.execute(context.editor, context.uri, args);
     }
 
@@ -84,7 +94,7 @@ export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand
                 args.sha = blame.commit.sha;
 
                 args.commit = blame.commit;
-                workingFileName = path.relative(args.commit.repoPath, gitUri.fsPath);
+                workingFileName = paths.relative(args.commit.repoPath, gitUri.fsPath);
             }
             catch (ex) {
                 Logger.error(ex, 'ShowQuickCommitFileDetailsCommand', `getBlameForLine(${blameline})`);
@@ -156,7 +166,7 @@ export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand
                     label: `go back ${GlyphChars.ArrowBack}`,
                     description: `${Strings.pad(GlyphChars.Dash, 2, 3)} to details of ${
                         GlyphChars.Space
-                    }$(file-text) ${path.basename(args.commit.fileName)} in ${
+                    }$(file-text) ${paths.basename(args.commit.fileName)} in ${
                         GlyphChars.Space
                     }$(git-commit) ${shortSha}`
                 },
@@ -179,7 +189,7 @@ export class ShowQuickCommitFileDetailsCommand extends ActiveEditorCachedCommand
         }
         catch (ex) {
             Logger.error(ex, 'ShowQuickCommitFileDetailsCommand');
-            return window.showErrorMessage(`Unable to show commit file details. See output channel for more details`);
+            return Messages.showGenericErrorMessage('Unable to show commit file details');
         }
     }
 }

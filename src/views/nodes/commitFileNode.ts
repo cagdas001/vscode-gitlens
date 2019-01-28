@@ -1,20 +1,20 @@
 'use strict';
-import * as path from 'path';
-import { Command, TreeItem, TreeItemCollapsibleState } from 'vscode';
+import * as paths from 'path';
+import { Command, Selection, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Commands, DiffWithPreviousCommandArgs } from '../../commands';
 import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
 import {
     CommitFormatter,
-    getGitStatusIcon,
+    GitFile,
     GitLogCommit,
     GitUri,
     ICommitFormatOptions,
-    IGitStatusFile,
     IStatusFormatOptions,
     StatusFileFormatter
-} from '../../gitService';
-import { Explorer, ExplorerNode, ExplorerRefNode, ResourceType } from './explorerNode';
+} from '../../git/gitService';
+import { View } from '../viewBase';
+import { ResourceType, ViewNode, ViewRefNode } from './viewNode';
 
 export enum CommitFileNodeDisplayAs {
     CommitLabel = 1 << 0,
@@ -27,32 +27,36 @@ export enum CommitFileNodeDisplayAs {
     File = FileLabel | StatusIcon
 }
 
-export class CommitFileNode extends ExplorerRefNode {
-    readonly priority: boolean = false;
-
+export class CommitFileNode extends ViewRefNode {
     constructor(
-        public readonly status: IGitStatusFile,
+        view: View,
+        parent: ViewNode,
+        public readonly file: GitFile,
         public commit: GitLogCommit,
-        protected readonly explorer: Explorer,
-        private displayAs: CommitFileNodeDisplayAs
+        private readonly _displayAs: CommitFileNodeDisplayAs,
+        private readonly _selection?: Selection
     ) {
-        super(GitUri.fromFileStatus(status, commit.repoPath, commit.sha));
+        super(GitUri.fromFile(file, commit.repoPath, commit.sha), view, parent);
+    }
+
+    get priority(): number {
+        return 0;
     }
 
     get ref(): string {
         return this.commit.sha;
     }
 
-    async getChildren(): Promise<ExplorerNode[]> {
+    async getChildren(): Promise<ViewNode[]> {
         return [];
     }
 
     async getTreeItem(): Promise<TreeItem> {
         if (!this.commit.isFile) {
             // See if we can get the commit directly from the multi-file commit
-            const commit = this.commit.toFileCommit(this.status);
+            const commit = this.commit.toFileCommit(this.file);
             if (commit === undefined) {
-                const log = await Container.git.getLogForFile(this.repoPath, this.status.fileName, {
+                const log = await Container.git.getLogForFile(this.repoPath, this.file.fileName, {
                     maxCount: 2,
                     ref: this.commit.sha
                 });
@@ -67,38 +71,56 @@ export class CommitFileNode extends ExplorerRefNode {
 
         const item = new TreeItem(this.label, TreeItemCollapsibleState.None);
         item.contextValue = this.resourceType;
+        item.description = this.description;
         item.tooltip = this.tooltip;
 
-        if ((this.displayAs & CommitFileNodeDisplayAs.CommitIcon) === CommitFileNodeDisplayAs.CommitIcon) {
+        if ((this._displayAs & CommitFileNodeDisplayAs.CommitIcon) === CommitFileNodeDisplayAs.CommitIcon) {
             item.iconPath = {
-                dark: Container.context.asAbsolutePath(path.join('images', 'dark', 'icon-commit.svg')),
-                light: Container.context.asAbsolutePath(path.join('images', 'light', 'icon-commit.svg'))
+                dark: Container.context.asAbsolutePath(paths.join('images', 'dark', 'icon-commit.svg')),
+                light: Container.context.asAbsolutePath(paths.join('images', 'light', 'icon-commit.svg'))
             };
         }
-        else if ((this.displayAs & CommitFileNodeDisplayAs.StatusIcon) === CommitFileNodeDisplayAs.StatusIcon) {
-            const icon = getGitStatusIcon(this.status.status);
+        else if ((this._displayAs & CommitFileNodeDisplayAs.StatusIcon) === CommitFileNodeDisplayAs.StatusIcon) {
+            const icon = GitFile.getStatusIcon(this.file.status);
             item.iconPath = {
-                dark: Container.context.asAbsolutePath(path.join('images', 'dark', icon)),
-                light: Container.context.asAbsolutePath(path.join('images', 'light', icon))
+                dark: Container.context.asAbsolutePath(paths.join('images', 'dark', icon)),
+                light: Container.context.asAbsolutePath(paths.join('images', 'light', icon))
             };
         }
-        else if ((this.displayAs & CommitFileNodeDisplayAs.Gravatar) === CommitFileNodeDisplayAs.Gravatar) {
+        else if ((this._displayAs & CommitFileNodeDisplayAs.Gravatar) === CommitFileNodeDisplayAs.Gravatar) {
             item.iconPath = this.commit.getGravatarUri(Container.config.defaultGravatarsStyle);
         }
 
         item.command = this.getCommand();
 
-        // Only cache the label/tooltip for a single refresh
+        // Only cache the label/description/tooltip for a single refresh
         this._label = undefined;
+        this._description = undefined;
         this._tooltip = undefined;
 
         return item;
     }
 
+    private _description: string | undefined;
+    get description() {
+        if (this._description === undefined) {
+            this._description =
+                this._displayAs & CommitFileNodeDisplayAs.CommitLabel
+                    ? CommitFormatter.fromTemplate(this.getCommitDescriptionTemplate(), this.commit, {
+                          truncateMessageAtNewLine: true,
+                          dateFormat: Container.config.defaultDateFormat
+                      } as ICommitFormatOptions)
+                    : StatusFileFormatter.fromTemplate(this.getCommitFileDescriptionTemplate(), this.file, {
+                          relativePath: this.relativePath
+                      } as IStatusFormatOptions);
+        }
+        return this._description;
+    }
+
     private _folderName: string | undefined;
     get folderName() {
         if (this._folderName === undefined) {
-            this._folderName = path.dirname(this.uri.getRelativePath());
+            this._folderName = paths.dirname(this.uri.getRelativePath());
         }
         return this._folderName;
     }
@@ -107,12 +129,12 @@ export class CommitFileNode extends ExplorerRefNode {
     get label() {
         if (this._label === undefined) {
             this._label =
-                this.displayAs & CommitFileNodeDisplayAs.CommitLabel
+                this._displayAs & CommitFileNodeDisplayAs.CommitLabel
                     ? CommitFormatter.fromTemplate(this.getCommitTemplate(), this.commit, {
                           truncateMessageAtNewLine: true,
                           dateFormat: Container.config.defaultDateFormat
                       } as ICommitFormatOptions)
-                    : StatusFileFormatter.fromTemplate(this.getCommitFileTemplate(), this.status, {
+                    : StatusFileFormatter.fromTemplate(this.getCommitFileTemplate(), this.file, {
                           relativePath: this.relativePath
                       } as IStatusFormatOptions);
         }
@@ -129,18 +151,21 @@ export class CommitFileNode extends ExplorerRefNode {
         this._tooltip = undefined;
     }
 
-    protected get resourceType(): ResourceType {
-        return ResourceType.CommitFile;
+    protected get resourceType(): string {
+        if (!this.commit.isUncommitted) return ResourceType.CommitFile;
+
+        return this.commit.isStagedUncommitted ? `${ResourceType.File}+staged` : `${ResourceType.File}+unstaged`;
     }
 
     private _tooltip: string | undefined;
     get tooltip() {
         if (this._tooltip === undefined) {
-            if (this.displayAs & CommitFileNodeDisplayAs.CommitLabel) {
+            if (this._displayAs & CommitFileNodeDisplayAs.CommitLabel) {
+                const status = StatusFileFormatter.fromTemplate('${status}', this.file);
                 this._tooltip = CommitFormatter.fromTemplate(
                     this.commit.isUncommitted
-                        ? `\${author} ${GlyphChars.Dash} \${id}\n\${ago} (\${date})`
-                        : `\${author} ${GlyphChars.Dash} \${id}\n\${ago} (\${date})\n\n\${message}`,
+                        ? `\${author} ${GlyphChars.Dash} \${id}\n${status}\n\${ago} (\${date})`
+                        : `\${author} ${GlyphChars.Dash} \${id}\n${status}\n\${ago} (\${date})\n\n\${message}`,
                     this.commit,
                     {
                         dateFormat: Container.config.defaultDateFormat
@@ -148,18 +173,26 @@ export class CommitFileNode extends ExplorerRefNode {
                 );
             }
             else {
-                this._tooltip = StatusFileFormatter.fromTemplate('${file}\n${directory}/\n\n${status}', this.status);
+                this._tooltip = StatusFileFormatter.fromTemplate('${file}\n${directory}/\n\n${status}', this.file);
             }
         }
         return this._tooltip;
     }
 
     protected getCommitTemplate() {
-        return this.explorer.config.commitFormat;
+        return this.view.config.commitFormat;
+    }
+
+    protected getCommitDescriptionTemplate() {
+        return this.view.config.commitDescriptionFormat;
     }
 
     protected getCommitFileTemplate() {
-        return this.explorer.config.commitFileFormat;
+        return this.view.config.commitFileFormat;
+    }
+
+    protected getCommitFileDescriptionTemplate() {
+        return this.view.config.commitFileDescriptionFormat;
     }
 
     getCommand(): Command | undefined {
@@ -167,10 +200,10 @@ export class CommitFileNode extends ExplorerRefNode {
             title: 'Compare File with Previous Revision',
             command: Commands.DiffWithPrevious,
             arguments: [
-                GitUri.fromFileStatus(this.status, this.commit.repoPath),
+                GitUri.fromFile(this.file, this.commit.repoPath),
                 {
                     commit: this.commit,
-                    line: 0,
+                    line: this._selection !== undefined ? this._selection.active.line : 0,
                     showOptions: {
                         preserveFocus: true,
                         preview: true

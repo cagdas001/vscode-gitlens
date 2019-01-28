@@ -1,51 +1,66 @@
 'use strict';
 import { TreeItem, TreeItemCollapsibleState } from 'vscode';
-import { ExplorerBranchesLayout } from '../../configuration';
+import { ViewBranchesLayout } from '../../configuration';
 import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
-import { GitRemote, GitRemoteType, GitUri, Repository } from '../../gitService';
-import { Arrays, Iterables } from '../../system';
-import { GitExplorer } from '../gitExplorer';
+import { GitRemote, GitRemoteType, GitUri, Repository } from '../../git/gitService';
+import { Arrays, Iterables, log } from '../../system';
+import { RepositoriesView } from '../repositoriesView';
 import { BranchNode } from './branchNode';
 import { BranchOrTagFolderNode } from './branchOrTagFolderNode';
-import { ExplorerNode, ResourceType } from './explorerNode';
+import { ResourceType, ViewNode } from './viewNode';
 
-export class RemoteNode extends ExplorerNode {
+export class RemoteNode extends ViewNode<RepositoriesView> {
     constructor(
-        public readonly remote: GitRemote,
         uri: GitUri,
-        private readonly repo: Repository,
-        private readonly explorer: GitExplorer
+        view: RepositoriesView,
+        parent: ViewNode,
+        public readonly remote: GitRemote,
+        public readonly repo: Repository
     ) {
-        super(uri);
+        super(uri, view, parent);
     }
 
-    async getChildren(): Promise<ExplorerNode[]> {
+    get id(): string {
+        return `${this._instanceId}:gitlens:repository(${this.remote.repoPath}):remote(${this.remote.name})`;
+    }
+
+    async getChildren(): Promise<ViewNode[]> {
         const branches = await this.repo.getBranches();
         if (branches === undefined) return [];
 
-        branches.sort((a, b) => a.name.localeCompare(b.name));
+        branches.sort(
+            (a, b) =>
+                (a.starred ? -1 : 1) - (b.starred ? -1 : 1) ||
+                a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+        );
 
         // filter remote branches
         const branchNodes = [
-            ...Iterables.filterMap(
-                branches,
-                b =>
-                    !b.remote || !b.name.startsWith(this.remote.name)
-                        ? undefined
-                        : new BranchNode(b, this.uri, this.explorer)
+            ...Iterables.filterMap(branches, b =>
+                !b.remote || !b.name.startsWith(this.remote.name)
+                    ? undefined
+                    : new BranchNode(this.uri, this.view, this, b)
             )
         ];
-        if (this.explorer.config.branches.layout === ExplorerBranchesLayout.List) return branchNodes;
+        if (this.view.config.branches.layout === ViewBranchesLayout.List) return branchNodes;
 
         const hierarchy = Arrays.makeHierarchical(
             branchNodes,
-            n => (n.branch.detached ? [n.branch.name] : n.branch.getName().split('/')),
+            n => n.treeHierarchy,
             (...paths: string[]) => paths.join('/'),
-            this.explorer.config.files.compact
+            this.view.config.files.compact
         );
 
-        const root = new BranchOrTagFolderNode(this.repo.path, '', undefined, hierarchy, this.explorer);
+        const root = new BranchOrTagFolderNode(
+            this.view,
+            this,
+            'remote-branch',
+            this.repo.path,
+            '',
+            undefined,
+            hierarchy
+        );
         const children = (await root.getChildren()) as (BranchOrTagFolderNode | BranchNode)[];
 
         return children;
@@ -69,14 +84,17 @@ export class RemoteNode extends ExplorerNode {
             separator = GlyphChars.Dash;
         }
 
-        const label = `${this.remote.name} ${GlyphChars.Space}${separator}${GlyphChars.Space} ${
+        const item = new TreeItem(
+            `${this.remote.default ? `${GlyphChars.Check} ${GlyphChars.Space}` : ''}${this.remote.name}`,
+            TreeItemCollapsibleState.Collapsed
+        );
+        item.description = `${separator}${GlyphChars.Space} ${
             this.remote.provider !== undefined ? this.remote.provider.name : this.remote.domain
         } ${GlyphChars.Space}${GlyphChars.Dot}${GlyphChars.Space} ${this.remote.path}`;
-
-        const item = new TreeItem(label, TreeItemCollapsibleState.Collapsed);
         item.contextValue = ResourceType.Remote;
-        item.tooltip = `${this.remote.name}
-${this.remote.path} (${this.remote.provider !== undefined ? this.remote.provider.name : this.remote.domain})`;
+        if (this.remote.default) {
+            item.contextValue += '+default';
+        }
 
         if (this.remote.provider !== undefined) {
             item.iconPath = {
@@ -91,6 +109,22 @@ ${this.remote.path} (${this.remote.provider !== undefined ? this.remote.provider
             };
         }
 
+        item.id = this.id;
+        item.tooltip = `${this.remote.name}\n${this.remote.path} (${
+            this.remote.provider !== undefined ? this.remote.provider.name : this.remote.domain
+        })`;
+
         return item;
+    }
+
+    @log()
+    fetch(options: { progress?: boolean } = {}) {
+        return this.repo.fetch({ ...options, remote: this.remote.name });
+    }
+
+    @log()
+    async setAsDefault(state: boolean = true) {
+        void (await this.remote.setAsDefault(state));
+        void this.parent!.triggerChange();
     }
 }
