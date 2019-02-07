@@ -1,0 +1,23 @@
+{
+  "engines": {
+    "vscode": "^1.30.0"
+  },
+  "scripts": {
+    "build": "cd .. && node node_modules/webpack/bin/webpack --env.development",
+    "bundle": "cd .. && node node_modules/webpack/bin/webpack --env.production",
+    "compress": "cd .. && node compress-electron.js",
+    "clean": "cd .. && git clean -Xdf -e !.cache-images -e !node_modules -e !node_modules/**/*",
+    "lint": "cd .. && node node_modules/webpack/bin/tslint --project tsconfig.json && tslint --project ui.tsconfig.json",
+    "pack": "cd .. && vsce package",
+    "pretty": "cd .. && prettier --config .prettierrc --loglevel warn --write \"./**/*.{ts,md,json}\" && tslint --project tsconfig.json --fix && tslint --project ui.tsconfig.json --fix",
+    "pub": "cd .. && vsce publish",
+    "rebuild": "npm run reset && npm run build",
+    "reset": "cd .. && npm run clean && npm install --no-save",
+    "watch": "cd .. && node node_modules/webpack/bin/webpack --watch --env.development --info-verbosity verbose",
+    "ui:optimize": "cd .. && node node_modules/webpack/bin/webpack --config-name ui --env.optimizeImages",
+    "ui:watch": "cd .. && node node_modules/webpack/bin/webpack --watch --config-name ui --env.development --info-verbosity verbose",
+    "update:emoji": "cd .. && pushd emoji && node ./shortcodeToEmoji.js && popd",
+    "postinstall": "cd .. && node ./node_modules/vscode/bin/install",
+    "vscode:prepublish": "npm run reset && npm run bundle && npm run compress"
+  }
+}
