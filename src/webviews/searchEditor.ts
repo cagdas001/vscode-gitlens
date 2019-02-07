@@ -1,7 +1,7 @@
 'use strict';
 import * as path from 'path';
 import { commands, Uri, WebviewPanel, window, workspace } from 'vscode';
-import { configuration, IConfig } from '../configuration';
+import { configuration, Config } from '../configuration';
 import { CommandContext, setCommandContext } from '../constants';
 import { Container } from '../container';
 import { GitStashCommit } from '../git/git';
@@ -79,7 +79,7 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         }
 
         return {
-            config: configuration.get<IConfig>(),
+            config: configuration.get<Config>(),
             rootPath: Uri.file(Container.context.asAbsolutePath('.'))
                 .with({ scheme: 'vscode-resource' })
                 .toString(),
@@ -137,7 +137,7 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
     }
 
     private async getUntrackedFilesFromStash(stashCommit: GitStashCommit): Promise<any[]> {
-        const statuses = stashCommit.fileStatuses;
+        const files = stashCommit.files;
         const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
 
         if (repoPath === undefined) return [];
@@ -149,14 +149,14 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         });
         if (log !== undefined) {
             const commit = Iterables.first(log.commits.values());
-            if (commit !== undefined && commit.fileStatuses.length !== 0) {
+            if (commit !== undefined && commit.files.length !== 0) {
                 // Since these files are untracked -- make them look that way
-                commit.fileStatuses.forEach(s => (s.status = '?'));
-                statuses.splice(statuses.length, 0, ...commit.fileStatuses);
+                commit.files.forEach(s => (s.status = '?'));
+                files.splice(files.length, 0, ...commit.files);
             }
         }
 
-        const children = statuses.map(s => {
+        const children = files.map(s => {
             const commit = stashCommit.toFileCommit(s);
             return {
                 status: s,

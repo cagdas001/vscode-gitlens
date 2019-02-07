@@ -418,7 +418,7 @@ export class Git {
         return git<string>({ cwd: repoPath, configs: ['-c', 'color.branch=false'] }, ...params);
     }
 
-    static async branch_contains(repoPath: string, ref: string, options: { remote: boolean } = { remote: false }) {
+    static async branch_contains(repoPath: string, ref: string, options: { remote?: boolean, all?: boolean } = { remote: false, all: false }) {
         const params = ['branch'];
         if (options.remote) {
             params.push('-r');

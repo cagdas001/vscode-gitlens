@@ -1,10 +1,20 @@
 'use strict';
-import { commands, ConfigurationChangeEvent, Event, EventEmitter } from 'vscode';
+import {
+    commands,
+    ConfigurationChangeEvent,
+    Event,
+    EventEmitter,
+    ViewColumn,
+    window,
+    workspace
+} from 'vscode';
 import { configuration, RepositoriesViewConfig, ViewFilesLayout, ViewsConfig } from '../configuration';
 import { CommandContext, setCommandContext, WorkspaceState } from '../constants';
 import { Container } from '../container';
+import { GitCommentService } from '../gitCommentService';
 import { RepositoriesNode } from './nodes';
 import { ViewBase } from './viewBase';
+import Axios, { AxiosBasicCredentials } from 'axios';
 
 export class RepositoriesView extends ViewBase<RepositoriesNode> {
     constructor() {

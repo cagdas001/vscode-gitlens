@@ -2,11 +2,12 @@
 import { commands, Range, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
+import { GitUri, RemoteResourceType } from '../git/gitService';
 import { Logger } from '../logger';
-import { BranchesQuickPick, CommandQuickPickItem } from '../quickpicks';
+import { BranchesAndTagsQuickPick, CommandQuickPickItem } from '../quickpicks';
 import {
     ActiveEditorCommand,
+    command,
     CommandContext,
     Commands,
     getCommandUri,
@@ -17,10 +18,12 @@ import { OpenInRemoteCommandArgs } from './openInRemote';
 
 export interface OpenFileInRemoteCommandArgs {
     branch?: string;
-    range?: boolean;
     clipboard?: boolean;
+    range?: boolean;
+    sha?: string;
 }
 
+@command()
 export class OpenFileInRemoteCommand extends ActiveEditorCommand {
     constructor() {
         super(Commands.OpenFileInRemote);
@@ -49,30 +52,24 @@ export class OpenFileInRemoteCommand extends ActiveEditorCommand {
         const gitUri = await GitUri.fromUri(uri);
         if (!gitUri.repoPath) return undefined;
 
-        if (args.branch === undefined) {
+        if (args.branch === undefined && args.sha === undefined) {
             const branch = await Container.git.getBranch(gitUri.repoPath);
             if (branch === undefined || branch.tracking === undefined) {
-                const branches = (await Container.git.getBranches(gitUri.repoPath)).filter(
-                    b => b.tracking !== undefined
+                const pick = await new BranchesAndTagsQuickPick(gitUri.repoPath).show(
+                    args.clipboard
+                        ? `Copy url for ${gitUri.getRelativePath()} to clipboard for which branch${GlyphChars.Ellipsis}`
+                        : `Open ${gitUri.getRelativePath()} on remote for which branch${GlyphChars.Ellipsis}`,
+                    {
+                        autoPick: true,
+                        filters: {
+                            branches: b => b.tracking !== undefined
+                        },
+                        include: 'branches'
+                    }
                 );
-                if (branches.length > 1) {
-                    const pick = await BranchesQuickPick.show(
-                        branches,
-                        args.clipboard
-                            ? `Copy url for ${gitUri.getRelativePath()} to clipboard for which branch${
-                                  GlyphChars.Ellipsis
-                              }`
-                            : `Open ${gitUri.getRelativePath()} in remote for which branch${GlyphChars.Ellipsis}`
-                    );
-                    if (pick === undefined) return undefined;
+                if (pick === undefined || pick instanceof CommandQuickPickItem) return undefined;
 
-                    if (pick instanceof CommandQuickPickItem) return undefined;
-
-                    args.branch = pick.branch.name;
-                }
-                else if (branches.length === 1) {
-                    args.branch = branches[0].name;
-                }
+                args.branch = pick.ref;
             }
             else {
                 args.branch = branch.name;
@@ -88,14 +85,15 @@ export class OpenFileInRemoteCommand extends ActiveEditorCommand {
                           editor.selection.end.with({ line: editor.selection.end.line + 1 })
                       )
                     : undefined;
+            const sha = args.sha || gitUri.sha;
 
             return commands.executeCommand(Commands.OpenInRemote, uri, {
                 resource: {
-                    type: gitUri.sha === undefined ? 'file' : 'revision',
+                    type: sha === undefined ? RemoteResourceType.File : RemoteResourceType.Revision,
                     branch: args.branch || 'HEAD',
                     fileName: gitUri.getRelativePath(),
                     range: range,
-                    sha: gitUri.sha
+                    sha: sha
                 },
                 remotes,
                 clipboard: args.clipboard
@@ -104,7 +102,7 @@ export class OpenFileInRemoteCommand extends ActiveEditorCommand {
         catch (ex) {
             Logger.error(ex, 'OpenFileInRemoteCommand');
             return window.showErrorMessage(
-                `Unable to open file in remote provider. See output channel for more details`
+                `Unable to open file on remote provider. See output channel for more details`
             );
         }
     }

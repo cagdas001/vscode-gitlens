@@ -7,7 +7,7 @@
     "bundle": "cd .. && node node_modules/webpack/bin/webpack --env.production",
     "compress": "cd .. && node compress-electron.js",
     "clean": "cd .. && git clean -Xdf -e !.cache-images -e !node_modules -e !node_modules/**/*",
-    "lint": "cd .. && node node_modules/webpack/bin/tslint --project tsconfig.json && tslint --project ui.tsconfig.json",
+    "lint": "cd .. && node node_modules/tslint/bin/tslint --project tsconfig.json && node node_modules/tslint/bin/tslint --project ui.tsconfig.json",
     "pack": "cd .. && vsce package",
     "pretty": "cd .. && prettier --config .prettierrc --loglevel warn --write \"./**/*.{ts,md,json}\" && tslint --project tsconfig.json --fix && tslint --project ui.tsconfig.json --fix",
     "pub": "cd .. && vsce publish",

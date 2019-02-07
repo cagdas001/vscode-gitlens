@@ -44,6 +44,13 @@ export interface SearchCommitsCommandArgs {
     showInView?: boolean;
 
     goBackCommand?: CommandQuickPickItem;
+    sha?: string;
+    branch?: string;
+    author?: string;
+    since?: string;
+    before?: Date;
+    after?: Date;
+    showMergeCommits?: boolean;
 }
 
 @command()
@@ -98,7 +105,7 @@ export class SearchCommitsCommand extends ActiveEditorCachedCommand {
 
         const searchByValuesMap = new Map<GitRepoSearchBy, string>();
 
-        if (args.prefillOnly && args.search && args.searchBy || args.searchBy.length === 0) {
+        if (args.prefillOnly && args.search && args.searchBy) {
             args.search = `${searchByToSymbolMap.get(args.searchBy) || ''}${args.search}`;
             args.searchBy = undefined;
         }
@@ -126,7 +133,7 @@ export class SearchCommitsCommand extends ActiveEditorCachedCommand {
             const match = searchByRegex.exec(args.search);
             if (match && match[1]) {
                 const searchByValue = args.search.substring(args.search[1] === ' ' ? 2 : 1);
-                const searchBy = searchByMap.get(match[1]);
+                const searchBy = symbolToSearchByMap.get(match[1]);
                 if (searchBy) {
                     searchByValuesMap.set(searchBy, searchByValue);
                 }
@@ -141,6 +148,9 @@ export class SearchCommitsCommand extends ActiveEditorCachedCommand {
         }
         if (args.branch) {
             searchByValuesMap.set(GitRepoSearchBy.Branch, args.branch);
+        }
+        if (args.searchBy == null) {
+            args.searchBy = GitRepoSearchBy.Message;
         }
         if (args.since && args.since !== '-1') {
             searchByValuesMap.set(GitRepoSearchBy.Since, args.since);

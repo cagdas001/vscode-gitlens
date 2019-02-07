@@ -110,8 +110,10 @@ export class SearchView extends ViewBase<SearchNode> {
     ) {
         await this.show();
 
+        const searchByValuesMap = new Map<GitRepoSearchBy, string>();
+        searchByValuesMap.set(searchBy, search);
         const searchQueryFn = this.getSearchQueryFn(
-            Container.git.getLogForSearch(repoPath, search, searchBy, {
+            Container.git.getLogForSearch(repoPath, searchByValuesMap, {
                 maxCount: options.maxCount
             }),
             options

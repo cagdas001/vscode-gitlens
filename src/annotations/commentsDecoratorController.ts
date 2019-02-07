@@ -4,7 +4,7 @@ import { DecorationOptions, Disposable, OverviewRulerLane, Range, TextEditor, wi
 import { Container } from '../container';
 import { GitCommit } from '../git/git';
 import { Comment, CommentCache, CommentType, GitCommentService } from '../gitCommentService';
-import { GitUri } from '../gitService';
+import { GitUri } from '../git/gitService';
 
 interface CommitDic {
     [key: string]: GitCommit;

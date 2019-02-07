@@ -103,7 +103,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         before.hidden = true;
         const after = DOM.getElementById<HTMLInputElement>('after');
         after.hidden = true;
-        since.onchange = function(this: HTMLElement, ev: Event) {
+        since.onchange = function(this: any, ev: Event) {
             const ele = this as HTMLSelectElement;
             const before = DOM.getElementById<HTMLInputElement>('before');
             const after = DOM.getElementById<HTMLInputElement>('after');
@@ -171,7 +171,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                                 opened: false,
                                 selected: false
                             },
-                            icon: this.bootstrap.config.explorers.avatars ? commit._avatar : commitIcon,
+                            icon: this.bootstrap.config.views.compare.avatars ? commit._avatar : commitIcon,
                             selectable: true,
                             data: element,
                             children: this.simplifyTreeFiles(this.generateTreeFiles(commit))
@@ -277,7 +277,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 // add show more link
                 if (showMoreLink) {
                     const commitLabel = selectedCommitRow.getElementsByClassName('commit-label').item(0);
-                    commitLabel.appendChild(showMoreLink);
+                    commitLabel!.appendChild(showMoreLink);
                 }
                 commitedList!.appendChild(selectedCommitRow);
 
@@ -546,15 +546,15 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         const commitLabel = selectedCommit.getElementsByClassName('commit-label').item(0);
         const action = element.getAttribute('action');
         if (action === 'more') {
-            commitLabel.innerHTML = element.getAttribute('fullmsg')!;
-            commitLabel.appendChild(element);
+            commitLabel!.innerHTML = element.getAttribute('fullmsg')!;
+            commitLabel!.appendChild(element);
             element.innerHTML = '< ...';
             element.title = 'Show Less';
             element.setAttribute('action' , 'less');
         }
         else if (action === 'less') {
-            commitLabel.innerHTML = element.getAttribute('summary')!;
-            commitLabel.appendChild(element);
+            commitLabel!.innerHTML = element.getAttribute('summary')!;
+            commitLabel!.appendChild(element);
             element.innerHTML = '... >';
             element.title = 'Show More';
             element.setAttribute('action' , 'more');

@@ -5,7 +5,7 @@ import { CancellationTokenSource, TextEditor, Uri, window } from 'vscode';
 import { GlyphChars } from '../constants';
 import { Container } from '../container';
 import { Comment, CommentCacheItem, CommentType } from '../gitCommentService';
-import { GitCommit, GitUri } from '../gitService';
+import { GitCommit, GitUri } from '../git/gitService';
 import { Logger } from '../logger';
 import { CommandQuickPickItem, CommentsQuickPick } from '../quickpicks';
 import { Strings } from '../system';

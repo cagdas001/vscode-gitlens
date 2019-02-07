@@ -23,18 +23,17 @@
         .panel-left {
             flex: 0 0 auto;  /* only manually resize */
             padding: 10px;
-            width: 300px;
+            width: 40%;
+            min-width: 25%;
+            max-width: 75%;
             min-height: 200px;
-            min-width: 150px;
             white-space: nowrap;
-
         }
         .panel-right {
             flex: 1 1 auto; /* resizable */
             padding: 10px;
             width: 100%;
             min-height: 200px;
-            min-width: 200px !important;   /* NOTE: This won't be respected! Explicit size of left forces the size to be fixed */
         }
         .splitter {
             flex: 0 0 auto;
@@ -47,8 +46,42 @@
         .show-more-link {
             font-size: 11pt;
         }
+
+        #jstree .jstree-node {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #jstree .jstree-node .jstree-ocl {
+            flex: 0 0 auto;
+        }
+
+        #jstree .jstree-node .jstree-anchor {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #jstree .jstree-node .jstree-children {
+            flex: 0 0 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #jstree .jstree-clicked {
+            background: #beebff;
+            border-radius: 2px;
+            box-shadow: inset 0 0 1px #999999;
+            color: #0077CC;
+        }
+        #jstree .jstree-anchor:hover {
+            text-decoration: none;
+            color: #0077CC;
+        }
     </style>
-<link href="{{root}}/out/ui/search.css" rel="stylesheet"></head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+<link href="{{root}}/dist/ui/search.css" rel="stylesheet"></head>
 
 <body class="preload">
     <div class="container">
@@ -61,6 +94,7 @@
                     <select class="branches" id="branches" name="branches">
                         <option value="all">All Branches</option>
                     </select>
+                    <input type="text" id="searchHash" placeholder="enter commit hash" />
                     <input type="text" id="author" width="10" placeholder="enter author here" />
                     <!-- </div> -->
                     <select class="since" id="since" name="since" aria-placeholder="since">
@@ -85,44 +119,97 @@
                 <div id="logs-container" class="panel-container">
                     <div class="panel-left">
                         <div id="commit-logs-table-container">
-                            <table id='logs' class="logs" style="width:100%">
-                                <tbody>
-                                    <tr>
-                                        <td>Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div id="jstree" class="logs">
+                                Loading...
+                            </div>
                         </div>
                     </div>
-
                     <div class="splitter">
                     </div>
                     <div class="panel-right">
-                        <div id='selected-files' class="logs"></div>
-                        <div id='selected-commits' class="logs"></div>
+                        <div id="commit-details-container">
+                            <div id="selected-files" class="logs"></div>
+                            <div id="selected-commits" class="logs"></div>
+                        </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
-
     </div>
 
     <script type="text/javascript">
         window.bootstrap = '{{bootstrap}}';
     </script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
     <script>
-        !function(e,t){"function"==typeof define&&define.amd?define(["jquery"],e):"object"==typeof module&&"object"==typeof module.exports?module.exports=e(require("jquery")):e(jQuery)}(function(e,t){e.fn.resizable||(e.fn.resizable=function(t){var n={handleSelector:null,resizeWidth:!0,resizeHeight:!0,resizeWidthFrom:"right",resizeHeightFrom:"bottom",onDragStart:null,onDragEnd:null,onDrag:null,touchActionNone:!0,instanceId:null};return"object"==typeof t&&(n=e.extend(n,t)),this.each(function(){function o(e){e.stopPropagation(),e.preventDefault()}function i(t){t.preventDefault&&t.preventDefault(),d=c(t),d.width=parseInt(l.width(),10),d.height=parseInt(l.height(),10),h=l.css("transition"),l.css("transition","none"),u.onDragStart&&u.onDragStart(t,l,u)===!1||(e(document).on("mousemove."+u.instanceId,r),e(document).on("mouseup."+u.instanceId,a),(window.Touch||navigator.maxTouchPoints)&&(e(document).on("touchmove."+u.instanceId,r),e(document).on("touchend."+u.instanceId,a)),e(document).on("selectstart."+u.instanceId,o),e("iframe").css("pointer-events","none"))}function r(e){var t,n,o=c(e);t="left"===u.resizeWidthFrom?d.width-o.x+d.x:d.width+o.x-d.x,n="top"===u.resizeHeightFrom?d.height-o.y+d.y:d.height+o.y-d.y,u.onDrag&&u.onDrag(e,l,t,n,u)===!1||(u.resizeHeight&&l.height(n),u.resizeWidth&&l.width(t))}function a(t){return t.stopPropagation(),t.preventDefault(),e(document).off("mousemove."+u.instanceId),e(document).off("mouseup."+u.instanceId),(window.Touch||navigator.maxTouchPoints)&&(e(document).off("touchmove."+u.instanceId),e(document).off("touchend."+u.instanceId)),e(document).off("selectstart."+u.instanceId,o),l.css("transition",h),e("iframe").css("pointer-events","auto"),u.onDragEnd&&u.onDragEnd(t,l,u),!1}function c(e){var t={x:0,y:0,width:0,height:0};if("number"==typeof e.clientX)t.x=e.clientX,t.y=e.clientY;else{if(!e.originalEvent.touches)return null;t.x=e.originalEvent.touches[0].clientX,t.y=e.originalEvent.touches[0].clientY}return t}function s(e,t){return e&&">"===e.trim()[0]?(e=e.trim().replace(/^>\s*/,""),t.find(e)):e?t.parent().find(e):t}var u=e.extend({},n);u.instanceId||(u.instanceId="rsz_"+(new Date).getTime());var d,h,f,l=e(this);if("destroy"===t){if(u=l.data("resizable"),!u)return;return f=s(u.handleSelector,l),f.off("mousedown."+u.instanceId+" touchstart."+u.instanceId),u.touchActionNone&&f.css("touch-action",""),void l.removeClass("resizable")}l.data("resizable",u),f=s(u.handleSelector,l),u.touchActionNone&&f.css("touch-action","none"),l.addClass("resizable"),f.on("mousedown."+u.instanceId+" touchstart."+u.instanceId,i)})})});
+        !function (e, t) { "function" == typeof define && define.amd ? define(["jquery"], e) : "object" == typeof module && "object" == typeof module.exports ? module.exports = e(require("jquery")) : e(jQuery) }(function (e, t) { e.fn.resizable || (e.fn.resizable = function (t) { var n = { handleSelector: null, resizeWidth: !0, resizeHeight: !0, resizeWidthFrom: "right", resizeHeightFrom: "bottom", onDragStart: null, onDragEnd: null, onDrag: null, touchActionNone: !0, instanceId: null }; return "object" == typeof t && (n = e.extend(n, t)), this.each(function () { function o(e) { e.stopPropagation(), e.preventDefault() } function i(t) { t.preventDefault && t.preventDefault(), d = c(t), d.width = parseInt(l.width(), 10), d.height = parseInt(l.height(), 10), h = l.css("transition"), l.css("transition", "none"), u.onDragStart && u.onDragStart(t, l, u) === !1 || (e(document).on("mousemove." + u.instanceId, r), e(document).on("mouseup." + u.instanceId, a), (window.Touch || navigator.maxTouchPoints) && (e(document).on("touchmove." + u.instanceId, r), e(document).on("touchend." + u.instanceId, a)), e(document).on("selectstart." + u.instanceId, o), e("iframe").css("pointer-events", "none")) } function r(e) { var t, n, o = c(e); t = "left" === u.resizeWidthFrom ? d.width - o.x + d.x : d.width + o.x - d.x, n = "top" === u.resizeHeightFrom ? d.height - o.y + d.y : d.height + o.y - d.y, u.onDrag && u.onDrag(e, l, t, n, u) === !1 || (u.resizeHeight && l.height(n), u.resizeWidth && l.width(t)) } function a(t) { return t.stopPropagation(), t.preventDefault(), e(document).off("mousemove." + u.instanceId), e(document).off("mouseup." + u.instanceId), (window.Touch || navigator.maxTouchPoints) && (e(document).off("touchmove." + u.instanceId), e(document).off("touchend." + u.instanceId)), e(document).off("selectstart." + u.instanceId, o), l.css("transition", h), e("iframe").css("pointer-events", "auto"), u.onDragEnd && u.onDragEnd(t, l, u), !1 } function c(e) { var t = { x: 0, y: 0, width: 0, height: 0 }; if ("number" == typeof e.clientX) t.x = e.clientX, t.y = e.clientY; else { if (!e.originalEvent.touches) return null; t.x = e.originalEvent.touches[0].clientX, t.y = e.originalEvent.touches[0].clientY } return t } function s(e, t) { return e && ">" === e.trim()[0] ? (e = e.trim().replace(/^>\s*/, ""), t.find(e)) : e ? t.parent().find(e) : t } var u = e.extend({}, n); u.instanceId || (u.instanceId = "rsz_" + (new Date).getTime()); var d, h, f, l = e(this); if ("destroy" === t) { if (u = l.data("resizable"), !u) return; return f = s(u.handleSelector, l), f.off("mousedown." + u.instanceId + " touchstart." + u.instanceId), u.touchActionNone && f.css("touch-action", ""), void l.removeClass("resizable") } l.data("resizable", u), f = s(u.handleSelector, l), u.touchActionNone && f.css("touch-action", "none"), l.addClass("resizable"), f.on("mousedown." + u.instanceId + " touchstart." + u.instanceId, i) }) }) });
         //# sourceMappingURL=jquery-resizable.min.js.map
     </script>
+  <script>
+      (function ($, undefined) {
+          "use strict";
+          $.jstree.defaults.conditionalselect = function () { return true; };
+          $.jstree.plugins.conditionalselect = function (options, parent) {
+              // own function
+              this.activate_node = function (obj, e) {
+                  if(this.settings.conditionalselect.call(this, this.get_node(obj))) {
+                      parent.activate_node.call(this, obj, e);
+                  }
+                  this.trigger('activate_node', { 'node' : this.get_node(obj), 'event' : e });
+              };
+          };
+      })(jQuery);
+  </script>
     <script>
-        $(".panel-left").resizable({
-            handleSelector: ".splitter",
-            resizeHeight: false
+        window.addEventListener('treeInit', (e) => {
+            $('#jstree').jstree('destroy');
+            $('#jstree').jstree({
+                core: {
+                    data: e.detail
+                },
+                themes: {
+                    theme: "default-dark"
+                },
+                plugins : ['conditionalselect'],
+                conditionalselect : function (node) {
+                    return Boolean(node.original.selectable)
+                }
+            });
+            $('#jstree').on('activate_node.jstree', function (e, data) {
+                const treeNodeClickEvent = new CustomEvent('treeNodeClick', {
+                    bubbles: true,
+                    detail: data
+                });
+                window.dispatchEvent(treeNodeClickEvent);
+            });
+            $('#jstree').on('changed.jstree', function (e, data) {
+                const selectedNodes = $('#jstree').jstree().get_selected(true);
+                const treeChangeEvent = new CustomEvent('treeChange', {
+                    bubbles: true,
+                    detail: {
+                        selectedNodes
+                    }
+                });
+                window.dispatchEvent(treeChangeEvent);
+            });
         });
     </script>
-<script type="text/javascript" src="{{root}}/out/ui/search.js"></script></body>
+    <script>
+        let stopDrag = false;
+        $(".panel-left").resizable({
+            handleSelector: ".splitter",
+            resizeHeight: false,
+            onDragStart: () => {
+                stopDrag = false;
+            },
+            onDrag: () => !stopDrag
+        });
+
+	    $('body').on('mouseleave', () => {
+            stopDrag = true;
+        })
+    </script>
+<script type="text/javascript" src="{{root}}/dist/ui/search.js"></script></body>
 
 </html>
