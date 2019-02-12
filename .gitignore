@@ -1,6 +1,7 @@
 .cache-images
 .cache-loader
 dist
+out
 node_modules
 settings.html
 search.html
