@@ -58,6 +58,7 @@ export abstract class GitCommit {
     private _isStagedUncommitted: boolean | undefined;
     private _isUncommitted: boolean | undefined;
     private _shortSha: string | undefined;
+    private _avatar: string | undefined;
 
     constructor(
         type: GitCommitType,
@@ -77,6 +78,7 @@ export abstract class GitCommit {
         this.originalFileName = originalFileName;
         this._previousSha = previousSha;
         this.previousFileName = previousFileName;
+        this._avatar = this.getGravatarUri(Container.config.defaultGravatarsStyle).toString();
     }
 
     get fileName() {

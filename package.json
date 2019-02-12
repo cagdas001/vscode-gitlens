@@ -1,5 +1,5 @@
 {
-    "name": "gitlens",
+    "name": "gitlens-extended",
     "displayName": "GitLens — Git supercharged",
     "description": "Supercharge the Git capabilities built into Visual Studio Code — Visualize code authorship at a glance via Git blame annotations and code lens, seamlessly navigate and explore Git repositories, gain valuable insights via powerful comparison commands, and so much more",
     "version": "8.5.6",
@@ -1599,8 +1599,8 @@
                 "title": "Put comment to this file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/chat.svg",
-                    "light": "images/chat.svg"
+                    "dark": "images/light/chat.svg",
+                    "light": "images/light/chat.svg"
                 }
             },
             {
@@ -1608,8 +1608,8 @@
                 "title": "Show comment for this file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/bookmark-red.svg",
-                    "light": "images/bookmark-red.svg"
+                    "dark": "images/light/bookmark-red.svg",
+                    "light": "images/light/bookmark-red.svg"
                 }
             },
             {
@@ -1617,8 +1617,8 @@
                 "title": "Show comment for this line",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/bookmark.svg",
-                    "light": "images/bookmark.svg"
+                    "dark": "images/light/bookmark.svg",
+                    "light": "images/light/bookmark.svg"
                 }
             },
             {
@@ -1626,8 +1626,8 @@
                 "title": "Show next file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/next.svg",
-                    "light": "images/next.svg"
+                    "dark": "images/light/next.svg",
+                    "light": "images/light/next.svg"
                 }
             },
             {
@@ -1635,8 +1635,8 @@
                 "title": "Show previous file",
                 "category": "GitLens",
                 "icon": {
-                    "dark": "images/previous.svg",
-                    "light": "images/previous.svg"
+                    "dark": "images/light/previous.svg",
+                    "light": "images/light/previous.svg"
                 }
             },
             {
@@ -3743,6 +3743,7 @@
     "scripts": {
         "build": "webpack --env.development",
         "bundle": "webpack --env.production",
+        "compress": "node compress-electron.js",
         "clean": "git clean -Xdf",
         "lint": "tslint --project tsconfig.json && tslint --project ui.tsconfig.json",
         "pack": "vsce package",
@@ -3754,7 +3755,7 @@
         "ui:optimize": "webpack --config-name ui --env.optimizeImages",
         "ui:watch": "webpack --watch --config-name ui --env.development",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "vscode:prepublish": "npm run reset && npm run bundle"
+        "vscode:prepublish": "npm run reset && npm run bundle && npm run compress"
     },
     "dependencies": {
         "@types/node-ipc": "^9.1.1",
@@ -3762,7 +3763,7 @@
         "axios-retry": "^3.1.1",
         "clipboardy": "1.2.3",
         "date-fns": "1.29.0",
-        "electron": "^3.0.5",
+        "electron": "^3.0.13",
         "iconv-lite": "0.4.23",
         "lodash.debounce": "4.0.8",
         "lodash.once": "4.1.1",

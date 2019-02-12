@@ -663,7 +663,7 @@ export class GitCommentService implements Disposable {
                     function checkReply(replies: Comment[]) {
                         return replies.filter(reply => {
                             if (reply.Replies) {
-                                checkReply(reply.Replies);
+                                reply.Replies = checkReply(reply.Replies);
                             }
                             return reply.Id !== commentId;
                         });

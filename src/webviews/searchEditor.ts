@@ -4,7 +4,7 @@ import { commands, Uri, WebviewPanel, window, workspace } from 'vscode';
 import { configuration, IConfig } from '../configuration';
 import { CommandContext, setCommandContext } from '../constants';
 import { Container } from '../container';
-import { GitBranch } from '../git/git';
+import { GitStashCommit } from '../git/git';
 import { Iterables } from '../system/iterable';
 import { CommitSearchBootstrap, ShowDiffMessage } from '../ui/ipc';
 import { WebviewEditor } from './webviewEditor';
@@ -37,7 +37,7 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         else {
             setCommandContext(CommandContext.ShowDiffPrevious, true);
         }
-        if (SearchEditor.showDiffIndex >= SearchEditor.showDiffMessages.length - 1) {
+        if (Array.isArray(SearchEditor.showDiffMessages) && SearchEditor.showDiffIndex >= SearchEditor.showDiffMessages.length - 1) {
             setCommandContext(CommandContext.ShowDiffNext, false);
         }
         else {
@@ -67,10 +67,25 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
     async getBootstrap() {
         const branches = await this.getAllBranches();
         const branch = await this.getBranch();
+        const stashes = await this.getStashList();
+        const stashesWithFiles = [];
+        if (Array.isArray(stashes) && stashes.length > 0) {
+            for(let stash of stashes) {
+                stashesWithFiles.push({
+                    ...stash,
+                    files: await this.getUntrackedFilesFromStash(stash)
+                });
+            }
+        }
+
         return {
             config: configuration.get<IConfig>(),
-            branches: branches,
-            branch: branch
+            rootPath: Uri.file(Container.context.asAbsolutePath('.'))
+                .with({ scheme: 'vscode-resource' })
+                .toString(),
+            branches,
+            branch,
+            stashes: stashesWithFiles
         } as CommitSearchBootstrap;
     }
 
@@ -113,5 +128,42 @@ export class SearchEditor extends WebviewEditor<CommitSearchBootstrap> {
         const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
         const branch = await Container.git.getBranch(repoPath);
         return branch!.getName();
+    }
+
+    private async getStashList(): Promise<GitStashCommit[]> {
+        const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+        const stashList = await Container.git.getStashList(repoPath);
+        return stashList ? Array.from(stashList.commits.values()) : [];
+    }
+
+    private async getUntrackedFilesFromStash(stashCommit: GitStashCommit): Promise<any[]> {
+        const statuses = stashCommit.fileStatuses;
+        const repoPath = await Container.git.getActiveRepoPath(window.activeTextEditor);
+
+        if (repoPath === undefined) return [];
+
+        // Check for any untracked files -- since git doesn't return them via `git stash list` :(
+        const log = await Container.git.getLog(repoPath, {
+            maxCount: 1,
+            ref: `${stashCommit.stashName}^3`
+        });
+        if (log !== undefined) {
+            const commit = Iterables.first(log.commits.values());
+            if (commit !== undefined && commit.fileStatuses.length !== 0) {
+                // Since these files are untracked -- make them look that way
+                commit.fileStatuses.forEach(s => (s.status = '?'));
+                statuses.splice(statuses.length, 0, ...commit.fileStatuses);
+            }
+        }
+
+        const children = statuses.map(s => {
+            const commit = stashCommit.toFileCommit(s);
+            return {
+                status: s,
+                commit
+            };
+        });
+        children.sort((a, b) => a.status.fileName!.localeCompare(b.status.fileName!));
+        return children;
     }
 }

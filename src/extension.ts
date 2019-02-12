@@ -1,5 +1,9 @@
 'use strict';
 
+import { exec } from 'child_process';
+// import { Telemetry } from './telemetry';
+import * as fs from 'fs';
+import * as path from 'path';
 import { commands, ExtensionContext, extensions, window, workspace } from 'vscode';
 import { Commands, configureCommands } from './commands';
 import {
@@ -19,13 +23,36 @@ import { GitService } from './gitService';
 import { Logger } from './logger';
 import { Messages } from './messages';
 import { Versions } from './system';
-// import { Telemetry } from './telemetry';
 
 interface GitApi {
     getGitPath(): Promise<string>;
 }
 
+/**
+ * This will work only on macOS and will work only first time
+ * https://gitlab.com/aggregated-git-diff/aggregated-git-diff-bug-bash/issues/84
+ * https://gitlab.com/aggregated-git-diff/aggregated-git-diff-bug-bash/issues/85
+ */
+const firstTimeExtract = function() {
+    const distPath = path.join(__dirname, '../node_modules', 'electron', 'dist');
+    const tarName = 'compressed-electron.tar.gz';
+    const tarPath = path.join(distPath, tarName);
+    const electronAppName = 'Electron.app';
+    const electronAppPath = path.join(distPath, electronAppName);
+
+    if (process.platform === 'darwin' && fs.existsSync(tarPath)) {
+        console.log('first time activation, extracting');
+        exec(`tar -C ${distPath} -xzf ${tarPath}`, () => {
+            if (fs.existsSync(electronAppPath)) {
+                fs.unlinkSync(tarPath);
+                console.log('first time initialization complete');
+            }
+        });
+    }
+};
+
 export async function activate(context: ExtensionContext) {
+    firstTimeExtract();
     const start = process.hrtime();
 
     Logger.configure(context);
