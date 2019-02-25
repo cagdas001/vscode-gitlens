@@ -159,12 +159,11 @@ function getUIConfig(env) {
             filename: '[name].css'
         }),
         new HtmlPlugin({
-            excludeChunks: ['welcome','settings'],
+            excludeChunks: ['welcome'],
             template: 'settings/index.html',
             filename: path.resolve(__dirname, 'settings.html'),
             inject: true,
             inlineSource: env.production ? '.(js|css)$' : undefined,
-            // inlineSource: '.(js|css)$',
             minify: env.production
                 ? {
                       removeComments: true,
@@ -173,14 +172,15 @@ function getUIConfig(env) {
                       useShortDoctype: true,
                       removeEmptyAttributes: true,
                       removeStyleLinkTypeAttributes: true,
-                      keepClosingSlash: true
+                      keepClosingSlash: true,
+                      minifyCSS: true
                   }
                 : false
         }),
         new HtmlPlugin({
-            excludeChunks: ['welcome'],
-            template: 'settings/index.html',
-            filename: path.resolve(__dirname, 'settings.html'),
+            excludeChunks: ['settings'],
+            template: 'welcome/index.html',
+            filename: path.resolve(__dirname, 'welcome.html'),
             inject: true,
             inlineSource: env.production ? '.(js|css)$' : undefined,
             minify: env.production
