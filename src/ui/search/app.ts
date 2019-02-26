@@ -123,7 +123,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 searchMessage.innerText = event.data.searchLabel;
                 return;
             }
-            if (event.data.type === 'showDiff') {
+            if (event.data.type === 'showDiff' || event.data.type === 'settingsChanged') {
                 return;
             }
 
@@ -285,7 +285,7 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
                 const files = commit._fileName.split(',') as string[];
                 for (const file of files) {
                     const trimmedFilePath = file.trim();
-                    const status = commit.fileStatuses.filter(
+                    const status = commit.files.filter(
                         (x: any) => (x.fileName as string) === trimmedFilePath
                     );
                     const fileCommitInfo = {
@@ -638,12 +638,12 @@ export class CommitSearches extends App<CommitSearchBootstrap> {
         if (Array.isArray(commit)) {
             commit.forEach(singleCommit => {
                 tempCommit = singleCommit;
-                singleCommit.fileStatuses.map(addnode);
+                singleCommit.files.map(addnode);
             });
         }
         else {
             tempCommit = commit;
-            commit.fileStatuses.map(addnode);
+            commit.files.map(addnode);
         }
 
         return tree;
