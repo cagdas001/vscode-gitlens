@@ -3916,12 +3916,12 @@
         },
         {
           "command": "gitlens.bitbucket.login",
-          "when": "view =~ /^gitlens.gitExplorer:/ && !gitlens:bitbucketLoggedIn",
+          "when": "view =~ /^gitlens.views.repositories:/ && !gitlens:bitbucketLoggedIn",
           "group": "3_gitlens"
         },
         {
           "command": "gitlens.bitbucket.logout",
-          "when": "view =~ /^gitlens.gitExplorer:/ && gitlens:bitbucketLoggedIn",
+          "when": "view =~ /^gitlens.views.repositories:/ && gitlens:bitbucketLoggedIn",
           "group": "3_gitlens"
         },
         {
