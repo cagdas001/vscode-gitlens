@@ -117,9 +117,9 @@ export class SearchCommitsCommand extends ActiveEditorCachedCommand {
                     args.search = searchByToSymbolMap.get(args.searchBy);
                     selection = [1, 1];
                 }
-                else {
+                /*else {
                     args.search = this._lastSearch;
-                }
+                }*/
             }
 
             if (args.showInView) {
